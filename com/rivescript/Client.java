@@ -1,0 +1,159 @@
+/*
+    com.rivescript.RiveScript - The Official Java RiveScript Interpreter
+    Copyright (C) 2010  Noah Petherbridge
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
+package com.rivescript;
+
+import java.lang.String;
+import java.util.HashMap;
+
+/**
+ * An object to represent an individual user's data.
+ */
+
+public class Client {
+	private String id;
+	private HashMap<String, String> data = new HashMap<String, String>(); // User data
+	private String[] input = new String [10]; // User's inputs
+	private String[] reply = new String [10]; // Bot's replies
+
+	/**
+	 * Create a new client object.
+	 *
+	 * @param id A unique ID for this client.
+	 */
+	public Client (String id) {
+		this.id = id;
+
+		// Set default vars.
+		set("topic","random");
+
+		// Initialize the user's history.
+		for (int i = 0; i < input.length; i++) {
+			input[i] = "undefined";
+			reply[i] = "undefined";
+		}
+	}
+
+	/**
+	 * Set a variable for the client.
+	 *
+	 * @param name  The name of the variable.
+	 * @param value The value to set in the variable.
+	 */
+	public void set (String name, String value) {
+		data.put(name, value);
+	}
+
+	/**
+	 * Get a variable from the client. Returns the text "undefined" if it doesn't
+	 * exist.
+	 *
+	 * @param name The name of the variable.
+	 */
+	public String get (String name) {
+		if (data.containsKey(name)) {
+			return data.get(name);
+		}
+		return "undefined";
+	}
+
+	/**
+	 * Delete a variable for the client.
+	 *
+	 * @param name The name of the variable.
+	 */
+	public void delete (String name) {
+		if (data.containsKey(name)) {
+			data.remove(name);
+		}
+	}
+
+	/**
+	 * Retrieve a hashmap of all the user's vars and values.
+	 */
+	public HashMap<String, String> getData () {
+		return data;
+	}
+
+	/**
+	 * Replace the internal hashmap with this new data (dangerous!).
+	 */
+	public boolean setData (HashMap<String, String> newdata) {
+		this.data = newdata;
+		return true;
+	}
+
+	/**
+	 * Add a line to the user's input history.
+	 */
+	public void addInput (String text) {
+		// Push this onto the front of the input array.
+		input = unshift(input, text);
+	}
+
+	/**
+	 * Add a line to the user's reply history.
+	 */
+	public void addReply (String text) {
+		// Push this onto the front of the reply array.
+		reply = unshift(reply, text);
+	}
+
+	/**
+	 * Get a specific input value by index.
+	 *
+	 * @param index The index of the input value to get (1-9).
+	 */
+	public String getInput (int index) throws java.lang.IndexOutOfBoundsException {
+		if (index >= 1 && index <= 9) {
+			return this.input[index-1];
+		}
+		else {
+			throw new java.lang.IndexOutOfBoundsException();
+		}
+	}
+
+	/**
+	 * Get a specific reply value by index.
+	 *
+	 * @param index The index of the reply value to get (1-9).
+	 */
+	public String getReply (int index) throws java.lang.IndexOutOfBoundsException {
+		if (index >= 1 && index <= 9) {
+			return this.reply[index-1];
+		}
+		else {
+			throw new java.lang.IndexOutOfBoundsException();
+		}
+	}
+
+	/**
+	 * Shift an item to the beginning of an array and rotate.
+	 */
+	public String[] unshift (String[] array, String addition) {
+		// First rotate all entries from 0 to the end.
+		for (int i = array.length - 1; i > 0; i--) {
+			array[i] = array[i - 1];
+		}
+
+		// Now set the first item.
+		array[0] = addition;
+		return array;
+	}
+}

@@ -1,0 +1,9 @@
+Things that don't pass yet in the test suite:
+
+*) the object tests
+	- objects aren't supported yet
+
+Things the Perl module does that Java doesn't:
+
+*) strict mode - syntax checks RS documents
+
