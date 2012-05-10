@@ -191,7 +191,7 @@ public class Topic {
 
 			int inherits = h;
 			say("Sorting triggers by heritage level " + inherits);
-			String[] triggers = com.rivescript.Util.v2s(heritage.get(inherits));
+			String[] triggers = com.rivescript.Util.Sv2s(heritage.get(inherits));
 
 			// Sort-priority maps.
 			HashMap<Integer, Vector<String> > prior = new HashMap<Integer, Vector<String> >();
@@ -324,7 +324,7 @@ public class Topic {
 		}
 
 		// Turn the running sort buffer into a string array and store it.
-		this.sorted = com.rivescript.Util.v2s (sorted);
+		this.sorted = com.rivescript.Util.Sv2s (sorted);
 	}
 
 	/**
@@ -358,7 +358,7 @@ public class Topic {
 		while (sit.hasNext()) {
 			vector.add((String) sit.next());
 		}
-		return com.rivescript.Util.v2s(vector);
+		return com.rivescript.Util.Sv2s(vector);
 	}
 
 	/**
@@ -369,7 +369,7 @@ public class Topic {
 	public String[] listPreviousTriggers (String previous) {
 		// TODO return sorted list
 		if (this.previous.containsKey(previous)) {
-			return com.rivescript.Util.v2s(this.previous.get(previous));
+			return com.rivescript.Util.Sv2s(this.previous.get(previous));
 		}
 		return new String[0];
 	}
@@ -426,7 +426,7 @@ public class Topic {
 	 */
 	public String[] listPrevious (String previous) {
 		if (this.previous.containsKey(previous)) {
-			return com.rivescript.Util.v2s (this.previous.get(previous));
+			return com.rivescript.Util.Sv2s (this.previous.get(previous));
 		}
 		else {
 			return new String[0];
@@ -455,14 +455,14 @@ public class Topic {
 	 * Retrieve a list of included topics.
 	 */
 	public String[] includes () {
-		return com.rivescript.Util.v2s(this.includes);
+		return com.rivescript.Util.Sv2s(this.includes);
 	}
 
 	/**
 	 * Retrieve a list of inherited topics.
 	 */
 	public String[] inherits () {
-		return com.rivescript.Util.v2s(this.inherits);
+		return com.rivescript.Util.Sv2s(this.inherits);
 	}
 
 	/**

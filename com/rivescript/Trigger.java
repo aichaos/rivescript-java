@@ -84,7 +84,7 @@ public class Trigger {
 	 * List replies under this trigger.
 	 */
 	public String[] listReplies () {
-		return v2s (reply);
+		return Sv2s (reply);
 	}
 
 	/**
@@ -100,7 +100,7 @@ public class Trigger {
 	 * List redirections under this trigger.
 	 */
 	public String[] listRedirects () {
-		return v2s (redirect);
+		return Sv2s (redirect);
 	}
 
 	/**
@@ -116,7 +116,7 @@ public class Trigger {
 	 * List conditions under this trigger.
 	 */
 	public String[] listConditions () {
-		return v2s (condition);
+		return Sv2s (condition);
 	}
 
 	/*---------------------*/
@@ -128,7 +128,7 @@ public class Trigger {
 	 *
 	 * @param vector The vector to convert.
 	 */
-	private String[] v2s (Vector vector) {
+	private String[] Sv2s (Vector vector) {
 		String[] result = new String [ vector.size() ];
 		int i = 0;
 		for (Enumeration e = vector.elements(); e.hasMoreElements(); ) {

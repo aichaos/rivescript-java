@@ -248,7 +248,7 @@ public class RiveScript {
 		}
 
 		// Convert the vector into a string array.
-		String[] code = com.rivescript.Util.v2s (lines);
+		String[] code = com.rivescript.Util.Sv2s (lines);
 
 		// Send the code to the parser.
 		return parse (file, code);
@@ -524,7 +524,7 @@ public class RiveScript {
 					// End of the object. Did we have a handler?
 					if (handlers.containsKey(objLang)) {
 						// Yes, call the handler's onLoad function.
-						handlers.get(objLang).onLoad(objName, com.rivescript.Util.v2s(objBuff));
+						handlers.get(objLang).onLoad(objName, com.rivescript.Util.Sv2s(objBuff));
 
 						// Map the name to the language.
 						objects.put(objName, objLang);
@@ -939,8 +939,8 @@ public class RiveScript {
 		this.topics.sortReplies();
 
 		// Sort the substitutions.
-		subs_s = com.rivescript.Util.sortByLength (com.rivescript.Util.h2s(subs));
-		person_s = com.rivescript.Util.sortByLength (com.rivescript.Util.h2s(person));
+		subs_s = com.rivescript.Util.sortByLength (com.rivescript.Util.SSh2s(subs));
+		person_s = com.rivescript.Util.sortByLength (com.rivescript.Util.SSh2s(person));
 	}
 
 	/*---------------------*/
@@ -1361,7 +1361,7 @@ public class RiveScript {
 				}
 
 				// Pull a random value out.
-				int[] choices = com.rivescript.Util.v2s(bucket);
+				int[] choices = com.rivescript.Util.Iv2s(bucket);
 				if (choices.length > 0) {
 					int choice = choices [ rand.nextInt(choices.length) ];
 					say("Possible choices: " + choices.length + "; chosen: " + choice);
@@ -1497,7 +1497,7 @@ public class RiveScript {
 
 				// Do we have an array by this name?
 				if (arrays.containsKey(name)) {
-					String[] values = com.rivescript.Util.v2s(arrays.get(name));
+					String[] values = com.rivescript.Util.Sv2s(arrays.get(name));
 					StringBuffer joined = new StringBuffer();
 
 					// Join the array.
@@ -1605,8 +1605,8 @@ public class RiveScript {
 		}
 
 		// Convert the stars into simple arrays.
-		String[] stars    = com.rivescript.Util.v2s(vstars);
-		String[] botstars = com.rivescript.Util.v2s(vbotstars);
+		String[] stars    = com.rivescript.Util.Sv2s(vstars);
+		String[] botstars = com.rivescript.Util.Sv2s(vbotstars);
 
 		// Shortcut tags.
 		reply = reply.replaceAll("<person>",    "{person}<star>{/person}");
@@ -1891,7 +1891,7 @@ public class RiveScript {
 				if (objects.containsKey(name)) {
 					// What language handles it?
 					String lang = objects.get(name);
-					String result = handlers.get(lang).onCall(name, user, com.rivescript.Util.v2s(args));
+					String result = handlers.get(lang).onCall(name, user, com.rivescript.Util.Sv2s(args));
 					reply = reply.replace(tag, result);
 				}
 				else {

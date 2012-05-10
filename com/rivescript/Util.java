@@ -40,7 +40,7 @@ public class Util {
 	 *
 	 * @param vector The vector to convert.
 	 */
-	public static String[] v2s (Vector<String> vector) {
+	public static String[] Sv2s (Vector<String> vector) {
 		String[] result = new String [ vector.size() ];
 		int i = 0;
 		for (Enumeration e = vector.elements(); e.hasMoreElements(); ) {
@@ -55,7 +55,7 @@ public class Util {
 	 *
 	 * @param vector The vector to convert.
 	 */
-	public static int[] v2s (Vector<Integer> vector) {
+	public static int[] Iv2s (Vector<Integer> vector) {
 		int[] result = new int [ vector.size() ];
 		int i = 0;
 		for (Enumeration e = vector.elements(); e.hasMoreElements(); ) {
@@ -70,13 +70,13 @@ public class Util {
 	 *
 	 * @param hash The hash to get the keys from.
 	 */
-	public static String[] h2s (HashMap<String, String> hash) {
+	public static String[] SSh2s (HashMap<String, String> hash) {
 		Vector<String> vector = new Vector<String>();
 		Iterator sit = hash.keySet().iterator();
 		while (sit.hasNext()) {
 			vector.add((String) sit.next());
 		}
-		return v2s(vector);
+		return Sv2s(vector);
 	}
 
 	/**
@@ -84,13 +84,13 @@ public class Util {
 	 *
 	 * @param hash The hash to get the keys from.
 	 */
-	public static int[] h2s (HashMap<Integer, com.rivescript.Inheritance> hash) {
+	public static int[] IIh2s (HashMap<Integer, com.rivescript.Inheritance> hash) {
 		Vector<Integer> vector = new Vector<Integer>();
 		Iterator sit = hash.keySet().iterator();
 		while (sit.hasNext()) {
 			vector.add((Integer) sit.next());
 		}
-		return v2s(vector);
+		return Iv2s(vector);
 	}
 
 	/**
@@ -127,7 +127,7 @@ public class Util {
 		}
 
 		// Turn the key vector into an int array.
-		int[] iKeys = v2s (keys);
+		int[] iKeys = Iv2s (keys);
 
 		// Order the keys in descending order.
 		Arrays.sort(iKeys);
@@ -201,6 +201,6 @@ public class Util {
 			}
 			reply.add(Character.toString(c));
 		}
-		return join(v2s(reply),"");
+		return join(Sv2s(reply),"");
 	}
 }

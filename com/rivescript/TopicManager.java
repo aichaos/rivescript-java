@@ -193,7 +193,7 @@ public class TopicManager {
 		}
 
 		// Return it as an array.
-		return com.rivescript.Util.v2s(triggers);
+		return com.rivescript.Util.Sv2s(triggers);
 	}
 
 	/**
@@ -290,6 +290,6 @@ public class TopicManager {
 		}
 
 		// Return.
-		return com.rivescript.Util.v2s(result);
+		return com.rivescript.Util.Sv2s(result);
 	}
 }

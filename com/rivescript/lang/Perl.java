@@ -95,7 +95,7 @@ public class Perl implements com.rivescript.ObjectHandler {
 				while ((line = stdOut.readLine()) != null) {
 					result.add(line);
 				}
-				incoming = com.rivescript.Util.join( com.rivescript.Util.v2s(result), "\n");
+				incoming = com.rivescript.Util.join( com.rivescript.Util.Sv2s(result), "\n");
 			} catch (java.io.IOException e) {
 				System.err.println("IOException error in com.rivescript.lang.Perl: " + e.getMessage());
 				return "[ERR: IOException: " + e.getMessage() + "]";

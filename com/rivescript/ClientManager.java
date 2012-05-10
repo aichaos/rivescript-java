@@ -63,7 +63,7 @@ public class ClientManager {
 		while (it.hasNext()) {
 			result.add(it.next().toString());
 		}
-		return com.rivescript.Util.v2s(result);
+		return com.rivescript.Util.Sv2s(result);
 	}
 
 	/**

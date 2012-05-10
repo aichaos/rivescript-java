@@ -82,7 +82,7 @@ public class Inheritance {
 
 		// Go through the results and add them to the vector.
 		for (int i = 0; i < sorted.length; i++) {
-			String[] items = com.rivescript.Util.v2s(hash.get(sorted[i]));
+			String[] items = com.rivescript.Util.Sv2s(hash.get(sorted[i]));
 			for (int j = 0; j < items.length; j++) {
 				vector.add(items[j]);
 			}
@@ -99,8 +99,9 @@ public class Inheritance {
 	 * @param wc     The vector of wildcard triggers
 	 */
 	private Vector<String> addSortedList (Vector<String> vector, Vector<String> wc) {
-		for (Enumeration e = wc.elements(); e.hasMoreElements(); ) {
-			vector.add( e.nextElement().toString() );
+		String[] items = com.rivescript.Util.sortByLength( com.rivescript.Util.Sv2s(wc) );
+		for (int i = 0; i < items.length; i++) {
+			vector.add( items[i] );
 		}
 		return vector;
 	}
