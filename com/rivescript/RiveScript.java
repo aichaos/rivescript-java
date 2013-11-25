@@ -47,7 +47,7 @@ import java.util.Vector;
  * // Create a new interpreter<br>
  * RiveScript rs = new RiveScript();<p>
  *
- * // Load a directory full of replies in *.rs files<br>
+ * // Load a directory full of replies in *.rive files<br>
  * rs.loadDirectory("./replies");<p>
  *
  * // Sort replies<br>
@@ -190,12 +190,12 @@ public class RiveScript {
 	}
 
 	/**
-	 * Load a directory full of RiveScript documents (.rs files).
+	 * Load a directory full of RiveScript documents (.rive files).
 	 *
 	 * @param path The path to the directory containing RiveScript documents.
 	 */
 	public boolean loadDirectory (String path) {
-		String[] exts = { ".rs" };
+		String[] exts = { ".rive", ".rs" };
 		return this.loadDirectory(path, exts);
 	}
 
