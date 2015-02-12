@@ -73,7 +73,7 @@ public class RiveScript {
 	/**
 	 * The version of the RiveScript Java library.
 	 */
-	public static final double VERSION        = 0.03;
+	public static final double VERSION        = 0.05;
 
 	// Constant RiveScript command symbols.
 	private static final double RS_VERSION    = 2.0; // This implements RiveScript 2.0
@@ -514,6 +514,10 @@ public class RiveScript {
 		String lastcmd          = "";    // Last command code
 		String isThat           = "";    // Is a %Previous trigger
 
+		// File scoped parser options.
+		HashMap<String, String> local_options = new HashMap<String, String>();
+		local_options.put("concat", "none");
+
 		// The given "code" is an array of lines, so jump right in.
 		for (int i = 0; i < code.length; i++) {
 			lineno++; // Increment the line counter.
@@ -636,7 +640,15 @@ public class RiveScript {
 					// end of the current line.
 					if (cmd.equals(CMD_CONTINUE) == false && cmd.equals(CMD_PREVIOUS) == false && cmd.equals(CMD_DEFINE) == false) {
 						if (peekCmd.equals(CMD_CONTINUE)) {
-							line += peek;
+							// Concatenation character?
+							String concat = "";
+							if (local_options.get("concat").equals("space")) {
+								concat = " ";
+							}
+							else if (local_options.get("concat").equals("newline")) {
+								concat = "\n";
+							}
+							line += concat + peek;
 						}
 						else {
 							break;
@@ -703,7 +715,12 @@ public class RiveScript {
 				}
 
 				// Handle the variable set types.
-				if (type.equals("global")) {
+				if (type.equals("local")) {
+					// Local file scoped parser options
+					say("\tSet local parser option " + var + " = " + value);
+					local_options.put(var, value);
+				}
+				else if (type.equals("global")) {
 					// Is it a special global? (debug or depth or etc).
 					say("\tSet global " + var + " = " + value);
 					this.setGlobal(var, value);

@@ -341,6 +341,39 @@
 - Actually, I just don't have any secrets.
 
 /******************************************************************************
+* Parser Option Testing                                                       *
+******************************************************************************/
+
+/* Test Concat Mode
+   ----------------
+   Human says:     test concat none
+   Expected reply: Helloworld!
+   Human says:     test concat space
+   Expected reply: Hello world!
+   Human says:     test concat newline
+   Expected reply: Hello\nworld!
+*/
+
++ test concat default
+- Hello
+^ world!
+
+! local concat = space
++ test concat space
+- Hello
+^ world!
+
+! local concat = newline
++ test concat newline
+- Hello
+^ world!
+
+! local concat = none
++ test concat none
+- Hello
+^ world!
+
+/******************************************************************************
  * Command Testing                                                            *
  ******************************************************************************/
 
@@ -644,4 +677,3 @@
 	+ (west|w){weight=5}
 	- {topic=room1}{@look}
 < topic
-
