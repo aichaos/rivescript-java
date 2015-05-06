@@ -1,21 +1,11 @@
 #!/bin/bash
-if [ -d ./classes ]
-then
-    echo "Removing class files"
-    rm -rf classes
-fi
+./build.sh
 
 if [ -f rsbot.jar ]
 then
     echo "Removing package"
     rm rsbot.jar
 fi
-
-echo "Creating classes directory"
-mkdir classes
-
-echo "Compiling"
-javac -Xlint:deprecation -Xlint:unchecked -d classes RSBot.java
 
 echo "Creating manifest"
 echo "Main-Class: RSBot" > classes/manifest.txt
