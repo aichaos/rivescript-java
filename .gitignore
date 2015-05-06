@@ -1,2 +1,4 @@
 # Java compiled files
 *.class
+classes/
+rsbot.jar
