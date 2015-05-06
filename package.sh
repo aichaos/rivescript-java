@@ -25,5 +25,6 @@ echo "Packaging"
 cd classes
 
 jar -cvmf manifest.txt ../rsbot.jar *
+chmod +x ../rsbot.jar
 
 cd -
