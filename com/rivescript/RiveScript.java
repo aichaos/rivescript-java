@@ -147,7 +147,7 @@ public class RiveScript {
 	 *
 	 * @param message The new error message to set.
 	 */
-	private boolean error(String message) {
+	protected boolean error(String message) {
 		this.error = message;
 		return false;
 	}
@@ -501,7 +501,7 @@ public class RiveScript {
 	 * @param filename A file name to associate with this code (for error reporting)
 	 * @param code     A string array of all the code to parse.
 	 */
-	private boolean parse (String filename, String[] code) {
+	protected boolean parse (String filename, String[] code) {
 		// Track some state variables for this parsing round.
 		String topic            = "random"; // Default topic = random
 		int lineno              = 0;
@@ -2001,9 +2001,9 @@ public class RiveScript {
 			String[] triggers = this.topics.topic(topic).listTriggers();
 
 			// Dump.
-			System.out.println("Topic: " + topic);
+			println("Topic: " + topic);
 			for (int i = 0; i < triggers.length; i++) {
-				System.out.println("       " + triggers[i]);
+				println("       " + triggers[i]);
 			}
 		}
 	}
@@ -2013,7 +2013,7 @@ public class RiveScript {
 	 */
 	public void dumpTopics () {
 		// Dump the topic list.
-		System.out.println("{");
+		println("{");
 		String[] topicList = topics.listTopics();
 		for (int t = 0; t < topicList.length; t++) {
 			String topic = topicList[t];
@@ -2034,48 +2034,48 @@ public class RiveScript {
 					extra += inherits[i] + " ";
 				}
 			}
-			System.out.println("  '" + topic + "' " + extra + " => {");
+			println("  '" + topic + "' " + extra + " => {");
 
 			// Dump the trigger list.
 			String[] trigList = topics.topic(topic).listTriggers();
 			for (int i = 0; i < trigList.length; i++) {
 				String trig = trigList[i];
-				System.out.println("    '" + trig + "' => {");
+				println("    '" + trig + "' => {");
 
 				// Dump the replies.
 				String[] reply = topics.topic(topic).trigger(trig).listReplies();
 				if (reply.length > 0) {
-					System.out.println("      'reply' => [");
+					println("      'reply' => [");
 					for (int r = 0; r < reply.length; r++) {
-						System.out.println("        '" + reply[r] + "',");
+						println("        '" + reply[r] + "',");
 					}
-					System.out.println("      ],");
+					println("      ],");
 				}
 
 				// Dump the conditions.
 				String[] cond = topics.topic(topic).trigger(trig).listConditions();
 				if (cond.length > 0) {
-					System.out.println("      'condition' => [");
+					println("      'condition' => [");
 					for (int r = 0; r < cond.length; r++) {
-						System.out.println("        '" + cond[r] + "',");
+						println("        '" + cond[r] + "',");
 					}
-					System.out.println("      ],");
+					println("      ],");
 				}
 
 				// Dump the redirects.
 				String[] red = topics.topic(topic).trigger(trig).listRedirects();
 				if (red.length > 0) {
-					System.out.println("      'redirect' => [");
+					println("      'redirect' => [");
 					for (int r = 0; r < red.length; r++) {
-						System.out.println("        '" + red[r] + "',");
+						println("        '" + red[r] + "',");
 					}
-					System.out.println("      ],");
+					println("      ],");
 				}
 
-				System.out.println("    },");
+				println("    },");
 			}
 
-			System.out.println("  },");
+			println("  },");
 		}
 	}
 
@@ -2083,12 +2083,16 @@ public class RiveScript {
 	/*-- Debug Methods --*/
 	/*-------------------*/
 
+	protected void println (String line) {
+		System.out.println(line);
+	}
+
 	/**
 	 * Print a line of debug text to the terminal.
 	 *
 	 * @param line The line of text to print.
 	 */
-	private void say (String line) {
+	protected void say (String line) {
 		if (this.debug) {
 			System.out.println("[RS] " + line);
 		}
@@ -2099,7 +2103,7 @@ public class RiveScript {
 	 *
 	 * @param line The line of warning text.
 	 */
-	private void cry (String line) {
+	protected void cry (String line) {
 		System.out.println("<RS> " + line);
 	}
 
@@ -2110,7 +2114,7 @@ public class RiveScript {
 	 * @param file The file name.
 	 * @param line The line number.
 	 */
-	private void cry (String text, String file, int line) {
+	protected void cry (String text, String file, int line) {
 		System.out.println("<RS> " + text + " at " + file + " line " + line + ".");
 	}
 
@@ -2119,7 +2123,7 @@ public class RiveScript {
 	 *
 	 * @param e The IOException object.
 	 */
-	private void trace (IOException e) {
+	protected void trace (IOException e) {
 		if (this.debug) {
 			e.printStackTrace();
 		}
