@@ -1,0 +1,14 @@
+apply plugin: 'eclipse'
+apply plugin: 'java'
+
+sourceSets {
+    main {
+        java {
+            srcDir '.'
+            exclude 'Aiden/*'
+            exclude 'build/*'
+            exclude 'doc/*'
+            exclude 'lang/*'
+        }
+    }
+}

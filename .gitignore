@@ -2,3 +2,5 @@
 *.class
 classes/
 rsbot.jar
+build/
+.gradle/
