@@ -1,0 +1,21 @@
++ test counter
+- <set counter=0>counter set
+
++ show
+- counter = <get counter>
+
++ add
+- <add counter=1>adding
+
++ sub
+- <sub counter=1>subbing
+
++ div
+- <set counter=10>
+^ <div counter=2>
+^ divving
+
++ mult
+- <set counter=10>
+^ <mult counter=2>
+^ multing

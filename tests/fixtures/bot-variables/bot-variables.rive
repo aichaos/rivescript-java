@@ -1,0 +1,14 @@
+! var name = Aiden
+! var age = 5
+
++ what is your name
+- My name is <bot name>.
+
++ how old are you
+- I am <bot age>.
+
++ what are you
+- I'm <bot gender>.
+
++ happy birthday
+- <bot age=6>Thanks!

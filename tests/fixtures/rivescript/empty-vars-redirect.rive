@@ -1,0 +1,27 @@
+! var globaltest = set test name test
+
++ test
+- {topic=test}{@<get test_name>}
+
++ test without redirect
+- {topic=test}<get test_name>
+
++ set test name *
+- <set test_name=<star>>{@test}
+
++ get global test
+@ <bot globaltest>
+
++ get bad global test
+@ <bot badglobaltest>
+
+> topic test
+	+ test
+	- hello <get test_name>!{topic=random}
+
+	+ *
+	- {topic=random}<@>
+< topic
+
++ *
+- Wildcard "<star>"!

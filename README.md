@@ -1,7 +1,5 @@
 # Java RiveScript Interpreter
 
-## SYNOPSIS
-
 This is a Java implementation of a RiveScript interpreter, per the Working Draft
 at http://www.rivescript.com/wd/RiveScript.html
 
@@ -16,11 +14,11 @@ include adding native JavaScript support.
 If you find a way to crash this library, please tell me how you did it so I can
 improve this library!
 
-## DOCUMENTATION
+## Documentation
 
 See the javadocs at doc/index.html
 
-## RSBOT DEMO SCRIPT
+## RSBot Demo Script
 
 The `RSBot.java` is a simple implementation of a Java RiveScript bot. You
 can use it to quickly chat with the Eliza-based bot in the `Aiden/` folder.
@@ -31,20 +29,16 @@ These commands may be used at your input prompt in RSBot:
     /dump topics - Dump the internal topic/trigger/reply struct (debugging)
     /dump sorted - Dump the internal trigger sort buffers (debugging)
 
-## SHELL SCRIPTS
+## Makefile
 
-The shell scripts were there to aid me in development. What they do is:
+I use a GNU Makefile to simplify builds and other commands (feel free to
+send a pull request to switch to Ant or something). Useful commands:
 
-* build.sh
-
-  Deletes all the `*.class` files in the current directory and its
-  subdirectories, and then uses `javac` to compile RSBot and all of the
-  library files.
-
-* javadoc.sh
-
-  Deletes the `doc/` folder and recreates it with the `javadoc` command,
-  for generating documentation for the library.
+* `make build`: compiles RSBot.java and, therefore, RiveScript.
+* `make test`: run unit tests with JUnit.
+* `make clean`: cleans up `.class` files.
+* `make javadoc`: deletes the `doc/` folder and recreates it with the `javadoc`
+  command, for generating library documentation.
 
 ## QUICK START
 
@@ -61,7 +55,19 @@ tends to ship with RiveScript libraries.
     Unix:   $ java RSBot
     Win32:  > java RSBot
 
-## LICENSE
+## Unit Testing
+
+This library is tested using [JUnit](http://junit.org/). To run the test suite,
+make sure that JUnit is available on your `$CLASSPATH`, for example by adding
+the jar file:
+
+```bash
+export CLASSPATH="$CLASSPATH:/path/to/junit-4.10.jar"
+```
+
+And then type `make test` to run the unit tests.
+
+## License
 
 ```
 The MIT License (MIT)

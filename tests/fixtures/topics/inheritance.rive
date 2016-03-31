@@ -1,0 +1,38 @@
+> topic colors
+	+ what color is the sky
+	- Blue.
+
+	+ what color is the sun
+	- Yellow.
+< topic
+
+> topic linux
+	+ name a red hat distro
+	- Fedora.
+
+	+ name a debian distro
+	- Ubuntu.
+< topic
+
+> topic stuff includes colors linux
+	+ say stuff
+	- "Stuff."
+< topic
+
+> topic override inherits colors
+	+ what color is the sun
+	- Purple.
+< topic
+
+> topic morecolors includes colors
+	+ what color is grass
+	- Green.
+< topic
+
+> topic evenmore inherits morecolors
+	+ what color is grass
+	- Blue, sometimes.
+< topic
+
++ set topic *
+- {topic=<star>}Set.

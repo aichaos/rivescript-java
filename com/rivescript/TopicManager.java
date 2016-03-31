@@ -288,7 +288,7 @@ public class TopicManager {
 		// Does it inherit?
 		String[] inherits = this.topic(topic).inherits();
 		for (int i = 0; i < inherits.length; i++) {
-			String[] children = this.getTopicTree(includes[i], (depth+1));
+			String[] children = this.getTopicTree(inherits[i], (depth+1));
 			for (int j = 0; j < children.length; j++) {
 				result.add(children[j]);
 			}
