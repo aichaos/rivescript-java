@@ -7,7 +7,7 @@ public class TestOptions extends TestBase {
 	}
 
 	@Test
-	public void testMath() {
+	public void testConcat() {
 		this.setUp("options.rive");
 		this.extend("options-2.rive");
 
