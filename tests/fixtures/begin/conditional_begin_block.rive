@@ -1,0 +1,12 @@
+> begin
+	+ request
+	* <get met> == undefined => <set met=true>{ok}
+	* <get name> != undefined => <get name>: {ok}
+	- {ok}
+< begin
+
++ hello bot
+- Hello human.
+
++ my name is *
+- <set name=<formal>>Hello, <get name>.

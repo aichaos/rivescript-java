@@ -1,0 +1,17 @@
+! sub who's  = who is
+! sub it's   = it is
+! sub didn't = did not
+
++ knock knock
+- Who's there?
+
++ *
+% who is there
+- <sentence> who?
+
++ *
+% * who
+- Haha! <sentence>!
+
++ *
+- I don't know.

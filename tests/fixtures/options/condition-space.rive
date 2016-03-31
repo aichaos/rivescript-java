@@ -1,0 +1,9 @@
+! local concat = space
+
++ test *
+* <star1> == a => First A line
+^ Second A line
+^ Third A line
+- First B line
+^ Second B line
+^ Third B line

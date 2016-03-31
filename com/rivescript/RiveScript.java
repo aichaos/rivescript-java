@@ -995,6 +995,9 @@ public class RiveScript {
 				begin = begin.replaceAll("\\{ok\\}", reply);
 				reply = begin;
 			}
+			else {
+				reply = begin;
+			}
 
 			// Run final substitutions.
 			reply = processTags (username, clients.client(username), message, reply,
@@ -1073,10 +1076,10 @@ public class RiveScript {
 		if (step == 0) {
 			say("Looking for a %Previous");
 			String[] allTopics = { topic };
-	//		if (this.topics.topic(topic).includes() || this.topics.topic(topic).inherits()) {
+			if (this.topics.topic(topic).includes().length > 0 || this.topics.topic(topic).inherits().length > 0) {
 				// We need to walk the topic tree.
 				allTopics = this.topics.getTopicTree(topic, 0);
-	//		}
+			}
 			for (int i = 0; i < allTopics.length; i++) {
 				// Does this topic have a %Previous anywhere?
 				say("Seeing if " + allTopics[i] + " has a %Previous");
@@ -1390,6 +1393,7 @@ public class RiveScript {
 					if (choice < redirects.length) {
 						// The choice was a redirect!
 						String redirect = redirects[choice].replaceAll("\\{weight=\\d+\\}","");
+						redirect = processTags (user, profile, message, redirect, stars, botstars, step);
 						say("Chosen a redirect to " + redirect + "!");
 						reply = reply(user, redirect, begin, step+1);
 					}
@@ -1413,7 +1417,7 @@ public class RiveScript {
 			reply = "ERR: No Reply Found";
 		}
 
-		say("Final reply: " + reply);
+		say("Final reply: " + reply + " (begin: " + begin + ")");
 
 		// Special tag processing for the BEGIN statement.
 		if (begin) {
@@ -1485,8 +1489,8 @@ public class RiveScript {
 				// Construct a regexp part.
 				StringBuffer re = new StringBuffer();
 				for (int i = 0; i < parts.length; i++) {
-					// We want: \s*part\s*
-					re.append("\\s*" + parts[i] + "\\s*");
+					// See: https://github.com/aichaos/rivescript-js/commit/02f236e78c5d237cb046d2347fe704f5f70231c9
+					re.append("(?:\\s|\\b)+" + parts[i] + "(?:\\s|\\b)+");
 					if (i < parts.length - 1) {
 						re.append("|");
 					}
@@ -1495,18 +1499,18 @@ public class RiveScript {
 
 				// If this optional had a star or anything in it, e.g. [*],
 				// make it non-matching.
-				pipes = pipes.replaceAll("\\(.+?\\)", "(?:.+?)");
-				pipes = pipes.replaceAll("\\(\\d+?\\)", "(?:\\\\d+?");
-				pipes = pipes.replaceAll("\\(\\w+?\\)", "(?:\\\\w+?)");
+				pipes = pipes.replaceAll("\\(\\.\\+\\?\\)", "(?:.+?)");
+				pipes = pipes.replaceAll("\\(\\d\\+\\?\\)", "(?:\\\\d+?)");
+				pipes = pipes.replaceAll("\\(\\w\\+\\?\\)", "(?:\\\\w+?)");
 
 				// Put the new text in.
-				pipes = "(?:" + pipes + "|\\s*)";
+				pipes = "(?:" + pipes + "|(?:\\b|\\s)+)";
 				regexp = regexp.replace(optional, pipes);
 			}
 		}
 
 		// Make \w more accurate for our purposes.
-		regexp = regexp.replaceAll("\\\\w", "[a-z ]");
+		regexp = regexp.replaceAll("\\\\w", "[A-Za-z]");
 
 		// Filter in arrays.
 		if (regexp.indexOf("@") > -1) {
@@ -1701,6 +1705,16 @@ public class RiveScript {
 				String tag = mBot.group(0);
 				String var = mBot.group(1);
 
+				// Setting the variable?
+				if (var.indexOf("=") > -1) {
+					String[] parts = var.split("\\s*=\\s*", 2);
+					var = parts[0];
+					String val = parts[1];
+					this.setVariable(var, val);
+					reply = reply.replace(tag, "");
+					continue;
+				}
+
 				// Have this?
 				if (vars.containsKey(var)) {
 					reply = reply.replace(tag, vars.get(var));
@@ -1718,6 +1732,16 @@ public class RiveScript {
 			while (mEnv.find()) {
 				String tag = mEnv.group(0);
 				String var = mEnv.group(1);
+
+				// Setting the variable?
+				if (var.indexOf("=") > -1) {
+					String[] parts = var.split("\\s*=\\s*", 2);
+					var = parts[0];
+					String val = parts[1];
+					this.setGlobal(var, val);
+					reply = reply.replace(tag, "");
+					continue;
+				}
 
 				// Have this?
 				if (globals.containsKey(var)) {
@@ -1883,7 +1907,7 @@ public class RiveScript {
 
 		// {@redirect} tag
 		if (reply.indexOf("{@") > -1) {
-			Pattern reRed = Pattern.compile("\\{@(.+?)\\}");
+			Pattern reRed = Pattern.compile("\\{@([^\\}]*?)\\}");
 			Matcher mRed  = reRed.matcher(reply);
 			while (mRed.find()) {
 				String tag    = mRed.group(0);
@@ -1947,9 +1971,7 @@ public class RiveScript {
 				String[] letters = words[i].split("");
 				say("cc: " + letters.length);
 				if (letters.length > 1) {
-					say("letter 1: " + letters[1]);
-					letters[1] = letters[1].toUpperCase();
-					say("new letter 1: " + letters[1]);
+					letters[0] = letters[0].toUpperCase();
 					words[i] = com.rivescript.Util.join(letters, "");
 					say("new word: " + words[i]);
 				}
@@ -1960,7 +1982,7 @@ public class RiveScript {
 			// Uppercase the first letter of the first word.
 			String[] letters = text.split("");
 			if (letters.length > 1) {
-				letters[1] = letters[1].toUpperCase();
+				letters[0] = letters[0].toUpperCase();
 			}
 			return com.rivescript.Util.join(letters, "");
 		}
