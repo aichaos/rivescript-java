@@ -1,6 +1,14 @@
 # Revision History for RiveScript-Java
 
-* 0.05  TBD
+* 0.6.0  June 28 2016
+  * Switched to semantic versioning; `com.rivescript.RiveScript.VERSION` is now
+    a string `"0.6.0"` instead of a floating point number.
+  * Add support for Java object macros (compile-time) via the new API
+    function `setSubroutine()`
+  * Add API function `currentUser()` which returns the current user's ID,
+    accessible from a Java object macro.
+  * Add API function `lastMatch()` which returns the text of the most recently
+    matched trigger for a user's message.
   * Add support for `! local concat` option to override concatenation mode
     (file scoped)
   * Add unit tests and fix various bugs discovered in the process:
