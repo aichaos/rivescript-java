@@ -24,7 +24,7 @@ Contributions are welcome. See `CONTRIBUTING.md` for more information.
 
 ## Documentation
 
-See the javadocs at doc/index.html
+Documentation is available at <https://www.rivescript.com/docs/java/>
 
 ## RSBot Demo Script
 
