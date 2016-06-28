@@ -6,6 +6,17 @@ import com.rivescript.RiveScript;
 
 public class RSBot {
 	public static void main (String[] args) {
+		// Print a fancy banner.
+		System.out.println(""
+			+ "      .   .       \n"
+			+ "     .:...::      RiveScript Java // RSBot\n"
+			+ "    .::   ::.     Version: " + com.rivescript.RiveScript.VERSION + "\n"
+			+ " ..:;;. ' .;;:..  \n"
+			+ "    .  '''  .     Type '/quit' to quit.\n"
+			+ "     :;,:,;:      Type '/help' for more options.\n"
+			+ "     :     :      \n"
+		);
+
 		// Let the user specify debug mode!
 		boolean debug = false;
 		for (int i = 0; i < args.length; i++) {
@@ -18,8 +29,11 @@ public class RSBot {
 		System.out.println(":: Creating RS Object");
 		RiveScript rs = new RiveScript(debug);
 
-		// Create a handler for Perl objects.
+		// Create a handler for Perl as an object macro language.
 		rs.setHandler("perl", new com.rivescript.lang.Perl(rs, "./lang/rsp4j.pl"));
+
+		// Define an object macro in Java.
+		rs.setSubroutine("javatest", new ExampleMacro());
 
 		// Load and sort replies
 		System.out.println(":: Loading replies");
@@ -48,6 +62,18 @@ public class RSBot {
 			}
 			else if (message.equals("/dump sorted")) {
 				rs.dumpSorted();
+			}
+			else if (message.equals("/last")) {
+				System.out.println("You last matched: "
+					+ rs.lastMatch("localuser"));
+			}
+			else if (message.equals("/help")) {
+				System.out.println("Available commands:\n"
+					+ "  /last           Print the last matched trigger.\n"
+					+ "  /dump topics    Pretty-print the topic structure.\n"
+					+ "  /dump sorted    Pretty-print the sorted trigger structure.\n"
+					+ "  /help           Show this message.\n"
+					+ "  /quit           Exit the program.\n");
 			}
 			else {
 				String reply = rs.reply("localuser", message);
