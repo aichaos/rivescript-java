@@ -124,4 +124,6 @@ public class Perl implements com.rivescript.ObjectHandler {
 			return "[ERR: JSONException: " + e.getMessage() + "]";
 		}
 	}
+
+	public void setClass (String name, com.rivescript.ObjectMacro impl) {}
 }

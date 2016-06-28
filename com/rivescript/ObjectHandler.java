@@ -23,4 +23,15 @@ public interface ObjectHandler {
 	 * @param args The argument list from the call tag.
 	 */
 	public String onCall (String name, String user, String[] args);
+
+	/**
+	 * Set a Java class to handle the macro directly.
+	 *
+	 * This is only useful to the built-in Java handler; other handlers
+	 * do not need to implement this function.
+	 *
+	 * @param name The name of the object macro.
+	 * @param impl An implementation class of com.rivescript.ObjectMacro.
+	 */
+	public void setClass (String name, com.rivescript.ObjectMacro impl);
 }

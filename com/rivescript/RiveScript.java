@@ -1,7 +1,7 @@
 /*
 	com.rivescript.RiveScript - The Official Java RiveScript Interpreter
 
-	Copyright (c) 2015 Noah Petherbridge
+	Copyright (c) 2016 Noah Petherbridge
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 package com.rivescript;
 
 import com.rivescript.Util;
+import com.rivescript.lang.Java;
 
 import java.io.BufferedReader;
 import java.io.DataInputStream;
@@ -73,7 +74,7 @@ public class RiveScript {
 	/**
 	 * The version of the RiveScript Java library.
 	 */
-	public static final double VERSION        = 0.05;
+	public static final String VERSION        = "0.6.0";
 
 	// Constant RiveScript command symbols.
 	private static final double RS_VERSION    = 2.0; // This implements RiveScript 2.0
@@ -107,6 +108,8 @@ public class RiveScript {
 	private HashMap<String, String>         person   = new HashMap<String, String>();         // ! person
 	private String[]                        person_s = null;                                  // sorted persons
 
+	// The current user ID when reply() is called.
+	private String currentUser = null;
 
 	/*-------------------------*/
 	/*-- Constructor Methods --*/
@@ -122,6 +125,9 @@ public class RiveScript {
 
 		// Set static debug modes.
 		com.rivescript.Topic.setDebug(this.debug);
+
+		// Set the default Java macro handler.
+		this.setHandler("java", new com.rivescript.lang.Java(this));
 	}
 
 	/**
@@ -296,6 +302,27 @@ public class RiveScript {
 	 */
 	public void setHandler (String name, com.rivescript.ObjectHandler handler) {
 		this.handlers.put(name, handler);
+	}
+
+	/**
+	 * Define a Java object macro from your program.
+	 *
+	 * Because Java is a compiled language, this method must be used to create
+	 * an object macro written in Java.
+	 *
+	 * @param name The name of the object macro.
+	 * @param handler The handler function.
+	 */
+	public void setSubroutine (String name, com.rivescript.ObjectMacro impl) {
+		// Is the Java handler available?
+		com.rivescript.ObjectHandler handler = (com.rivescript.ObjectHandler)this.handlers.get("java");
+		if (handler == null) {
+			this.error("The Java macro handler is unavailable!");
+			return;
+		}
+
+		handler.setClass(name, impl);
+		this.objects.put(name, "java");
 	}
 
 	/**
@@ -489,6 +516,29 @@ public class RiveScript {
 		else {
 			return null;
 		}
+	}
+
+	/**
+	 * Get the current user's ID from within an object macro.
+	 *
+	 * This is useful within a (Java) object macro to get the ID of the user
+	 * currently executing the macro (for example, to get/set variables for
+	 * them).
+	 *
+	 * This function is only available during a reply context; outside of
+	 * that it will return null.
+	 *
+	 * @return string user ID or null.
+	 */
+	public String currentUser () {
+		return this.currentUser;
+	}
+
+	/**
+	 * Return the last trigger that the user matched.
+	 */
+	public String lastMatch (String user) {
+		return this.getUservar(user, "__lastmatch__");
 	}
 
 	/*---------------------*/
@@ -978,6 +1028,9 @@ public class RiveScript {
 	public String reply (String username, String message) {
 		say("Get reply to [" + username + "] " + message);
 
+		// Store the current ID in case an object macro wants it.
+		this.currentUser = username;
+
 		// Format their message first.
 		message = formatMessage (message);
 
@@ -1012,6 +1065,9 @@ public class RiveScript {
 		// Save their chat history.
 		clients.client(username).addInput(message);
 		clients.client(username).addReply(reply);
+
+		// Clear the current user.
+		this.currentUser = null;
 
 		// Return their reply.
 		return reply;

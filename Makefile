@@ -4,6 +4,10 @@ all: build
 build: clean
 	javac RSBot.java
 
+# `make run` to build and run the bot
+run: clean build
+	java RSBot
+
 # `make test` to run unit tests
 test: clean
 	cd tests; \
