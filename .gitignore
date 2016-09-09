@@ -5,3 +5,5 @@ rsbot.jar
 build/
 .gradle/
 doc/
+.idea
+*.iml
