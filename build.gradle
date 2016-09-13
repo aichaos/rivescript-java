@@ -1,6 +1,13 @@
 apply plugin: 'eclipse'
 apply plugin: 'java'
 
+repositories {
+	mavenCentral()
+}
+dependencies {
+	compile group: 'org.json', name: 'json', version: '20160810'
+	testCompile group: 'junit', name: 'junit', version: '4.+'
+}
 sourceSets {
     main {
         java {
@@ -9,6 +16,13 @@ sourceSets {
             exclude 'build/*'
             exclude 'doc/*'
             exclude 'lang/*'
+			exclude 'tests/*'
         }
     }
+	test {
+		java.srcDir 'tests'
+	}
+}
+test {
+	workingDir 'tests'
 }
