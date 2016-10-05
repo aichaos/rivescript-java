@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.rivescript</groupId>
+	<artifactId>rivescript</artifactId>
+	<version>0.6.0</version>
+
+	<name>com.rivescript:RiveScript</name>
+	<description>RiveScript is a chatbot scripting language.</description>
+	<url>https://github.com/aichaos/rivescript-java</url>
+
+	<licenses>
+		<license>
+			<name>GPL License, version 2</name>
+			<url>https://www.gnu.org/licenses/gpl2.txt</url>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<name>Noah Petherbridge</name>
+			<email>root@kirsle.net</email>
+			<organization>AiChaos</organization>
+			<organizationUrl>https://www.aichaos.com/</organizationUrl>
+		</developer>
+	</developers>
+
+	<scm>
+		<connection>scm:git:git@github.com:aichaos/rivescript-java.git</connection>
+		<developerConnection>scm:git:git@github.com:aichaos/rivescript-java.git</developerConnection>
+		<url>git@github.com:aichaos/rivescript-java.git</url>
+	</scm>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20160810</version>
+			<type>jar</type>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.+</version>
+			<type>jar</type>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.sonatype.plugins</groupId>
+				<artifactId>nexus-staging-maven-plugin</artifactId>
+				<version>1.6.3</version>
+				<extensions>true</extensions>
+				<configuration>
+					<serverId>ossrh</serverId>
+					<nexusUrl>https://oss.sonatype.org/</nexusUrl>
+					<stagingProfileId>19375019933d12</stagingProfileId>
+					<autoReleaseAfterClose>true</autoReleaseAfterClose>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<additionalparam>-Xdoclint:none</additionalparam>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>
