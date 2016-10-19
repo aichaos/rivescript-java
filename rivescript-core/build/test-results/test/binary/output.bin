@@ -1,0 +1,22 @@
+*[RS] Get reply to [localuser] Debug mode?
+[RS] Looking for a %Previous
+&[RS] Seeing if random has a %Previous
+A[RS] Try to match "debug mode" against "debug mode" (debug mode)
+([RS] The trigger matches! Star count: 0
+2[RS] They were successfully matched to a trigger!
+1[RS] The trigger matched belongs to topic random
+5[RS] Trigger has a reply: Debug mode is: <env debug>
+$[RS] Possible choices: 1; chosen: 0
+0[RS] Chosen a reply: Debug mode is: <env debug>
+<[RS] Final reply: Debug mode is: <env debug> (begin: false)
+7*[RS] Get reply to [localuser] Debug mode?
+7[RS] Looking for a %Previous
+7&[RS] Seeing if random has a %Previous
+7A[RS] Try to match "debug mode" against "debug mode" (debug mode)
+7([RS] The trigger matches! Star count: 0
+72[RS] They were successfully matched to a trigger!
+71[RS] The trigger matched belongs to topic random
+75[RS] Trigger has a reply: Debug mode is: <env debug>
+7$[RS] Possible choices: 1; chosen: 0
+70[RS] Chosen a reply: Debug mode is: <env debug>
+7<[RS] Final reply: Debug mode is: <env debug> (begin: false)

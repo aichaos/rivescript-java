@@ -1,0 +1,29 @@
+// Default concat mode = none
++ test concat default
+- Hello
+^ world!
+
+! local concat = space
++ test concat space
+- Hello
+^ world!
+
+! local concat = none
++ test concat none
+- Hello
+^ world!
+
+! local concat = newline
++ test concat newline
+- Hello
+^ world!
+
+// invalid concat setting is equivalent to 'none'
+! local concat = foobar
++ test concat foobar
+- Hello
+^ world!
+
+// the option is file scoped so it can be left at
+// any setting and won't affect subsequent parses
+! local concat = newline

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="TestRiveScript" tests="6" skipped="0" failures="0" errors="0" timestamp="2016-10-19T13:04:48" hostname="marcels-macbook.local" time="0.161">
+  <properties/>
+  <testcase name="testRedirectWithUndefinedInput" classname="TestRiveScript" time="0.003"/>
+  <testcase name="testEmptyVariableRedirect" classname="TestRiveScript" time="0.01"/>
+  <testcase name="testJunit" classname="TestRiveScript" time="0.0"/>
+  <testcase name="testRedirectWithUndefinedInput" classname="TestRiveScript" time="0.005"/>
+  <testcase name="testEmptyVariableRedirect" classname="TestRiveScript" time="0.006"/>
+  <testcase name="testJunit" classname="TestRiveScript" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

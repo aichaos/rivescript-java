@@ -1,0 +1,14 @@
++ what (are|is) you
+- I am a robot.
+
++ what is your (home|office|cell) [phone] number
+- It is 555-1234.
+
++ [please|can you] ask me a question
+- Why is the sky blue?
+
++ (aa|bb|cc) [bogus]
+- Matched.
+
++ (yo|hi) [computer|bot] *
+- Matched.

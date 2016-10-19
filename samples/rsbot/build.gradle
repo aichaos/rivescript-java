@@ -1,0 +1,9 @@
+dependencies {
+    compile project(":rivescript-core")
+}
+
+task runApp(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = "RSBot"
+    standardInput = System.in
+}

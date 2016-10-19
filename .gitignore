@@ -1,9 +1,16 @@
-# Java compiled files
-*.class
-classes/
-rsbot.jar
-build/
-.gradle/
-doc/
+.DS_Store
+.classpath
+.gradle
 .idea
+.project
+.settings
 *.iml
+*.ipr
+*.iws
+
+/bin
+/build
+/classes
+/lib
+/log
+/target

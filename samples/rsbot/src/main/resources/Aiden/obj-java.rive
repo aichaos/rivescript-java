@@ -1,0 +1,11 @@
+// Tests the com.rivescript.lang.Java handler.
+
+! local concat = space
+
++ reverse *{weight=2}
+- Ok: <call>javatest <star></call>
+
++ java test
+* <get java> <> undefined => Last time you used "reverse ___", I set
+^ the "java" user variable to the following: <get java>.
+- Say something like "reverse hello world" and then say "java test" again.

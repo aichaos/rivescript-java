@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="TestReplies" tests="16" skipped="0" failures="0" errors="0" timestamp="2016-10-19T13:04:48" hostname="marcels-macbook.local" time="0.185">
+  <properties/>
+  <testcase name="testRedirects" classname="TestReplies" time="0.003"/>
+  <testcase name="testPrevious" classname="TestReplies" time="0.008"/>
+  <testcase name="testConditionals" classname="TestReplies" time="0.017"/>
+  <testcase name="testContinuations" classname="TestReplies" time="0.002"/>
+  <testcase name="testQuestionMark" classname="TestReplies" time="0.001"/>
+  <testcase name="testSetUservars" classname="TestReplies" time="0.001"/>
+  <testcase name="testRandom" classname="TestReplies" time="0.001"/>
+  <testcase name="testJunit" classname="TestReplies" time="0.0"/>
+  <testcase name="testRedirects" classname="TestReplies" time="0.002"/>
+  <testcase name="testPrevious" classname="TestReplies" time="0.005"/>
+  <testcase name="testConditionals" classname="TestReplies" time="0.012"/>
+  <testcase name="testContinuations" classname="TestReplies" time="0.003"/>
+  <testcase name="testQuestionMark" classname="TestReplies" time="0.001"/>
+  <testcase name="testSetUservars" classname="TestReplies" time="0.002"/>
+  <testcase name="testRandom" classname="TestReplies" time="0.002"/>
+  <testcase name="testJunit" classname="TestReplies" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

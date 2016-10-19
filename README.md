@@ -38,44 +38,20 @@ These commands may be used at your input prompt in RSBot:
     /dump sorted - Dump the internal trigger sort buffers (debugging)
     /last        - Print the last trigger you matched.
 
-## Makefile
-
-I use a GNU Makefile to simplify builds and other commands (feel free to
-send a pull request to switch to Ant or something). Useful commands:
-
-* `make build`: compiles RSBot.java and, therefore, RiveScript.
-* `make run`: compiles RSBot.java and immediately runs it.
-* `make test`: run unit tests with JUnit.
-* `make clean`: cleans up `.class` files.
-* `make javadoc`: deletes the `doc/` folder and recreates it with the `javadoc`
-  command, for generating library documentation.
-
 ## QUICK START
 
-Compile RSBot.java using `make build`. If you're running on Windows and don't
-have a Make program installed, you can compile the bot with the `javac` command
-directly:
+To execute `RSBot` to begin chatting with the demo Eliza-based bot that
+tends to ship with RiveScript libraries run:
 
-    Unix:   $ make build
-    Win32:  > javac RSBot.java
-
-Then execute `RSBot` to begin chatting with the demo Eliza-based bot that
-tends to ship with RiveScript libraries.
-
-    Unix:   $ java RSBot
-    Win32:  > java RSBot
+    Unix:   $ ./gradlew :rivescript-samples-rsbot:runApp --console plain
+    Win32:  > gradlew :rivescript-samples-rsbot:runApp --console plain
 
 ## Unit Testing
 
-This library is tested using [JUnit](http://junit.org/). To run the test suite,
-make sure that JUnit is available on your `$CLASSPATH`, for example by adding
-the jar file:
+This library is tested using [JUnit](http://junit.org/). To execute the test suite run:
 
-```bash
-export CLASSPATH="$CLASSPATH:/path/to/junit-4.10.jar"
-```
-
-And then type `make test` to run the unit tests.
+    Unix:   $ ./gradlew clean test
+    Win32:  > gradlew clean test
 
 ## License
 

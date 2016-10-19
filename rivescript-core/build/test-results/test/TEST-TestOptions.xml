@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="TestOptions" tests="10" skipped="0" failures="0" errors="0" timestamp="2016-10-19T13:04:48" hostname="marcels-macbook.local" time="0.164">
+  <properties/>
+  <testcase name="testConcatNewlineWithConditionals" classname="TestOptions" time="0.002"/>
+  <testcase name="testConcatWithConditionals" classname="TestOptions" time="0.002"/>
+  <testcase name="testConcatSpaceWithConditionals" classname="TestOptions" time="0.003"/>
+  <testcase name="testConcat" classname="TestOptions" time="0.004"/>
+  <testcase name="testJunit" classname="TestOptions" time="0.0"/>
+  <testcase name="testConcatNewlineWithConditionals" classname="TestOptions" time="0.003"/>
+  <testcase name="testConcatWithConditionals" classname="TestOptions" time="0.001"/>
+  <testcase name="testConcatSpaceWithConditionals" classname="TestOptions" time="0.002"/>
+  <testcase name="testConcat" classname="TestOptions" time="0.003"/>
+  <testcase name="testJunit" classname="TestOptions" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

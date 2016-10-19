@@ -1,0 +1,16 @@
++ hello
+- Hi there!
+
++ swear word
+- How rude! Apologize or I won't talk to you again.{topic=sorry}
+
++ *
+- Catch-all.
+
+> topic sorry
+	+ sorry
+	- It's ok!{topic=random}
+
+	+ *
+	- Say you're sorry!
+< topic

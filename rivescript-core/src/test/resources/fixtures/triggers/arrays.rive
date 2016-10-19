@@ -1,0 +1,11 @@
+! array colors = red blue green yellow white
+  ^ dark blue|light blue
+
++ what color is my (@colors) *
+- Your <star2> is <star1>.
+
++ what color was * (@colors) *
+- It was <star2>.
+
++ i have a @colors *
+- Tell me more about your <star>.

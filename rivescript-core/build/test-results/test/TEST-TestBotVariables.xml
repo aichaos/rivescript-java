@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="TestBotVariables" tests="6" skipped="0" failures="0" errors="0" timestamp="2016-10-19T13:04:48" hostname="marcels-macbook.local" time="0.165">
+  <properties/>
+  <testcase name="testGlobalVariables" classname="TestBotVariables" time="0.006"/>
+  <testcase name="testVariables" classname="TestBotVariables" time="0.004"/>
+  <testcase name="testJunit" classname="TestBotVariables" time="0.001"/>
+  <testcase name="testGlobalVariables" classname="TestBotVariables" time="0.013"/>
+  <testcase name="testVariables" classname="TestBotVariables" time="0.005"/>
+  <testcase name="testJunit" classname="TestBotVariables" time="0.0"/>
+  <system-out><![CDATA[[RS] Get reply to [localuser] Debug mode?
+[RS] Looking for a %Previous
+[RS] Seeing if random has a %Previous
+[RS] Try to match "debug mode" against "debug mode" (debug mode)
+[RS] The trigger matches! Star count: 0
+[RS] They were successfully matched to a trigger!
+[RS] The trigger matched belongs to topic random
+[RS] Trigger has a reply: Debug mode is: <env debug>
+[RS] Possible choices: 1; chosen: 0
+[RS] Chosen a reply: Debug mode is: <env debug>
+[RS] Final reply: Debug mode is: <env debug> (begin: false)
+[RS] Get reply to [localuser] Debug mode?
+[RS] Looking for a %Previous
+[RS] Seeing if random has a %Previous
+[RS] Try to match "debug mode" against "debug mode" (debug mode)
+[RS] The trigger matches! Star count: 0
+[RS] They were successfully matched to a trigger!
+[RS] The trigger matched belongs to topic random
+[RS] Trigger has a reply: Debug mode is: <env debug>
+[RS] Possible choices: 1; chosen: 0
+[RS] Chosen a reply: Debug mode is: <env debug>
+[RS] Final reply: Debug mode is: <env debug> (begin: false)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

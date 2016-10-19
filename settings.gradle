@@ -1,0 +1,18 @@
+rootProject.name = "rivescript"
+
+def String[] modules = [
+        "rivescript-core"
+]
+
+include modules
+
+def String[] samples = [
+        "rsbot"
+]
+
+samples.each { name ->
+    include name
+    def project = findProject(":${name}")
+    project.name = "rivescript-samples-${name}"
+    project.projectDir = new File(settingsDir, "samples/${name}");
+}

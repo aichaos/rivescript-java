@@ -1,0 +1,6 @@
++ test random response
+- One.
+- Two.
+
++ test random tag
+- This sentence has a random {random}word|bit{/random}.

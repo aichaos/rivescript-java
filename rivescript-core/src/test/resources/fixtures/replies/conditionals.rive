@@ -1,0 +1,14 @@
++ i am # years old
+- <set age=<star>>OK.
+
++ what can i do
+* <get age> == undefined => I don't know.
+* <get age> >  25 => Anything you want.
+* <get age> == 25 => Rent a car for cheap.
+* <get age> >= 21 => Drink.
+* <get age> >= 18 => Vote.
+* <get age> <  18 => Not much of anything.
+
++ am i your master
+* <get master> == true => Yes.
+- No.
