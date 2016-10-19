@@ -8,7 +8,7 @@ public interface ObjectMacro {
 	/**
 	 * The implementation of your object macro function.
 	 *
-	 * This code is executed when a `<call>` tag in a RiveScript reply
+	 * This code is executed when a `&lt;call&gt;` tag in a RiveScript reply
 	 * wants to call your object macro.
 	 *
 	 * @param rs   A reference to the parent RiveScript instance.

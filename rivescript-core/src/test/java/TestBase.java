@@ -1,3 +1,4 @@
+import java.io.File;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -13,18 +14,18 @@ public class TestBase {
 
 	public void setUp(String file) {
 		this.rs = new RiveScript();
-		this.rs.loadFile("./fixtures/" + this.replies() + "/" + file);
+		this.rs.loadFile(getAbsolutePath("fixtures/" + this.replies() + "/" + file));
 		this.rs.sortReplies();
 	}
 
 	public void setUp(String file, boolean debug) {
 		this.rs = new RiveScript(debug);
-		this.rs.loadFile("./fixtures/" + this.replies() + "/" + file);
+		this.rs.loadFile(getAbsolutePath("fixtures/" + this.replies() + "/" + file));
 		this.rs.sortReplies();
 	}
 
 	public void extend(String file) {
-		this.rs.loadFile("./fixtures/" + this.replies() + "/" + file);
+		this.rs.loadFile(getAbsolutePath("fixtures/" + this.replies() + "/" + file));
 		this.rs.sortReplies();
 	}
 
@@ -48,6 +49,12 @@ public class TestBase {
 		}
 
 		fail();
+	}
+
+	private String getAbsolutePath(String fileName) {
+		ClassLoader classLoader = getClass().getClassLoader();
+		File file = new File(classLoader.getResource(fileName).getFile());
+		return file.getAbsolutePath();
 	}
 
 	@Test

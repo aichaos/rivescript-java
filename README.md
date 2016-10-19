@@ -26,6 +26,16 @@ Contributions are welcome. See `CONTRIBUTING.md` for more information.
 
 Documentation is available at <https://www.rivescript.com/docs/java/>
 
+## Building from Source
+
+To compile, test, build all jars and docs run:
+
+    ./gradlew build
+
+To install all jars into your local Maven cache run:
+
+    ./gradlew install
+
 ## RSBot Demo Script
 
 The `RSBot.java` is a simple implementation of a Java RiveScript bot. You
@@ -38,44 +48,18 @@ These commands may be used at your input prompt in RSBot:
     /dump sorted - Dump the internal trigger sort buffers (debugging)
     /last        - Print the last trigger you matched.
 
-## Makefile
+## Quickstart
 
-I use a GNU Makefile to simplify builds and other commands (feel free to
-send a pull request to switch to Ant or something). Useful commands:
+To execute `RSBot` to begin chatting with the demo Eliza-based bot that
+tends to ship with RiveScript libraries run:
 
-* `make build`: compiles RSBot.java and, therefore, RiveScript.
-* `make run`: compiles RSBot.java and immediately runs it.
-* `make test`: run unit tests with JUnit.
-* `make clean`: cleans up `.class` files.
-* `make javadoc`: deletes the `doc/` folder and recreates it with the `javadoc`
-  command, for generating library documentation.
-
-## QUICK START
-
-Compile RSBot.java using `make build`. If you're running on Windows and don't
-have a Make program installed, you can compile the bot with the `javac` command
-directly:
-
-    Unix:   $ make build
-    Win32:  > javac RSBot.java
-
-Then execute `RSBot` to begin chatting with the demo Eliza-based bot that
-tends to ship with RiveScript libraries.
-
-    Unix:   $ java RSBot
-    Win32:  > java RSBot
+    ./gradlew :rivescript-samples-rsbot:runApp --console plain
 
 ## Unit Testing
 
-This library is tested using [JUnit](http://junit.org/). To run the test suite,
-make sure that JUnit is available on your `$CLASSPATH`, for example by adding
-the jar file:
+This library is tested using [JUnit](http://junit.org/). To execute the test suite run:
 
-```bash
-export CLASSPATH="$CLASSPATH:/path/to/junit-4.10.jar"
-```
-
-And then type `make test` to run the unit tests.
+    ./gradlew clean test
 
 ## License
 

@@ -1,28 +1,169 @@
-apply plugin: 'eclipse'
-apply plugin: 'java'
+buildscript {
+    repositories {
+        jcenter()
+        mavenCentral()
+        mavenLocal()
+    }
+    dependencies {
+        classpath "nu.studer:gradle-credentials-plugin:1.0.1"
+    }
+}
 
-repositories {
-	mavenCentral()
+ext {
+    junitVersion = "4.12"
+    jsonVersion = "20160810"
+    mockitoVersion = "1.10.19"
 }
-dependencies {
-	compile group: 'org.json', name: 'json', version: '20160810'
-	testCompile group: 'junit', name: 'junit', version: '4.+'
+
+ext.javadocLinks = [
+        "http://docs.oracle.com/javase/7/docs/api/",
+        "http://docs.oracle.com/javaee/7/api/"
+] as String[]
+
+ext.sampleprojects = subprojects.findAll { project -> !project.name.startsWith("rivescript-samples") }
+
+configure(allprojects) { project ->
+
+    group = "com.rivescript"
+
+    repositories {
+        jcenter()
+        mavenCentral()
+        mavenLocal()
+    }
 }
-sourceSets {
-    main {
-        java {
-            srcDir '.'
-            exclude 'Aiden/*'
-            exclude 'build/*'
-            exclude 'doc/*'
-            exclude 'lang/*'
-			exclude 'tests/*'
+
+configure(subprojects) { project ->
+
+    apply plugin: "java"
+    apply plugin: "eclipse"
+    apply plugin: "idea"
+    apply plugin: "maven"
+
+    sourceCompatibility = 1.7
+    targetCompatibility = 1.7
+
+    [compileJava, compileTestJava]*.options*.compilerArgs = ['-Xlint:none']
+
+    dependencies {
+        testCompile "junit:junit:${junitVersion}"
+        testCompile "org.mockito:mockito-core:${mockitoVersion}"
+    }
+
+    idea {
+        module {
+            downloadJavadoc = true
+            downloadSources = true
         }
     }
-	test {
-		java.srcDir 'tests'
-	}
 }
-test {
-	workingDir 'tests'
+
+configure(subprojects - sampleprojects) { subproject ->
+
+    apply plugin: "signing"
+    apply plugin: "nu.studer.credentials"
+
+    ext."signing.keyId" = credentials.signingKeyId
+    ext."signing.password" = credentials.signingPassword
+    ext."signing.secretKeyRingFile" = credentials.signingSecretKeyRingFile
+
+    jar {
+        manifest.attributes["Created-By"] = "${System.getProperty("java.version")} (${System.getProperty("java.specification.vendor")})"
+        manifest.attributes["Implementation-Title"] = project.name
+        manifest.attributes["Implementation-Version"] = project.version
+    }
+
+    javadoc {
+        options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
+        options.author = true
+        options.header = project.name
+        options.addStringOption("Xdoclint:none", "-quiet")
+    }
+
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = "sources"
+        from sourceSets.main.allSource
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = "javadoc"
+        from javadoc.destinationDir
+    }
+
+    artifacts {
+        archives sourcesJar, javadocJar
+    }
+
+    signing {
+        sign configurations.archives
+    }
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+
+                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                    authentication(userName: credentials.ossrhUsername, password: credentials.ossrhPassword)
+                }
+
+                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                    authentication(userName: credentials.ossrhUsername, password: credentials.ossrhPassword)
+                }
+
+                pom.project {
+                    name "RiveScript"
+                    packaging "jar"
+                    description "RiveScript interpreter for Java"
+                    url "https://github.com/aichaos/rivescript-java"
+
+                    scm {
+                        connection "git@github.com:aichaos/rivescript-java.git"
+                        developerConnection "git@github.com:aichaos/rivescript-java.git"
+                        url "https://github.com/aichaos/rivescript-java"
+                    }
+
+                    licenses {
+                        license {
+                            name "MIT License"
+                            url "http://www.opensource.org/licenses/mit-license.php"
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id "kirsle"
+                            name "Noah Petherbridge"
+                            email "root@kirsle.net"
+                        }
+                        developer {
+                            id "marceloverdijk"
+                            name "Marcel Overdijk"
+                            email "marcel@overdijk.me"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+project("rivescript-core") {
+
+    description = "RiveScript Core"
+
+    dependencies {
+        compile "org.json:json:${jsonVersion}"
+    }
+}
+
+configure(rootProject) {
+
+    description = "RiveScript"
+
+    task wrapper(type: Wrapper) {
+        description = "Generates gradlew[.bat] scripts."
+        gradleVersion = "3.1"
+    }
 }

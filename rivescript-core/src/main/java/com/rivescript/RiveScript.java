@@ -74,7 +74,7 @@ public class RiveScript {
 	/**
 	 * The version of the RiveScript Java library.
 	 */
-	public static final String VERSION        = "0.6.0";
+	public static final String VERSION        = "0.7.0-SNAPSHOT"; // TODO should be retrieved from manifest file
 
 	// Constant RiveScript command symbols.
 	private static final double RS_VERSION    = 2.0; // This implements RiveScript 2.0
@@ -311,7 +311,7 @@ public class RiveScript {
 	 * an object macro written in Java.
 	 *
 	 * @param name The name of the object macro.
-	 * @param handler The handler function.
+	 * @param impl The object macro.
 	 */
 	public void setSubroutine (String name, com.rivescript.ObjectMacro impl) {
 		// Is the Java handler available?

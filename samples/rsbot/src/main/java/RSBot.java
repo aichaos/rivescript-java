@@ -1,3 +1,4 @@
+import java.io.File;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -30,14 +31,17 @@ public class RSBot {
 		RiveScript rs = new RiveScript(debug);
 
 		// Create a handler for Perl as an object macro language.
-		rs.setHandler("perl", new com.rivescript.lang.Perl(rs, "./lang/rsp4j.pl"));
+		File rsp4jFile = new File(RSBot.class.getClassLoader().getResource("lang/rsp4j.pl").getFile());
+		rs.setHandler("perl", new com.rivescript.lang.Perl(rs, rsp4jFile.getAbsolutePath()));
 
 		// Define an object macro in Java.
 		rs.setSubroutine("javatest", new ExampleMacro());
 
 		// Load and sort replies
 		System.out.println(":: Loading replies");
-		rs.loadDirectory("./Aiden");
+
+		File aidenDir = new File(RSBot.class.getClassLoader().getResource("Aiden").getFile());
+		rs.loadDirectory(aidenDir.getAbsolutePath());
 		rs.sortReplies();
 
 		// Enter the main loop.

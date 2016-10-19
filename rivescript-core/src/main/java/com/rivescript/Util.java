@@ -118,7 +118,7 @@ public class Util {
 	/**
 	 * Sort the integer keys in a HashMap from highest to lowest.
 	 *
-	 * @param hash The hashmap of type Integer, Vector<String>.
+	 * @param hash The hashmap of type Integer, Vector&lt;String&gt;.
 	 */
 	public static int[] sortKeysDesc (HashMap<Integer, Vector<String> > hash) {
 		// Make a vector of all the number-keys of the hash.
