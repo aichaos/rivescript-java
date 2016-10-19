@@ -26,6 +26,16 @@ Contributions are welcome. See `CONTRIBUTING.md` for more information.
 
 Documentation is available at <https://www.rivescript.com/docs/java/>
 
+## Building from Source
+
+To compile, test, build all jars and docs run:
+
+    ./gradlew build
+
+To install all jars into your local Maven cache run:
+
+    ./gradlew install
+
 ## RSBot Demo Script
 
 The `RSBot.java` is a simple implementation of a Java RiveScript bot. You
@@ -38,20 +48,18 @@ These commands may be used at your input prompt in RSBot:
     /dump sorted - Dump the internal trigger sort buffers (debugging)
     /last        - Print the last trigger you matched.
 
-## QUICK START
+## Quickstart
 
 To execute `RSBot` to begin chatting with the demo Eliza-based bot that
 tends to ship with RiveScript libraries run:
 
-    Unix:   $ ./gradlew :rivescript-samples-rsbot:runApp --console plain
-    Win32:  > gradlew :rivescript-samples-rsbot:runApp --console plain
+    ./gradlew :rivescript-samples-rsbot:runApp --console plain
 
 ## Unit Testing
 
 This library is tested using [JUnit](http://junit.org/). To execute the test suite run:
 
-    Unix:   $ ./gradlew clean test
-    Win32:  > gradlew clean test
+    ./gradlew clean test
 
 ## License
 

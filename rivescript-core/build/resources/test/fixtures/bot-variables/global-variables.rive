@@ -1,7 +1,0 @@
-! global debug = false
-
-+ debug mode
-- Debug mode is: <env debug>
-
-+ set debug mode *
-- <env debug=<star>>Switched to <star>.

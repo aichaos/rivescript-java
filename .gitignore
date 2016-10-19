@@ -14,3 +14,17 @@
 /lib
 /log
 /target
+
+/rivescript-*/bin
+/rivescript-*/build
+/rivescript-*/classes
+/rivescript-*/lib
+/rivescript-*/log
+/rivescript-*/target
+
+/samples/*/bin
+/samples/*/build
+/samples/*/classes
+/samples/*/lib
+/samples/*/log
+/samples/*/target
