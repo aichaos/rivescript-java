@@ -10,40 +10,47 @@ buildscript {
 }
 
 ext {
-    junitVersion = "4.12"
-    jsonVersion = "20160810"
+    junitVersion   = "4.12"
+    jsonVersion    = "20160810"
     mockitoVersion = "1.10.19"
+    ext.javadocLinks = [
+            "http://docs.oracle.com/javase/7/docs/api/",
+            "http://docs.oracle.com/javaee/7/api/"
+    ] as String[]
 }
 
-ext.javadocLinks = [
-        "http://docs.oracle.com/javase/7/docs/api/",
-        "http://docs.oracle.com/javaee/7/api/"
-] as String[]
-
-ext.sampleprojects = subprojects.findAll { project -> !project.name.startsWith("rivescript-samples") }
+ext.coreprojects = subprojects.findAll { project -> !project.name.startsWith("rivescript-samples") }
+ext.sampleprojects = subprojects.findAll { project -> project.name.startsWith("rivescript-samples") }
 
 configure(allprojects) { project ->
 
     group = "com.rivescript"
+
+    apply plugin: "java"
+    apply plugin: "idea"
+    apply plugin: "maven"
+    apply plugin: "signing"
+    apply plugin: "nu.studer.credentials"
+
+    compileJava {
+        sourceCompatibility = 1.7
+        targetCompatibility = 1.7
+		options.encoding = "UTF-8"
+        options.compilerArgs += "-Xlint:none"
+    }
+
+    compileTestJava {
+        sourceCompatibility = 1.8
+        targetCompatibility = 1.8
+        options.encoding = "UTF-8"
+        options.compilerArgs += "-Xlint:none"
+    }
 
     repositories {
         jcenter()
         mavenCentral()
         mavenLocal()
     }
-}
-
-configure(subprojects) { project ->
-
-    apply plugin: "java"
-    apply plugin: "eclipse"
-    apply plugin: "idea"
-    apply plugin: "maven"
-
-    sourceCompatibility = 1.7
-    targetCompatibility = 1.7
-
-    [compileJava, compileTestJava]*.options*.compilerArgs = ['-Xlint:none']
 
     dependencies {
         testCompile "junit:junit:${junitVersion}"
@@ -76,7 +83,8 @@ configure(subprojects - sampleprojects) { subproject ->
     javadoc {
         options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
         options.author = true
-        options.header = project.name
+        options.header = "${project.name} ${project.version}"
+        options.docTitle = "${options.header} API"
         options.addStringOption("Xdoclint:none", "-quiet")
     }
 
@@ -161,6 +169,80 @@ project("rivescript-core") {
 configure(rootProject) {
 
     description = "RiveScript"
+
+    // don't publish the default jar for the root project
+    configurations.archives.artifacts.clear()
+
+    task api(type: Javadoc) {
+        group = "Documentation"
+        description = "Generates aggregated Javadoc API documentation."
+        title = "${rootProject.description} ${version} API"
+
+        dependsOn {
+            coreprojects.collect {
+                it.tasks.getByName("jar")
+            }
+        }
+        options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
+        options.author = true
+        options.header = "${project.name} ${project.version}"
+        options.overview = "src/api/overview.html"
+        options.splitIndex = true
+        options.links(javadocLinks)
+        options.addStringOption("Xdoclint:none", "-quiet")
+
+        source coreprojects.collect { project ->
+            project.sourceSets.main.allJava
+        }
+
+        classpath += files(coreprojects.collect { it.sourceSets.main.compileClasspath })
+        destinationDir = new File(buildDir, "api")
+        maxMemory = "1024m"
+    }
+
+    task docs(dependsOn: "api") {
+        group = "Documentation"
+        description = "Generates aggregated Javadoc API and reference documentation."
+    }
+
+    task docsZip(type: Zip, dependsOn: "docs") {
+        group = "Distribution"
+        baseName = rootProject.name
+        classifier = "docs"
+        description = "Builds -${classifier} archive containing Javadoc API and reference documentation."
+
+        from (api) {
+            into "api"
+        }
+    }
+
+    task distZip(type: Zip, dependsOn: "docsZip") {
+        group = "Distribution"
+        baseName = rootProject.name
+        classifier = "dist"
+        description = "Builds -${classifier} archive containing all jars and documentation."
+
+		from(zipTree(docsZip.archivePath)) {
+			into "docs"
+		}
+
+		coreprojects.each { subproject ->
+			into ("libs") {
+				from subproject.jar
+				if (subproject.tasks.findByPath("sourcesJar")) {
+					from subproject.sourcesJar
+				}
+				if (subproject.tasks.findByPath("javadocJar")) {
+					from subproject.javadocJar
+				}
+			}
+		}
+	}
+
+	artifacts {
+		archives docsZip
+		archives distZip
+	}
 
     task wrapper(type: Wrapper) {
         description = "Generates gradlew[.bat] scripts."
