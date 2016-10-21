@@ -50,10 +50,13 @@ These commands may be used at your input prompt in RSBot:
 
 ## Quickstart
 
-To execute `RSBot` to begin chatting with the demo Eliza-based bot that
-tends to ship with RiveScript libraries run:
+To execute `RSBot` to begin chatting with the Eliza-based demo bot run:
 
-    ./gradlew :rivescript-samples-rsbot:runApp --console plain
+    cd samples/rsbot
+    ./gradlew run --console plain
+
+Make sure you have run `./gradlew clean install` from the root folder to
+install the RiveScript libraries in you local Maven cache.
 
 ## Unit Testing
 

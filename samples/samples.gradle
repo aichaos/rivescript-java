@@ -1,0 +1,29 @@
+ext {
+	rivescriptVersion = "0.7.0-SNAPSHOT"
+}
+
+apply plugin: "java"
+apply plugin: "eclipse"
+apply plugin: "idea"
+
+repositories {
+    jcenter()
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    compile "com.rivescript:rivescript-core:${rivescriptVersion}"
+}
+
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
+task wrapper(type: Wrapper) {
+    description = "Generates gradlew[.bat] scripts."
+    gradleVersion = "3.1"
+}
