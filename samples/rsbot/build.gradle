@@ -1,8 +1,8 @@
-dependencies {
-    compile project(":rivescript-core")
-}
+description = "RiveScript RSBot Sample"
 
-task runApp(type: JavaExec) {
+apply from: "../samples.gradle"
+
+task run(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     main = "RSBot"
     standardInput = System.in
