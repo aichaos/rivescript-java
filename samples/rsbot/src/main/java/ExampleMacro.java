@@ -1,3 +1,29 @@
+/*
+ * Copyright (c) 2016 the original author or authors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+import com.rivescript.ObjectMacro;
+import java.lang.String;
+import java.lang.StringBuilder;
+
 /**
  * An example object macro written in Java.
  *
@@ -10,13 +36,10 @@
  * This implements the `reverse` object macro used in Aiden/obj-java.rive
  *
  * See RSBot.java for more details.
+ *
+ * @author Noah Petherbridge
  */
-
-import com.rivescript.ObjectMacro;
-import java.lang.String;
-import java.lang.StringBuilder;
-
-public class ExampleMacro implements com.rivescript.ObjectMacro {
+public class ExampleMacro implements ObjectMacro {
 	public String call (com.rivescript.RiveScript rs, String[] args) {
 		String message = String.join(" ", args);
 
