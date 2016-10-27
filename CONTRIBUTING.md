@@ -3,24 +3,24 @@
 Interested in contributing to RiveScript? Great!
 
 First, check the general contributing guidelines for RiveScript and its primary
-implementations found at <http://www.rivescript.com/contributing> - in
-particular, understand the goals and scope of the RiveScript language and the
-style guide for the Java implementation.
+implementations found at <http://www.rivescript.com/contributing>*[]: 
+
+Eclipse users should simply import the Eclipse 
+[RiveScript Java Style](https://github.com/aichaos/rivescript-java/blob/master/src/eclipse/rivescript-java-style.xml) 
+code formatter file.
+
+IntelliJ IDEA users should first install the [Eclipse Code Formatter plugin](http://plugins.jetbrains.com/plugin/6546) 
+to import the same Eclipse code formatter file.
 
 # Quick Start
 
 Fork, then clone the repo:
 
-```bash
-$ git clone git@github.com:your-username/rivescript-java.git
-```
+    git clone git@github.com:your-username/rivescript-java.git
 
-Make your code changes and test them by using the included `RSBot` demo program:
+Make your code changes and test them by using the included `RSBot` sample:
 
-```bash
-$ ./build.sh
-$ java RSBot
-```
+    ./gradlew :rivescript-samples-rsbot:runApp --console plain
 
 Push to your fork and [submit a pull request](https://github.com/kirsle/rivescript-java/compare/).
 
