@@ -48,7 +48,7 @@ public class Java implements ObjectHandler {
 	/**
 	 * Constructs a Java {@link ObjectHandler}.
 	 *
-	 * @param rivescript The {@code RiveScript} instance, not null.
+	 * @param rivescript The RiveScript instance, not null.
 	 */
 	public Java(RiveScript rivescript) {
 		this.parent = requireNonNull(rivescript, "'rivescript' must not be null");
@@ -63,6 +63,7 @@ public class Java implements ObjectHandler {
 	 * @param name The name of the object.
 	 * @param code The source code inside the object.
 	 */
+	@Override
 	public boolean onLoad(String name, String[] code) {
 		System.err.println("NOTICE: Can't dynamically eval Java code from an "
 				+ "inline object macro! Use the setSubroutine() function instead "
@@ -74,9 +75,10 @@ public class Java implements ObjectHandler {
 	 * Handler for when a user invokes the object. Should return the text reply from the object.
 	 *
 	 * @param name The name of the object being called.
-	 * @param user The user's ID.
-	 * @param args The argument list from the call tag.
+	 * @param user The user's id.
+	 * @param args The argument list from the tag.
 	 */
+	@Override
 	public String onCall(String name, String user, String[] args) {
 		// Does the object macro exist?
 		ObjectMacro macro = this.handlers.get(name);
@@ -89,7 +91,7 @@ public class Java implements ObjectHandler {
 	}
 
 	/**
-	 * Handler for directly setting an implementation class for a {@link ObjectMacro}.
+	 * Sets a Java class to handle the {@link ObjectMacro} directly.
 	 * <p>
 	 * This is called by the parent RiveScript object's
 	 * {@link RiveScript#setSubroutine(String, ObjectMacro)} method.
@@ -97,6 +99,7 @@ public class Java implements ObjectHandler {
 	 * @param name The name of the object macro.
 	 * @param impl The {@link ObjectMacro} implementation.
 	 */
+	@Override
 	public void setClass(String name, ObjectMacro impl) {
 		this.handlers.put(name, impl);
 	}

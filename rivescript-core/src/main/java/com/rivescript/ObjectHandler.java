@@ -42,7 +42,7 @@ public interface ObjectHandler {
 	 * Handler for when a user invokes the object. Should return the text reply from the object.
 	 *
 	 * @param name The name of the object being called.
-	 * @param user The user's ID.
+	 * @param user The user's id.
 	 * @param args The argument list from the call tag.
 	 */
 	String onCall(String name, String user, String[] args);

@@ -22,7 +22,6 @@
 
 package com.rivescript;
 
-import java.lang.String;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
@@ -33,50 +32,50 @@ import java.util.Vector;
  * @author Noah Petherbridge
  */
 public class ClientManager {
-	private HashMap<String, com.rivescript.Client> clients =
-		new HashMap<String, com.rivescript.Client>(); // List of users
+
+	private HashMap<String, Client> clients = new HashMap<>(); // List of users
 
 	/**
-	 * Create a client manager. Only one needed per bot.
+	 * Creates a client manager. Only one needed per bot.
 	 */
-	public ClientManager () {
+	public ClientManager() {
 		// Nothing to construct here.
 	}
 
 	/**
-	 * Get a Client object for a given user ID.
+	 * Gets a {@link Client} object for a given user id.
 	 *
-	 * @param username The user ID you want to work with.
+	 * @param userId The user id.
 	 */
-	public com.rivescript.Client client (String username) {
+	public Client client(String userId) {
 		// Is this a new topic?
-		if (clients.containsKey(username) == false) {
+		if (clients.containsKey(userId) == false) {
 			// Create it.
-			clients.put(username, new com.rivescript.Client(username));
+			clients.put(userId, new Client(userId));
 		}
 
-		return clients.get(username);
+		return clients.get(userId);
 	}
 
 	/**
-	 * Get a list of the clients managed.
+	 * Gets a list of the {@link Client}s managed.
 	 */
-	public String[] listClients () {
-		Vector<String> result = new Vector<String>();
+	public String[] listClients() {
+		Vector<String> result = new Vector<>();
 		Iterator it = clients.keySet().iterator();
 		while (it.hasNext()) {
 			result.add(it.next().toString());
 		}
-		return com.rivescript.Util.Sv2s(result);
+		return Util.Sv2s(result);
 	}
 
 	/**
-	 * Query whether a client is known or not.
+	 * Queries whether a client is known or not.
 	 *
-	 * @param user The user ID.
+	 * @param userId The user id.
 	 */
-	public boolean clientExists (String user) {
-		if (clients.containsKey(user)) {
+	public boolean clientExists(String userId) {
+		if (clients.containsKey(userId)) {
 			return true;
 		}
 		return false;

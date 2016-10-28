@@ -23,20 +23,20 @@
 package com.rivescript;
 
 /**
- * Interface for object macros written in Java.
+ * Interface for RiveScript object macros written in Java.
  *
  * @author Noah Petherbridge
  */
 public interface ObjectMacro {
+
 	/**
 	 * The implementation of your object macro function.
+	 * <p>
+	 * This code is executed when a {@code <call>} tag in a RiveScript reply wants to call your object macro.
 	 *
-	 * This code is executed when a `&lt;call&gt;` tag in a RiveScript reply
-	 * wants to call your object macro.
-	 *
-	 * @param rs   A reference to the parent RiveScript instance.
-	 * @param args An array of the word-arguments from the call tag.
-	 * @return A string result of your macro.
+	 * @param rivescript A reference to the parent RiveScript instance.
+	 * @param args       An array of the word-arguments from the call tag.
+	 * @return A string result of the macro.
 	 */
-	public String call (com.rivescript.RiveScript rs, String[] args);
+	String call(RiveScript rivescript, String[] args);
 }

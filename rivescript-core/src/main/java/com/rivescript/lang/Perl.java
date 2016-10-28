@@ -52,7 +52,7 @@ public class Perl implements ObjectHandler {
 	/**
 	 * Creates a Perl {@link ObjectHandler}. Must take the path to the rsp4j script as its argument.
 	 *
-	 * @param rivescript The {@code RiveScript} instance, not null.
+	 * @param rivescript The RiveScript instance, not null.
 	 * @param rsp4j      The path to the rsp4j script (either in .pl or .exe format), not null.
 	 */
 	public Perl(RiveScript rivescript, String rsp4j) {
@@ -68,6 +68,7 @@ public class Perl implements ObjectHandler {
 	 * @param name The name of the object.
 	 * @param code The source code inside the object.
 	 */
+	@Override
 	public boolean onLoad(String name, String[] code) {
 		codes.put(name, Util.join(code, "\n"));
 		return true;
@@ -77,9 +78,10 @@ public class Perl implements ObjectHandler {
 	 * Handler for when a user invokes the object. Should return the text reply from the object.
 	 *
 	 * @param name The name of the object being called.
-	 * @param user The user's ID.
+	 * @param user The user's id.
 	 * @param args The argument list from the call tag.
 	 */
+	@Override
 	public String onCall(String name, String user, String[] args) {
 		// Prepare JSON data to send.
 		try {
@@ -157,6 +159,7 @@ public class Perl implements ObjectHandler {
 		}
 	}
 
+	@Override
 	public void setClass(String name, ObjectMacro impl) {
 	}
 }
