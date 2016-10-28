@@ -22,131 +22,141 @@
 
 package com.rivescript.lang;
 
-import java.lang.String;
-import java.io.InputStreamReader;
+import static java.util.Objects.requireNonNull;
+
 import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
+
 import org.json.JSONObject;
+
+import com.rivescript.ObjectHandler;
+import com.rivescript.ObjectMacro;
+import com.rivescript.RiveScript;
+import com.rivescript.Util;
 
 /**
  * Perl programming language support for RiveScript-Java.
  *
  * @author Noah Petherbridge
+ * @see ObjectHandler
  */
-public class Perl implements com.rivescript.ObjectHandler {
-	private String rsp4j;                      // Path to the Perl script
-	private com.rivescript.RiveScript parent;  // Parent RS object
-	private HashMap<String, String> codes =
-		new HashMap<String, String>();       // Object codes
+public class Perl implements ObjectHandler {
 
-	/**
-	 * Create a Perl handler. Must take the path to the rsp4j script as
-	 * its argument.
-	 *
-	 * @param rivescript Instance of your RiveScript object.
-	 * @param rsp4j      Path to the rsp4j script (either in .pl or .exe format).
-	 */
-	public Perl (com.rivescript.RiveScript rivescript, String rsp4j) {
-		this.parent = rivescript;
-		this.rsp4j  = rsp4j;
-	}
+    private String rsp4j; // Path to the Perl script
+    private RiveScript parent; // Parent RS object
+    private HashMap<String, String> codes = new HashMap<>(); // Object codes
 
-	/**
-	 * Handler for when object code is read (loaded) by RiveScript.
-	 * Should return true for success or false to indicate error.
-	 *
-	 * @param name The name of the object.
-	 * @param code The source code inside the object.
-	 */
-	public boolean onLoad (String name, String[] code) {
-		codes.put(name, com.rivescript.Util.join(code,"\n"));
-		return true;
-	}
+    /**
+     * Creates a Perl {@link ObjectHandler}. Must take the path to the rsp4j script as its argument.
+     *
+     * @param rivescript The {@code RiveScript} instance, not null.
+     * @param rsp4j The path to the rsp4j script (either in .pl or .exe format), not null.
+     */
+    public Perl(RiveScript rivescript, String rsp4j) {
+        this.parent = requireNonNull(rivescript, "'rivescript' must not be null");
+        this.rsp4j = requireNonNull(rsp4j, "'rsp4j' must not be null");;
+    }
 
-	/**
-	 * Handler for when a user invokes the object. Should return the text
-	 * reply from the object.
-	 *
-	 * @param name The name of the object being called.
-	 * @param user The user's ID.
-	 * @param args The argument list from the call tag.
-	 */
-	public String onCall (String name, String user, String[] args) {
-		// Prepare JSON data to send.
-		try {
-			JSONObject json = new JSONObject();
+    /**
+     * Handler for when object code is read (loaded) by RiveScript. Should return {@code true} for
+     * success or {@code false} to indicate error.
+     *
+     * @param name The name of the object.
+     * @param code The source code inside the object.
+     */
+    public boolean onLoad(String name, String[] code) {
+        codes.put(name, Util.join(code, "\n"));
+        return true;
+    }
 
-			// Set the flat scalars first.
-			json.put("id", user);
-			json.put("message", com.rivescript.Util.join(args, " "));
-			json.put("code", codes.get(name));
+    /**
+     * Handler for when a user invokes the object. Should return the text reply from the object.
+     *
+     * @param name The name of the object being called.
+     * @param user The user's ID.
+     * @param args The argument list from the call tag.
+     */
+    public String onCall(String name, String user, String[] args) {
+        // Prepare JSON data to send.
+        try {
+            JSONObject json = new JSONObject();
 
-			// Transcode the user's data into a JSON object.
-			JSONObject vars = new JSONObject();
-			HashMap<String, String> data = parent.getUservars(user);
-			Iterator it = data.keySet().iterator();
-			while (it.hasNext()) {
-				String key = it.next().toString();
-				vars.put(key, data.get(key));
-			}
+            // Set the flat scalars first.
+            json.put("id", user);
+            json.put("message", Util.join(args, " "));
+            json.put("code", codes.get(name));
 
-			// Add it to the JSON.
-			json.put("vars", vars);
+            // Transcode the user's data into a JSON object.
+            JSONObject vars = new JSONObject();
+            HashMap<String, String> data = parent.getUservars(user);
+            Iterator it = data.keySet().iterator();
+            while (it.hasNext()) {
+                String key = it.next().toString();
+                vars.put(key, data.get(key));
+            }
 
-			// Stringify.
-			String outgoing = json.toString(); // Query
-			String incoming = "";              // Response
+            // Add it to the JSON.
+            json.put("vars", vars);
 
-			// Run the Perl RiveScript handler.
-			try {
-				Process p = Runtime.getRuntime().exec(this.rsp4j + " --java");
-				OutputStream   stdIn  = p.getOutputStream();
-				BufferedReader stdOut = new BufferedReader(new InputStreamReader(p.getInputStream()));
-				BufferedReader stdErr = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+            // Stringify.
+            String outgoing = json.toString(); // Query
+            String incoming; // Response
 
-				// Send it the JSON-in.
-				stdIn.write(outgoing.getBytes());
-				stdIn.flush();
-				stdIn.close();
+            // Run the Perl RiveScript handler.
+            try {
+                Process p = Runtime.getRuntime().exec(this.rsp4j + " --java");
+                OutputStream stdIn = p.getOutputStream();
+                BufferedReader stdOut =
+                        new BufferedReader(new InputStreamReader(p.getInputStream()));
 
-				// Read the results back.
-				Vector<String> result = new Vector<String>();
-				String line;
-				while ((line = stdOut.readLine()) != null) {
-					result.add(line);
-				}
-				incoming = com.rivescript.Util.join( com.rivescript.Util.Sv2s(result), "\n");
-			} catch (java.io.IOException e) {
-				System.err.println("IOException error in com.rivescript.lang.Perl: " + e.getMessage());
-				return "[ERR: IOException: " + e.getMessage() + "]";
-			}
+                // Send it the JSON-in.
+                stdIn.write(outgoing.getBytes());
+                stdIn.flush();
+                stdIn.close();
 
-			// Process the response.
-			JSONObject reply = new JSONObject(incoming);
+                // Read the results back.
+                Vector<String> result = new Vector<>();
+                String line;
+                while ((line = stdOut.readLine()) != null) {
+                    result.add(line);
+                }
+                incoming = Util.join(Util.Sv2s(result), "\n");
+            } catch (java.io.IOException e) {
+                System.err.println("IOException error in " + this.getClass().getCanonicalName()
+                        + ": " + e.getMessage());
+                return "[ERR: IOException: " + e.getMessage() + "]";
+            }
 
-			// OK, or error?
-			if (reply.getString("status").equals("error")) {
-				return "[ERR: " + reply.getString("message");
-			}
+            // Process the response.
+            JSONObject reply = new JSONObject(incoming);
 
-			// Send back any new user vars.
-			JSONObject newVars = reply.getJSONObject("vars");
-			String[] keys = reply.getNames(newVars);
-			for (int i = 0; i < keys.length; i++) {
-				String value = newVars.getString(keys[i]);
-				parent.setUservar(user, keys[i], value);
-			}
+            // OK, or error?
+            if (reply.getString("status").equals("error")) {
+                return "[ERR: " + reply.getString("message");
+            }
 
-			// OK. Get the reply.
-			return reply.getString("reply");
-		} catch (org.json.JSONException e) {
-			System.err.println("JSONException in com.rivescript.lang.Perl: " + e.getMessage());
-			return "[ERR: JSONException: " + e.getMessage() + "]";
-		}
-	}
+            // Send back any new user vars.
+            JSONObject newVars = reply.getJSONObject("vars");
+            String[] keys = reply.getNames(newVars);
+            for (int i = 0; i < keys.length; i++) {
+                String value = newVars.getString(keys[i]);
+                parent.setUservar(user, keys[i], value);
+            }
 
-	public void setClass (String name, com.rivescript.ObjectMacro impl) {}
+            // OK. Get the reply.
+            return reply.getString("reply");
+
+        } catch (org.json.JSONException e) {
+            System.err.println("JSONException in " + this.getClass().getCanonicalName() + ": "
+                    + e.getMessage());
+            return "[ERR: JSONException: " + e.getMessage() + "]";
+        }
+    }
+
+    public void setClass(String name, ObjectMacro impl) {
+    }
 }

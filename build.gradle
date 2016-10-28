@@ -1,22 +1,22 @@
 buildscript {
-    repositories {
-        jcenter()
-        mavenCentral()
-        mavenLocal()
-    }
-    dependencies {
-        classpath "nu.studer:gradle-credentials-plugin:1.0.1"
-    }
+	repositories {
+		jcenter()
+		mavenCentral()
+		mavenLocal()
+	}
+	dependencies {
+		classpath "nu.studer:gradle-credentials-plugin:1.0.1"
+	}
 }
 
 ext {
-    junitVersion   = "4.12"
-    jsonVersion    = "20160810"
-    mockitoVersion = "1.10.19"
-    ext.javadocLinks = [
-            "http://docs.oracle.com/javase/7/docs/api/",
-            "http://docs.oracle.com/javaee/7/api/"
-    ] as String[]
+	junitVersion   = "4.12"
+	jsonVersion    = "20160810"
+	mockitoVersion = "1.10.19"
+	ext.javadocLinks = [
+			"http://docs.oracle.com/javase/7/docs/api/",
+			"http://docs.oracle.com/javaee/7/api/"
+	] as String[]
 }
 
 ext.coreprojects = subprojects.findAll { project -> !project.name.startsWith("rivescript-samples") }
@@ -24,203 +24,203 @@ ext.sampleprojects = subprojects.findAll { project -> project.name.startsWith("r
 
 configure(allprojects) { project ->
 
-    group = "com.rivescript"
+	group = "com.rivescript"
 
-    apply plugin: "java"
-    apply plugin: "idea"
-    apply plugin: "maven"
-    apply plugin: "signing"
-    apply plugin: "nu.studer.credentials"
+	apply plugin: "java"
+	apply plugin: "idea"
+	apply plugin: "maven"
+	apply plugin: "signing"
+	apply plugin: "nu.studer.credentials"
 
-    compileJava {
-        sourceCompatibility = 1.7
-        targetCompatibility = 1.7
+	compileJava {
+		sourceCompatibility = 1.7
+		targetCompatibility = 1.7
 		options.encoding = "UTF-8"
-        options.compilerArgs += "-Xlint:none"
-    }
+		options.compilerArgs += "-Xlint:none"
+	}
 
-    compileTestJava {
-        sourceCompatibility = 1.8
-        targetCompatibility = 1.8
-        options.encoding = "UTF-8"
-        options.compilerArgs += "-Xlint:none"
-    }
+	compileTestJava {
+		sourceCompatibility = 1.8
+		targetCompatibility = 1.8
+		options.encoding = "UTF-8"
+		options.compilerArgs += "-Xlint:none"
+	}
 
-    repositories {
-        jcenter()
-        mavenCentral()
-        mavenLocal()
-    }
+	repositories {
+		jcenter()
+		mavenCentral()
+		mavenLocal()
+	}
 
-    dependencies {
-        testCompile "junit:junit:${junitVersion}"
-        testCompile "org.mockito:mockito-core:${mockitoVersion}"
-    }
+	dependencies {
+		testCompile "junit:junit:${junitVersion}"
+		testCompile "org.mockito:mockito-core:${mockitoVersion}"
+	}
 
-    idea {
-        module {
-            downloadJavadoc = true
-            downloadSources = true
-        }
-    }
+	idea {
+		module {
+			downloadJavadoc = true
+			downloadSources = true
+		}
+	}
 }
 
 configure(subprojects - sampleprojects) { subproject ->
 
-    apply plugin: "signing"
-    apply plugin: "nu.studer.credentials"
+	apply plugin: "signing"
+	apply plugin: "nu.studer.credentials"
 
-    ext."signing.keyId" = credentials.signingKeyId
-    ext."signing.password" = credentials.signingPassword
-    ext."signing.secretKeyRingFile" = credentials.signingSecretKeyRingFile
+	ext."signing.keyId" = credentials.signingKeyId
+	ext."signing.password" = credentials.signingPassword
+	ext."signing.secretKeyRingFile" = credentials.signingSecretKeyRingFile
 
-    jar {
-        manifest.attributes["Created-By"] = "${System.getProperty("java.version")} (${System.getProperty("java.specification.vendor")})"
-        manifest.attributes["Implementation-Title"] = project.name
-        manifest.attributes["Implementation-Version"] = project.version
-    }
+	jar {
+		manifest.attributes["Created-By"] = "${System.getProperty("java.version")} (${System.getProperty("java.specification.vendor")})"
+		manifest.attributes["Implementation-Title"] = project.name
+		manifest.attributes["Implementation-Version"] = project.version
+	}
 
-    javadoc {
-        options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
-        options.author = true
-        options.header = "${project.name} ${project.version}"
-        options.docTitle = "${options.header} API"
-        options.addStringOption("Xdoclint:none", "-quiet")
-    }
+	javadoc {
+		options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
+		options.author = true
+		options.header = "${project.name} ${project.version}"
+		options.docTitle = "${options.header} API"
+		options.addStringOption("Xdoclint:none", "-quiet")
+	}
 
-    task sourcesJar(type: Jar, dependsOn: classes) {
-        classifier = "sources"
-        from sourceSets.main.allSource
-    }
+	task sourcesJar(type: Jar, dependsOn: classes) {
+		classifier = "sources"
+		from sourceSets.main.allSource
+	}
 
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        classifier = "javadoc"
-        from javadoc.destinationDir
-    }
+	task javadocJar(type: Jar, dependsOn: javadoc) {
+		classifier = "javadoc"
+		from javadoc.destinationDir
+	}
 
-    artifacts {
-        archives sourcesJar, javadocJar
-    }
+	artifacts {
+		archives sourcesJar, javadocJar
+	}
 
-    signing {
-        sign configurations.archives
-    }
+	signing {
+		sign configurations.archives
+	}
 
-    uploadArchives {
-        repositories {
-            mavenDeployer {
+	uploadArchives {
+		repositories {
+			mavenDeployer {
 
-                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+				beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                    authentication(userName: credentials.ossrhUsername, password: credentials.ossrhPassword)
-                }
+				repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+					authentication(userName: credentials.ossrhUsername, password: credentials.ossrhPassword)
+				}
 
-                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-                    authentication(userName: credentials.ossrhUsername, password: credentials.ossrhPassword)
-                }
+				snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+					authentication(userName: credentials.ossrhUsername, password: credentials.ossrhPassword)
+				}
 
-                pom.project {
-                    name "RiveScript"
-                    packaging "jar"
-                    description "RiveScript interpreter for Java"
-                    url "https://github.com/aichaos/rivescript-java"
+				pom.project {
+					name "RiveScript"
+					packaging "jar"
+					description "RiveScript interpreter for Java"
+					url "https://github.com/aichaos/rivescript-java"
 
-                    scm {
-                        connection "git@github.com:aichaos/rivescript-java.git"
-                        developerConnection "git@github.com:aichaos/rivescript-java.git"
-                        url "https://github.com/aichaos/rivescript-java"
-                    }
+					scm {
+						connection "git@github.com:aichaos/rivescript-java.git"
+						developerConnection "git@github.com:aichaos/rivescript-java.git"
+						url "https://github.com/aichaos/rivescript-java"
+					}
 
-                    licenses {
-                        license {
-                            name "MIT License"
-                            url "http://www.opensource.org/licenses/mit-license.php"
-                        }
-                    }
+					licenses {
+						license {
+							name "MIT License"
+							url "http://www.opensource.org/licenses/mit-license.php"
+						}
+					}
 
-                    developers {
-                        developer {
-                            id "kirsle"
-                            name "Noah Petherbridge"
-                            email "root@kirsle.net"
-                        }
-                        developer {
-                            id "marceloverdijk"
-                            name "Marcel Overdijk"
-                            email "marcel@overdijk.me"
-                        }
-                    }
-                }
-            }
-        }
-    }
+					developers {
+						developer {
+							id "kirsle"
+							name "Noah Petherbridge"
+							email "root@kirsle.net"
+						}
+						developer {
+							id "marceloverdijk"
+							name "Marcel Overdijk"
+							email "marcel@overdijk.me"
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 project("rivescript-core") {
 
-    description = "RiveScript Core"
+	description = "RiveScript Core"
 
-    dependencies {
-        compile "org.json:json:${jsonVersion}"
-    }
+	dependencies {
+		compile "org.json:json:${jsonVersion}"
+	}
 }
 
 configure(rootProject) {
 
-    description = "RiveScript"
+	description = "RiveScript"
 
-    // don't publish the default jar for the root project
-    configurations.archives.artifacts.clear()
+	// don't publish the default jar for the root project
+	configurations.archives.artifacts.clear()
 
-    task api(type: Javadoc) {
-        group = "Documentation"
-        description = "Generates aggregated Javadoc API documentation."
-        title = "${rootProject.description} ${version} API"
+	task api(type: Javadoc) {
+		group = "Documentation"
+		description = "Generates aggregated Javadoc API documentation."
+		title = "${rootProject.description} ${version} API"
 
-        dependsOn {
-            coreprojects.collect {
-                it.tasks.getByName("jar")
-            }
-        }
-        options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
-        options.author = true
-        options.header = "${project.name} ${project.version}"
-        options.overview = "src/api/overview.html"
-        options.splitIndex = true
-        options.links(javadocLinks)
-        options.addStringOption("Xdoclint:none", "-quiet")
+		dependsOn {
+			coreprojects.collect {
+				it.tasks.getByName("jar")
+			}
+		}
+		options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
+		options.author = true
+		options.header = "${project.name} ${project.version}"
+		options.overview = "src/api/overview.html"
+		options.splitIndex = true
+		options.links(javadocLinks)
+		options.addStringOption("Xdoclint:none", "-quiet")
 
-        source coreprojects.collect { project ->
-            project.sourceSets.main.allJava
-        }
+		source coreprojects.collect { project ->
+			project.sourceSets.main.allJava
+		}
 
-        classpath += files(coreprojects.collect { it.sourceSets.main.compileClasspath })
-        destinationDir = new File(buildDir, "api")
-        maxMemory = "1024m"
-    }
+		classpath += files(coreprojects.collect { it.sourceSets.main.compileClasspath })
+		destinationDir = new File(buildDir, "api")
+		maxMemory = "1024m"
+	}
 
-    task docs(dependsOn: "api") {
-        group = "Documentation"
-        description = "Generates aggregated Javadoc API and reference documentation."
-    }
+	task docs(dependsOn: "api") {
+		group = "Documentation"
+		description = "Generates aggregated Javadoc API and reference documentation."
+	}
 
-    task docsZip(type: Zip, dependsOn: "docs") {
-        group = "Distribution"
-        baseName = rootProject.name
-        classifier = "docs"
-        description = "Builds -${classifier} archive containing Javadoc API and reference documentation."
+	task docsZip(type: Zip, dependsOn: "docs") {
+		group = "Distribution"
+		baseName = rootProject.name
+		classifier = "docs"
+		description = "Builds -${classifier} archive containing Javadoc API and reference documentation."
 
-        from (api) {
-            into "api"
-        }
-    }
+		from (api) {
+			into "api"
+		}
+	}
 
-    task distZip(type: Zip, dependsOn: "docsZip") {
-        group = "Distribution"
-        baseName = rootProject.name
-        classifier = "dist"
-        description = "Builds -${classifier} archive containing all jars and documentation."
+	task distZip(type: Zip, dependsOn: "docsZip") {
+		group = "Distribution"
+		baseName = rootProject.name
+		classifier = "dist"
+		description = "Builds -${classifier} archive containing all jars and documentation."
 
 		from(zipTree(docsZip.archivePath)) {
 			into "docs"
@@ -244,8 +244,8 @@ configure(rootProject) {
 		archives distZip
 	}
 
-    task wrapper(type: Wrapper) {
-        description = "Generates gradlew[.bat] scripts."
-        gradleVersion = "3.1"
-    }
+	task wrapper(type: Wrapper) {
+		description = "Generates gradlew[.bat] scripts."
+		gradleVersion = "3.1"
+	}
 }
