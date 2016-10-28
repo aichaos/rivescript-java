@@ -22,17 +22,17 @@
 
 package com.rivescript.lang;
 
-import static java.util.Objects.requireNonNull;
-
-import java.util.HashMap;
-
 import com.rivescript.ObjectHandler;
 import com.rivescript.ObjectMacro;
 import com.rivescript.RiveScript;
 
+import java.util.HashMap;
+
+import static java.util.Objects.requireNonNull;
+
 /**
  * Java programming language support for RiveScript-Java.
- *
+ * <p>
  * Note that since Java must be compiled before running, this object macro language is only
  * available at compile-time using the {@link RiveScript#setSubroutine(String, ObjectMacro)} method.
  * Inline Java code can't be parsed and compiled from RiveScript source files.
@@ -42,62 +42,62 @@ import com.rivescript.RiveScript;
  */
 public class Java implements ObjectHandler {
 
-    private RiveScript parent;
-    private HashMap<String, ObjectMacro> handlers = new HashMap<>();
+	private RiveScript parent;
+	private HashMap<String, ObjectMacro> handlers = new HashMap<>();
 
-    /**
-     * Constructs a Java {@link ObjectHandler}.
-     *
-     * @param rivescript The {@code RiveScript} instance, not null.
-     */
-    public Java(RiveScript rivescript) {
-        this.parent = requireNonNull(rivescript, "'rivescript' must not be null");
-    }
+	/**
+	 * Constructs a Java {@link ObjectHandler}.
+	 *
+	 * @param rivescript The {@code RiveScript} instance, not null.
+	 */
+	public Java(RiveScript rivescript) {
+		this.parent = requireNonNull(rivescript, "'rivescript' must not be null");
+	}
 
-    /**
-     * Handler for when object code is read (loaded) by RiveScript. Should return {@code true} for
-     * success or {@code false} to indicate error.
-     *
-     * We can't dynamically evaluate Java code, so this function just logs an error.
-     *
-     * @param name The name of the object.
-     * @param code The source code inside the object.
-     */
-    public boolean onLoad(String name, String[] code) {
-        System.err.println("NOTICE: Can't dynamically eval Java code from an "
-                + "inline object macro! Use the setSubroutine() function instead "
-                + "to define an object at compile time.");
-        return false;
-    }
+	/**
+	 * Handler for when object code is read (loaded) by RiveScript. Should return {@code true} for
+	 * success or {@code false} to indicate error.
+	 * <p>
+	 * We can't dynamically evaluate Java code, so this function just logs an error.
+	 *
+	 * @param name The name of the object.
+	 * @param code The source code inside the object.
+	 */
+	public boolean onLoad(String name, String[] code) {
+		System.err.println("NOTICE: Can't dynamically eval Java code from an "
+				+ "inline object macro! Use the setSubroutine() function instead "
+				+ "to define an object at compile time.");
+		return false;
+	}
 
-    /**
-     * Handler for when a user invokes the object. Should return the text reply from the object.
-     *
-     * @param name The name of the object being called.
-     * @param user The user's ID.
-     * @param args The argument list from the call tag.
-     */
-    public String onCall(String name, String user, String[] args) {
-        // Does the object macro exist?
-        ObjectMacro macro = this.handlers.get(name);
-        if (macro == null) {
-            return "[ERR: Object Not Found]";
-        }
+	/**
+	 * Handler for when a user invokes the object. Should return the text reply from the object.
+	 *
+	 * @param name The name of the object being called.
+	 * @param user The user's ID.
+	 * @param args The argument list from the call tag.
+	 */
+	public String onCall(String name, String user, String[] args) {
+		// Does the object macro exist?
+		ObjectMacro macro = this.handlers.get(name);
+		if (macro == null) {
+			return "[ERR: Object Not Found]";
+		}
 
-        // Call it!
-        return macro.call(this.parent, args);
-    }
+		// Call it!
+		return macro.call(this.parent, args);
+	}
 
-    /**
-     * Handler for directly setting an implementation class for a {@link ObjectMacro}.
-     *
-     * This is called by the parent RiveScript object's
-     * {@link RiveScript#setSubroutine(String, ObjectMacro)} method.
-     *
-     * @param name The name of the object macro.
-     * @param impl The {@link ObjectMacro} implementation.
-     */
-    public void setClass(String name, ObjectMacro impl) {
-        this.handlers.put(name, impl);
-    }
+	/**
+	 * Handler for directly setting an implementation class for a {@link ObjectMacro}.
+	 * <p>
+	 * This is called by the parent RiveScript object's
+	 * {@link RiveScript#setSubroutine(String, ObjectMacro)} method.
+	 *
+	 * @param name The name of the object macro.
+	 * @param impl The {@link ObjectMacro} implementation.
+	 */
+	public void setClass(String name, ObjectMacro impl) {
+		this.handlers.put(name, impl);
+	}
 }

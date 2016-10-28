@@ -29,32 +29,32 @@ package com.rivescript;
  */
 public interface ObjectHandler {
 
-    /**
-     * Handler for when object code is read (loaded) by RiveScript. Should return {@code true} for
-     * success or {@code false} to indicate error.
-     *
-     * @param name The name of the object.
-     * @param code The source code inside the object.
-     */
-    boolean onLoad(String name, String[] code);
+	/**
+	 * Handler for when object code is read (loaded) by RiveScript. Should return {@code true} for
+	 * success or {@code false} to indicate error.
+	 *
+	 * @param name The name of the object.
+	 * @param code The source code inside the object.
+	 */
+	boolean onLoad(String name, String[] code);
 
-    /**
-     * Handler for when a user invokes the object. Should return the text reply from the object.
-     *
-     * @param name The name of the object being called.
-     * @param user The user's ID.
-     * @param args The argument list from the call tag.
-     */
-    String onCall(String name, String user, String[] args);
+	/**
+	 * Handler for when a user invokes the object. Should return the text reply from the object.
+	 *
+	 * @param name The name of the object being called.
+	 * @param user The user's ID.
+	 * @param args The argument list from the call tag.
+	 */
+	String onCall(String name, String user, String[] args);
 
-    /**
-     * Sets a Java class to handle the {@link ObjectMacro} directly.
-     *
-     * This is only useful to the built-in Java handler; other handlers do not need to implement
-     * this function.
-     *
-     * @param name The name of the object macro.
-     * @param impl The {@link ObjectMacro} implementation.
-     */
-    void setClass(String name, ObjectMacro impl);
+	/**
+	 * Sets a Java class to handle the {@link ObjectMacro} directly.
+	 * <p>
+	 * This is only useful to the built-in Java handler; other handlers do not need to implement
+	 * this function.
+	 *
+	 * @param name The name of the object macro.
+	 * @param impl The {@link ObjectMacro} implementation.
+	 */
+	void setClass(String name, ObjectMacro impl);
 }
