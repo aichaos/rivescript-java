@@ -5,12 +5,9 @@ Interested in contributing to RiveScript? Great!
 First, check the general contributing guidelines for RiveScript and its primary
 implementations found at <http://www.rivescript.com/contributing>.
 
-Eclipse users should simply import the Eclipse
-[RiveScript Java Style](https://github.com/aichaos/rivescript-java/blob/master/src/eclipse/rivescript-java-style.xml)
-code formatter file.
-
-IntelliJ IDEA users should first install the [Eclipse Code Formatter plugin](http://plugins.jetbrains.com/plugin/6546)
-to import the same Eclipse code formatter file.
+Users should simply import the Eclipse 
+[RiveScript Java Style](https://github.com/aichaos/rivescript-java/blob/master/src/eclipse/rivescript-java-style.xml) 
+file in their IDE. The same code formatter file should also be imported in IntelliJ IDEA.
 
 # Quick Start
 
