@@ -22,7 +22,6 @@
 
 package com.rivescript;
 
-import java.lang.String;
 import java.util.Enumeration;
 import java.util.Vector;
 
@@ -32,95 +31,97 @@ import java.util.Vector;
  * @author Noah Petherbridge
  */
 public class Trigger {
-	// A trigger is a parent of everything that comes after it (redirect,
-	// reply and conditions).
-	private String pattern           = "";
-	private String inTopic           = "";
-	private Vector<String> redirect  = new Vector<String>(); // @Redirect
-	private Vector<String> reply     = new Vector<String>(); // -Reply
-	private Vector<String> condition = new Vector<String>(); // *Condition
-	private boolean previous         = false;
+
+	// A trigger is a parent of everything that comes after it (redirect, reply and conditions).
+
+	private String pattern;
+	private String inTopic;
+	private Vector<String> redirect = new Vector<>();  // @Redirect
+	private Vector<String> reply = new Vector<>();     // -Reply
+	private Vector<String> condition = new Vector<>(); // *Condition
+	private boolean previous = false;
 
 	/**
-	 * Create a new trigger object.
+	 * Creates a new trigger object.
 	 *
+	 * @param topic   The topic of the trigger.
 	 * @param pattern The match pattern for the trigger.
 	 */
-	public Trigger (String topic, String pattern) {
+	public Trigger(String topic, String pattern) {
 		this.inTopic = topic; // And then it's read-only! Triggers can't be moved to other topics
 		this.pattern = pattern;
 	}
 
 	/**
-	 * If you have the trigger object, this will tell you what topic it belongs to.
+	 * Returns the topic the trigger belongs to.
 	 */
-	public String topic () {
+	public String topic() {
 		return this.inTopic;
 	}
 
 	/**
-	 * Flag that this trigger is paired with a %Previous (and shouldn't be sorted
+	 * Sets that this trigger is paired with a {@code %Previous} (and shouldn't be sorted
 	 * with the other triggers for reply matching purposes).
 	 *
-	 * @param paired Whether the trigger has a %Previous.
+	 * @param paired Whether the trigger has a {@code %Previous}.
 	 */
-	public void hasPrevious (boolean paired) {
-		this.previous = true;
+	public void hasPrevious(boolean paired) {
+		this.previous = paired;
 	}
 
 	/**
-	 * Test whether the trigger has a %Previous.
+	 * Returns whether the trigger has a %Previous.
 	 */
-	public boolean hasPrevious () {
+	public boolean hasPrevious() {
 		return this.previous;
 	}
 
 	/**
-	 * Add a new reply to a trigger.
+	 * Adds a new reply to this trigger.
 	 *
 	 * @param reply The reply text.
 	 */
-	public void addReply (String reply) {
+	public void addReply(String reply) {
 		this.reply.add(reply);
 	}
 
 	/**
-	 * List replies under this trigger.
+	 * Returns the replies under this trigger.
 	 */
-	public String[] listReplies () {
-		return Sv2s (reply);
+	public String[] listReplies() {
+		return Sv2s(reply);
 	}
 
 	/**
-	 * Add a new redirection to a trigger.
+	 * Adds a new redirection to this trigger.
 	 *
 	 * @param meant What the user "meant" to say.
 	 */
-	public void addRedirect (String meant) {
+	public void addRedirect(String meant) {
 		this.redirect.add(meant);
 	}
 
 	/**
-	 * List redirections under this trigger.
+	 * Returns the redirections under this trigger.
 	 */
-	public String[] listRedirects () {
-		return Sv2s (redirect);
+	public String[] listRedirects() {
+		return Sv2s(redirect);
 	}
 
 	/**
-	 * Add a new condition to a trigger.
+	 * Adds a new condition to this trigger.
 	 *
 	 * @param condition The conditional line.
 	 */
-	public void addCondition (String condition) {
+	public void addCondition(String condition) {
 		this.condition.add(condition);
 	}
 
 	/**
-	 * List conditions under this trigger.
+	 * Returns the conditions under this trigger.
 	 */
-	public String[] listConditions () {
-		return Sv2s (condition);
+	public String[] listConditions() {
+		return Sv2s(condition);
 	}
 
 	/*---------------------*/
@@ -128,12 +129,12 @@ public class Trigger {
 	/*---------------------*/
 
 	/**
-	 * Convert a vector to a string array.
+	 * Converts a {@link Vector} to a {@link String} array.
 	 *
 	 * @param vector The vector to convert.
 	 */
-	private String[] Sv2s (Vector vector) {
-		String[] result = new String [ vector.size() ];
+	private String[] Sv2s(Vector vector) {
+		String[] result = new String[vector.size()];
 		int i = 0;
 		for (Enumeration e = vector.elements(); e.hasMoreElements(); ) {
 			result[i] = e.nextElement().toString();

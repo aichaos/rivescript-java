@@ -21,12 +21,12 @@
  */
 
 import org.junit.Test;
-import com.rivescript.RiveScript;
 
 /**
  * @author Noah Petherbridge
  */
 public class TestSubstitutions extends TestBase {
+
 	public String replies() {
 		return "substitutions";
 	}

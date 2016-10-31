@@ -21,12 +21,12 @@
  */
 
 import org.junit.Test;
-import com.rivescript.RiveScript;
 
 /**
  * @author Noah Petherbridge
  */
 public class TestTopics extends TestBase {
+
 	public String replies() {
 		return "topics";
 	}

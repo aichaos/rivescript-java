@@ -25,7 +25,7 @@ package com.rivescript;
 import java.util.Comparator;
 
 /**
- * A comparator class to sort strings by length, longest to shortest.
+ * A comparator class to sort {@link String}s by length, longest to shortest.
  *
  * @author Noah Petherbridge
  */

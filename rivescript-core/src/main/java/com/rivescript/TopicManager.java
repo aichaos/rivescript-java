@@ -22,7 +22,6 @@
 
 package com.rivescript;
 
-import java.lang.String;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Vector;
@@ -33,54 +32,51 @@ import java.util.Vector;
  * @author Noah Petherbridge
  */
 public class TopicManager {
+
 	// Private variables.
-	private HashMap<String, com.rivescript.Topic> topics =
-		new HashMap<String, com.rivescript.Topic>(); // List of managed topics
-	private Vector<String> vTopics = new Vector<String>(); // A vector of topics
+	private HashMap<String, Topic> topics = new HashMap<>(); // List of managed topics
+	private Vector<String> vTopics = new Vector<>(); // A vector of topics
 
 	/**
-	 * Create a topic manager. Only one per RiveScript interpreter needed.
+	 * Creates a topic manager. Only one per RiveScript interpreter needed.
 	 */
-	public TopicManager () {
+	public TopicManager() {
 		// Nothing to construct.
 	}
 
 	/**
-	 * Specify which topic any following operations will operate under.
+	 * Specifies which topic any following operations will operate under.
 	 *
-	 * @param topic Name of the topic (will be constructed if it doesn't exist).
+	 * @param topic The name of the topic (will be constructed if it doesn't exist).
 	 */
-	public com.rivescript.Topic topic (String topic) {
+	public Topic topic(String topic) {
 		// Is this a new topic?
-		if (topics.containsKey(topic) == false) {
+		if (!topics.containsKey(topic)) {
 			// Create it.
-			com.rivescript.Topic newTopic = new com.rivescript.Topic (topic);
+			Topic newTopic = new Topic(topic);
 			topics.put(topic, newTopic);
 			vTopics.add(topic);
 		}
 
-		return (com.rivescript.Topic) topics.get(topic);
+		return topics.get(topic);
 	}
 
 	/**
-	 * Test whether a topic exists.
+	 * Returns whether a topic exists.
 	 *
-	 * @param topic Name of the topic to test.
+	 * @param topic The name of the topic.
 	 */
-	public boolean exists (String topic) {
+	public boolean exists(String topic) {
 		// Does it exist?
-		if (topics.containsKey(topic) == false) {
-			return false;
-		}
-		return true;
+		return topics.containsKey(topic);
 	}
 
 	/**
-	 * Retrieve a list of the existing topics.
+	 * Returns a list of the existing topics.
 	 */
-	public String[] listTopics () {
+	public String[] listTopics() {
 		// Convert the vector to a list and return it.
-		String[] result = new String [ vTopics.size() ];
+		String[] result = new String[vTopics.size()];
 		int i = 0;
 		for (Enumeration e = vTopics.elements(); e.hasMoreElements(); ) {
 			result[i] = e.nextElement().toString();
@@ -90,11 +86,12 @@ public class TopicManager {
 	}
 
 	/**
-	 * Sort the replies in all the topics. This will build trigger lists of
-	 * the topics (taking into account topic inheritence/includes) and sending
-	 * the final trigger list into each topic's individual sortTriggers() method.
+	 * Sorts the replies in all the topics. This will build trigger lists of
+	 * the topics (taking into account topic inheritance/includes) and sending
+	 * the final trigger list into each {@link Topic}'s individual {@link Topic#sortTriggers(String[])}
+	 * method.
 	 */
-	public void sortReplies () {
+	public void sortReplies() {
 		// Get trigger lists for all the topics.
 		String[] topics = this.listTopics();
 		for (int i = 0; i < topics.length; i++) {
@@ -110,14 +107,14 @@ public class TopicManager {
 	}
 
 	/**
-	 * Walk the inherit/include trees and return a list of unsorted triggers.
+	 * Walks the inherit/include trees and return a list of unsorted triggers.
 	 *
-	 * @param topic The name of the topic to start at.
-	 * @param depth A recursion depth limit (can't recurse more than 50 levels)
-	 * @param inheritence The current inheritence level (starts at 0)
+	 * @param topic       The name of the topic to start at.
+	 * @param depth       The recursion depth limit (can't recurse more than 50 levels)
+	 * @param inheritance The current inheritance level (starts at 0)
 	 * @param inherited   Whether the topic is inherited
 	 */
-	private String[] topicTriggers (String topic, int depth, int inheritance, boolean inherited) {
+	private String[] topicTriggers(String topic, int depth, int inheritance, boolean inherited) {
 		// Break if we're too deep.
 		if (depth > 50) {
 			System.err.println("Deep recursion while scanning topic inheritance (topic " + topic + " was involved)");
@@ -140,14 +137,14 @@ public class TopicManager {
 		*/
 
 		// Collect an array of triggers to return.
-		Vector<String> triggers = new Vector<String>();
+		Vector<String> triggers = new Vector<>();
 
 		// Does this topic include others?
 		String[] includes = this.topic(topic).includes();
 		if (includes.length > 0) {
 			for (int i = 0; i < includes.length; i++) {
 				// Recurse.
-				String[] recursive = this.topicTriggers (includes[i], (depth+1), inheritance, false);
+				String[] recursive = this.topicTriggers(includes[i], (depth + 1), inheritance, false);
 				for (int j = 0; j < recursive.length; j++) {
 					triggers.add(recursive[j]);
 				}
@@ -159,7 +156,7 @@ public class TopicManager {
 		if (inherits.length > 0) {
 			for (int i = 0; i < inherits.length; i++) {
 				// Recurse.
-				String[] recursive = this.topicTriggers (inherits[i], (depth+1), (inheritance+1), true);
+				String[] recursive = this.topicTriggers(inherits[i], (depth + 1), (inheritance + 1), true);
 				for (int j = 0; j < recursive.length; j++) {
 					triggers.add(recursive[j]);
 				}
@@ -182,8 +179,7 @@ public class TopicManager {
 				// Prefix it with an {inherits} tag.
 				triggers.add("{inherits=" + inheritance + "}" + localTriggers[i]);
 			}
-		}
-		else {
+		} else {
 			// No need for an inherits tag here.
 			for (int i = 0; i < localTriggers.length; i++) {
 				// Skip any trigger with a {previous} tag, these are for %Previous
@@ -197,21 +193,21 @@ public class TopicManager {
 		}
 
 		// Return it as an array.
-		return com.rivescript.Util.Sv2s(triggers);
+		return Util.Sv2s(triggers);
 	}
 
 	/**
-	 * Walk the inherit/include trees starting with one topic and find the trigger
+	 * Walks the inherit/include trees starting with one topic and find the trigger
 	 * object that corresponds to the search trigger. Or rather, if you have a trigger
 	 * that was part of a topic's sort list, but that topic itself doesn't manage
 	 * that trigger, this function will search the tree to find the topic that does,
-	 * and return its Trigger object.
+	 * and return its {@link Trigger} object.
 	 *
 	 * @param topic   The name of the topic to start at.
 	 * @param pattern The trigger pattern text.
 	 * @param depth   The current depth limit (should start at 0), for recursion.
 	 */
-	public com.rivescript.Trigger findTriggerByInheritance (String topic, String pattern, int depth) {
+	public Trigger findTriggerByInheritance(String topic, String pattern, int depth) {
 		// Break if we're too deep.
 		if (depth > 50) {
 			System.err.println("Deep recursion while scanning topic inheritance (topic " + topic + " was involved)");
@@ -225,10 +221,9 @@ public class TopicManager {
 			if (this.topic(inherits[i]).triggerExists(pattern)) {
 				// Good! Return it!
 				return this.topic(inherits[i]).trigger(pattern);
-			}
-			else {
+			} else {
 				// Recurse.
-				com.rivescript.Trigger match = this.findTriggerByInheritance (inherits[i], pattern, (depth+1));
+				Trigger match = this.findTriggerByInheritance(inherits[i], pattern, (depth + 1));
 				if (match != null) {
 					// Found it!
 					return match;
@@ -243,10 +238,9 @@ public class TopicManager {
 			if (this.topic(includes[i]).triggerExists(pattern)) {
 				// Good! Return it!
 				return this.topic(includes[i]).trigger(pattern);
-			}
-			else {
+			} else {
 				// Recurse.
-				com.rivescript.Trigger match = this.findTriggerByInheritance (includes[i], pattern, (depth+1));
+				Trigger match = this.findTriggerByInheritance(includes[i], pattern, (depth + 1));
 				if (match != null) {
 					// Found it!
 					return match;
@@ -259,12 +253,12 @@ public class TopicManager {
 	}
 
 	/**
-	 * Walk the inherit/include trees starting with one topic and list every topic we find.
+	 * Walks the inherit/include trees starting with one topic and list every topic we find.
 	 *
-	 * @param topic   The name of the topic to start at.
-	 * @param depth   The current depth limit (should start at 0), for recursion.
+	 * @param topic The name of the topic to start at.
+	 * @param depth The current depth limit (should start at 0), for recursion.
 	 */
-	public String[] getTopicTree (String topic, int depth) {
+	public String[] getTopicTree(String topic, int depth) {
 		// Avoid deep recursion.
 		if (depth >= 50) {
 			System.err.println("Deep recursion while scanning topic inheritance (topic " + topic + " was involved)");
@@ -272,13 +266,13 @@ public class TopicManager {
 		}
 
 		// Collect a vector of topics.
-		Vector<String> result = new Vector<String>();
+		Vector<String> result = new Vector<>();
 		result.add(topic);
 
 		// Does this topic include others?
 		String[] includes = this.topic(topic).includes();
 		for (int i = 0; i < includes.length; i++) {
-			String[] children = this.getTopicTree(includes[i], (depth+1));
+			String[] children = this.getTopicTree(includes[i], (depth + 1));
 			for (int j = 0; j < children.length; j++) {
 				result.add(children[j]);
 			}
@@ -287,13 +281,13 @@ public class TopicManager {
 		// Does it inherit?
 		String[] inherits = this.topic(topic).inherits();
 		for (int i = 0; i < inherits.length; i++) {
-			String[] children = this.getTopicTree(inherits[i], (depth+1));
+			String[] children = this.getTopicTree(inherits[i], (depth + 1));
 			for (int j = 0; j < children.length; j++) {
 				result.add(children[j]);
 			}
 		}
 
 		// Return.
-		return com.rivescript.Util.Sv2s(result);
+		return Util.Sv2s(result);
 	}
 }

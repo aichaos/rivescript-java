@@ -21,12 +21,12 @@
  */
 
 import org.junit.Test;
-import com.rivescript.RiveScript;
 
 /**
  * @author Noah Petherbridge
  */
 public class TestBotVariables extends TestBase {
+
 	public String replies() {
 		return "bot-variables";
 	}

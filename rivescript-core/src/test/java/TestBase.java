@@ -20,17 +20,18 @@
  * SOFTWARE.
  */
 
-import java.io.File;
-import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import com.rivescript.RiveScript;
+import org.junit.Test;
+
+import java.io.File;
+
+import static org.junit.Assert.*;
 
 /**
  * @author Noah Petherbridge
  */
 public class TestBase {
+
 	protected RiveScript rs;
 
 	public String replies() {
@@ -80,11 +81,5 @@ public class TestBase {
 		ClassLoader classLoader = getClass().getClassLoader();
 		File file = new File(classLoader.getResource(fileName).getFile());
 		return file.getAbsolutePath();
-	}
-
-	@Test
-	public void testJunit() {
-		String str = "Junit is working fine";
-		assertEquals("Junit is working fine", str);
 	}
 }

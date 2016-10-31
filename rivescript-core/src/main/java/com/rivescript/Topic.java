@@ -22,38 +22,38 @@
 
 package com.rivescript;
 
-import java.lang.String;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
-import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * A topic manager class for RiveScript.
+ * A topic class for RiveScript.
  *
  * @author Noah Petherbridge
  */
 public class Topic {
+
 	// Private variables.
 	private static boolean debug = false;
-	private HashMap<String, com.rivescript.Trigger> triggers =
-		new HashMap<String, com.rivescript.Trigger>();      // Topics contain triggers
-	private boolean hasPrevious  = false;                   // Has at least one %Previous
-	private HashMap<String, Vector<String> > previous =
-		new HashMap<String, Vector<String> >();             // Mapping of %Previous's to their triggers
-	private Vector<String> includes = new Vector<String>(); // Included topics
-	private Vector<String> inherits = new Vector<String>(); // Inherited topics
-	private String[] sorted         = null;                 // Sorted trigger list
+	private HashMap<String, Trigger> triggers = new HashMap<>();        // Topics contain triggers
+	private boolean hasPrevious = false;                                // Has at least one %Previous
+	private HashMap<String, Vector<String>> previous = new HashMap<>(); // Mapping of %Previous's to their triggers
+	private Vector<String> includes = new Vector<>();                   // Included topics
+	private Vector<String> inherits = new Vector<>();                   // Inherited topics
+	private String[] sorted;                                            // Sorted trigger list
 
 	// Currently selected topic.
-	String name = "";
+	String name;
 
 	/**
-	 * Create a topic manager. Only one per RiveScript interpreter needed.
+	 * Creates a new topic object.
+	 *
+	 * @param name The name of the topic.
 	 */
-	public Topic (String name) {
+	public Topic(String name) {
 		this.name = name;
 	}
 
@@ -63,72 +63,69 @@ public class Topic {
 	 *
 	 * @param debug The new debug mode to set.
 	 */
-	public static boolean setDebug (boolean debug) {
-		debug = debug;
+	public static boolean setDebug(boolean debug) {
+		Topic.debug = debug;
 		return debug;
 	}
 
 	/**
-	 * Fetch a Trigger object from the topic. If the trigger doesn't exist, it
+	 * Returns a {@link Trigger} object from the topic. If the trigger doesn't exist, it
 	 * is created on the fly.
 	 *
 	 * @param pattern The pattern for the trigger.
 	 */
-	public com.rivescript.Trigger trigger (String pattern) {
+	public Trigger trigger(String pattern) {
 		// Is this a new trigger?
-		if (triggers.containsKey(pattern) == false) {
+		if (!triggers.containsKey(pattern)) {
 			// Create a new Trigger object.
-			com.rivescript.Trigger newTrig = new com.rivescript.Trigger(this.name,pattern);
-			triggers.put(pattern, newTrig);
+			Trigger newTrigger = new Trigger(this.name, pattern);
+			triggers.put(pattern, newTrigger);
 		}
 
 		return triggers.get(pattern);
 	}
 
 	/**
-	 * Test if a trigger exists.
+	 * Returns whether the trigger exists.
 	 *
 	 * @param trigger The pattern for the trigger.
 	 */
-	public boolean triggerExists (String trigger) {
-		if (triggers.containsKey(trigger) == false) {
-			return false;
-		}
-		return true;
+	public boolean triggerExists(String trigger) {
+		return triggers.containsKey(trigger);
 	}
 
 	/**
-	 * Fetch a sorted list of all triggers. Note that the results are only accurate if
-	 * you called sortTriggers() for this topic after loading new replies into it (the
-	 * sortReplies() in RiveScript automagically calls sortTriggers() for all topics,
-	 * so just make sure you call sortReplies() after loading new replies).
+	 * Returns a sorted list of all {@link Trigger}s. Note that the results are only accurate if
+	 * you called {@link Topic#sortTriggers(String[])} for this topic after loading new replies into it (the
+	 * {@link RiveScript#sortReplies()} automagically calls {@link Topic#sortTriggers(String[])} for all topics,
+	 * so just make sure you call {@link RiveScript#sortReplies()} after loading new replies).
 	 */
-	public String[] listTriggers () {
-		return listTriggers (false);
+	public String[] listTriggers() {
+		return listTriggers(false);
 	}
 
 	/**
-	 * Fetch a list of all triggers. If you provide a true value to this method, it will
-	 * return the UNSORTED list (getting the keys of the trigger hash directly). If you
-	 * want a SORTED list (which you probably do), use listTriggers() instead, or explicitly
-	 * provide a false value to this method.
+	 * Returns a list of all {@link Trigger}s. If you provide a {@code true} value to this method, it will
+	 * return the unsorted list (getting the keys of the trigger hash directly). If you
+	 * want a sorted list (which you probably do), use {@link #listTriggers()} instead, or explicitly
+	 * provide a {@code false} value to this method.
 	 *
-	 * @param raw Get a raw unsorted list instead of a sorted one.
+	 * @param raw Whether a raw unsorted list instead of a sorted one should be returned.
 	 */
-	public String[] listTriggers (boolean raw) {
+	public String[] listTriggers(boolean raw) {
 		// If raw, get the unsorted triggers directly from the hash.
 		if (raw) {
 			// Turn the trigger keys into a list.
-			Vector<String> trigs = new Vector<String>();
+			Vector<String> trigs = new Vector<>();
 			Iterator it = triggers.keySet().iterator();
 			while (it.hasNext()) {
 				String next = it.next().toString();
 				say("RAW TRIGGER: " + next);
-				trigs.add (next);
+				trigs.add(next);
 			}
 
 			// Turn the trigger vector into a string array.
-			String[] result = new String [ trigs.size() ];
+			String[] result = new String[trigs.size()];
 			int i = 0;
 			for (Enumeration e = trigs.elements(); e.hasMoreElements(); ) {
 				result[i] = e.nextElement().toString();
@@ -143,20 +140,20 @@ public class Topic {
 		if (sorted == null) {
 			// Um no, that's bad.
 			System.err.println("You called listTriggers() for topic " + name + " before its replies have been sorted!");
-			return new String [0];
+			return new String[0];
 		}
 		return sorted;
 	}
 
 	/**
-	 * (Re)create the internal sort cache for this topic's triggers.
+	 * (Re)creates the internal sort cache for this topic's {@link Trigger}s.
 	 */
-	public void sortTriggers (String[] alltrigs) {
+	public void sortTriggers(String[] alltrigs) {
 		// Get our list of triggers.
-		Vector<String> sorted   = new Vector<String>();
+		Vector<String> sorted = new Vector<>();
 
 		// Do multiple sorts, one for each inheritence level.
-		HashMap<Integer, Vector<String> > heritage = new HashMap<Integer, Vector<String> >();
+		HashMap<Integer, Vector<String>> heritage = new HashMap<>();
 		heritage.put(-1, new Vector<String>());
 		int highest = -1;
 		Pattern reInherit = Pattern.compile("\\{inherits=(\\d+)\\}");
@@ -175,11 +172,11 @@ public class Topic {
 				}
 			}
 
-			alltrigs[i] = alltrigs[i].replaceAll("\\{inherits=\\d+\\}","");
+			alltrigs[i] = alltrigs[i].replaceAll("\\{inherits=\\d+\\}", "");
 
 			// Initialize this inherit group?
 			if (heritage.containsKey(inherits) == false) {
-				heritage.put(inherits, new Vector<String>() );
+				heritage.put(inherits, new Vector<String>());
 			}
 
 			// Add it.
@@ -195,10 +192,10 @@ public class Topic {
 
 			int inherits = h;
 			say("Sorting triggers by heritage level " + inherits);
-			String[] triggers = com.rivescript.Util.Sv2s(heritage.get(inherits));
+			String[] triggers = Util.Sv2s(heritage.get(inherits));
 
 			// Sort-priority maps.
-			HashMap<Integer, Vector<String> > prior = new HashMap<Integer, Vector<String> >();
+			HashMap<Integer, Vector<String>> prior = new HashMap<>();
 
 			// Assign each trigger to its priority level.
 			say("BEGIN sortTriggers in topic " + this.name);
@@ -218,7 +215,7 @@ public class Topic {
 				// Initialize its priority group?
 				if (prior.containsKey(priority) == false) {
 					// Create it.
-					prior.put(priority, new Vector<String>() );
+					prior.put(priority, new Vector<String>());
 				}
 
 				// Add it.
@@ -244,7 +241,7 @@ public class Topic {
 			*/
 
 			// Sort the priority lists numerically from highest to lowest.
-			int[] prior_sorted = com.rivescript.Util.sortKeysDesc(prior);
+			int[] prior_sorted = Util.sortKeysDesc(prior);
 			for (int p = 0; p < prior_sorted.length; p++) {
 				say("Sorting triggers w/ priority " + prior_sorted[p]);
 				Vector<String> p_list = prior.get(prior_sorted[p]);
@@ -260,8 +257,7 @@ public class Topic {
 
 				// Initialize a sort bucket that will keep inheritance levels'
 				// triggers in separate places.
-				//com.rivescript.InheritanceManager bucket = new com.rivescript.InheritanceManager();
-				com.rivescript.Inheritance bucket = new com.rivescript.Inheritance();
+				Inheritance bucket = new Inheritance();
 
 				// Loop through the triggers and sort them into their buckets.
 				for (Enumeration e = p_list.elements(); e.hasMoreElements(); ) {
@@ -283,34 +279,27 @@ public class Topic {
 						// It has the alpha wildcard, _.
 						if (wc > 0) {
 							bucket.addAlpha(wc, trigger);
-						}
-						else {
+						} else {
 							bucket.addUnder(trigger);
 						}
-					}
-					else if (trigger.indexOf("#") > -1) {
+					} else if (trigger.indexOf("#") > -1) {
 						// It has the numeric wildcard, #.
 						if (wc > 0) {
 							bucket.addNumber(wc, trigger);
-						}
-						else {
+						} else {
 							bucket.addPound(trigger);
 						}
-					}
-					else if (trigger.indexOf("*") > -1) {
+					} else if (trigger.indexOf("*") > -1) {
 						// It has the global wildcard, *.
 						if (wc > 0) {
 							bucket.addWild(wc, trigger);
-						}
-						else {
+						} else {
 							bucket.addStar(trigger);
 						}
-					}
-					else if (trigger.indexOf("[") > -1) {
+					} else if (trigger.indexOf("[") > -1) {
 						// It has optional parts.
 						bucket.addOption(wc, trigger);
-					}
-					else {
+					} else {
 						// Totally atomic.
 						bucket.addAtomic(wc, trigger);
 					}
@@ -328,16 +317,16 @@ public class Topic {
 		}
 
 		// Turn the running sort buffer into a string array and store it.
-		this.sorted = com.rivescript.Util.Sv2s (sorted);
+		this.sorted = Util.Sv2s(sorted);
 	}
 
 	/**
-	 * Add a mapping between a trigger and a %Previous that follows it.
+	 * Adds a mapping between a {@link Trigger} and a {@code %Previous} that follows it.
 	 *
 	 * @param pattern  The trigger pattern.
-	 * @param previous The pattern in the %Previous.
+	 * @param previous The pattern in the {@code %Previous}.
 	 */
-	public void addPrevious (String pattern, String previous) {
+	public void addPrevious(String pattern, String previous) {
 		// Add it to the vector.
 		if (this.previous.containsKey(previous) == false) {
 			this.previous.put(previous, new Vector<String>());
@@ -346,48 +335,48 @@ public class Topic {
 	}
 
 	/**
-	 * Check if any trigger in the topic has a %Previous (only good after
-	 * sortPrevious, from RiveScript.sortReplies is called).
+	 * Returns whether any {@link Trigger} in the topic has a {@code %Previous} (only good after
+	 * {@link RiveScript#sortReplies()} is called.
 	 */
-	public boolean hasPrevious () {
+	public boolean hasPrevious() {
 		return this.hasPrevious;
 	}
 
 	/**
-	 * Get a list of all the %Previous keys.
+	 * Get a list of all the {@code %Previous} keys.
 	 */
-	public String[] listPrevious () {
-		Vector<String> vector = new Vector<String>();
+	public String[] listPrevious() {
+		Vector<String> vector = new Vector<>();
 		Iterator sit = previous.keySet().iterator();
 		while (sit.hasNext()) {
 			vector.add((String) sit.next());
 		}
-		return com.rivescript.Util.Sv2s(vector);
+		return Util.Sv2s(vector);
 	}
 
 	/**
-	 * List the triggers associated with a %Previous.
+	 * Returns the {@link Trigger}s associated with a {@code %Previous}.
 	 *
-	 * @param previous The %Previous pattern.
+	 * @param previous The {@code %Previous} pattern.
 	 */
-	public String[] listPreviousTriggers (String previous) {
+	public String[] listPreviousTriggers(String previous) {
 		// TODO return sorted list
 		if (this.previous.containsKey(previous)) {
-			return com.rivescript.Util.Sv2s(this.previous.get(previous));
+			return Util.Sv2s(this.previous.get(previous));
 		}
 		return new String[0];
 	}
 
 	/**
-	 * Sort the %Previous buffer.
+	 * Sorts the {@code %Previous} buffer.
 	 */
-	public void sortPrevious () {
+	public void sortPrevious() {
 		// Keep track if ANYTHING has a %Previous.
 		this.hasPrevious = false;
 
 		// Find all the triggers that have a %Previous. This hash maps a %Previous
 		// label to the list of triggers that are associated with it.
-		HashMap<String, Vector<String> > prev2trig = new HashMap<String, Vector<String> >();
+		HashMap<String, Vector<String>> prev2trig = new HashMap<>();
 
 		// Loop through the triggers to find those with a %Previous.
 		String[] triggers = this.listTriggers(true);
@@ -412,69 +401,65 @@ public class Topic {
 	}
 
 	/**
-	 * Query whether a %Previous is registered with this topic.
+	 * Returns whether a {@code %Previous} is registered with this topic.
 	 *
-	 * @param previous The pattern in the %Previous.
+	 * @param previous The pattern in the {@code %Previous}.
 	 */
-	public boolean previousExists (String previous) {
-		if (this.previous.containsKey(previous)) {
-			return true;
-		}
-		return false;
+	public boolean previousExists(String previous) {
+		return this.previous.containsKey(previous);
 	}
 
 	/**
-	 * Retrieve a string array of the +Triggers that are associated with a %Previous.
+	 * Returns a {@link String} array of the {@code +Triggers} that are associated with a {@code %Previous}.
 	 *
-	 * @param previous The pattern in the %Previous.
+	 * @param previous The pattern in the {@code %Previous}.
 	 */
-	public String[] listPrevious (String previous) {
+	public String[] listPrevious(String previous) {
 		if (this.previous.containsKey(previous)) {
-			return com.rivescript.Util.Sv2s (this.previous.get(previous));
-		}
-		else {
+			return Util.Sv2s(this.previous.get(previous));
+		} else {
 			return new String[0];
 		}
 	}
 
 	/**
-	 * Add a topic that this one includes.
+	 * Adds a topic that this one includes.
 	 *
 	 * @param topic The included topic's name.
 	 */
-	public void includes (String topic) {
+	public void includes(String topic) {
 		this.includes.add(topic);
 	}
 
 	/**
-	 * Add a topic that this one inherits.
+	 * Adds a topic that this one inherits.
 	 *
 	 * @param topic The inherited topic's name.
 	 */
-	public void inherits (String topic) {
+	public void inherits(String topic) {
 		this.inherits.add(topic);
 	}
 
 	/**
-	 * Retrieve a list of included topics.
+	 * Returns a list of included topics.
 	 */
-	public String[] includes () {
-		return com.rivescript.Util.Sv2s(this.includes);
+	public String[] includes() {
+		return Util.Sv2s(this.includes);
 	}
 
 	/**
-	 * Retrieve a list of inherited topics.
+	 * Returns a list of inherited topics.
 	 */
-	public String[] inherits () {
-		return com.rivescript.Util.Sv2s(this.inherits);
+	public String[] inherits() {
+		return Util.Sv2s(this.inherits);
 	}
 
 	/**
-	 * Print a line of debug text to the terminal when the static "debug" is true.
+	 * Prints a line of debug text to the terminal when the static "debug" is true.
 	 *
 	 * @param line The line of text to print.
 	 */
-	private void say (String line) {
+	private void say(String line) {
 		if (debug) { // doesn't work?
 			System.out.println("[RS::Topic] " + line);
 		}

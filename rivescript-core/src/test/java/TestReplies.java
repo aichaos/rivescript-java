@@ -20,16 +20,17 @@
  * SOFTWARE.
  */
 
+import org.junit.Test;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import org.junit.Test;
-import com.rivescript.RiveScript;
 
 /**
  * @author Noah Petherbridge
  */
 public class TestReplies extends TestBase {
+
 	public String replies() {
 		return "replies";
 	}
@@ -48,13 +49,13 @@ public class TestReplies extends TestBase {
 	public void testRandom() {
 		this.setUp("random.rive");
 
-		this.reply("test random response", new String[]{
-			"One.",
-			"Two.",
+		this.reply("test random response", new String[] {
+				"One.",
+				"Two.",
 		});
-		this.reply("test random tag", new String[]{
-			"This sentence has a random word.",
-			"This sentence has a random bit.",
+		this.reply("test random tag", new String[] {
+				"This sentence has a random word.",
+				"This sentence has a random bit.",
 		});
 	}
 
@@ -63,9 +64,9 @@ public class TestReplies extends TestBase {
 		this.setUp("continuations.rive");
 
 		this.reply("Tell me a poem.", "There once was a man named Tim, "
-			+ "who never quite learned how to swim. "
-			+ "He fell off a dock, and sank like a rock, "
-			+ "and that was the end of him.");
+				+ "who never quite learned how to swim. "
+				+ "He fell off a dock, and sank like a rock, "
+				+ "and that was the end of him.");
 	}
 
 	@Test
@@ -95,9 +96,9 @@ public class TestReplies extends TestBase {
 
 		Iterator it = ages.entrySet().iterator();
 		while (it.hasNext()) {
-			Map.Entry pair = (Map.Entry)it.next();
+			Map.Entry pair = (Map.Entry) it.next();
 			this.reply("I am " + pair.getKey() + " years old.", "OK.");
-			this.reply(age_q, (String)pair.getValue());
+			this.reply(age_q, (String) pair.getValue());
 			it.remove();
 		}
 
