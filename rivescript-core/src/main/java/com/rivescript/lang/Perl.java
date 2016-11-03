@@ -22,66 +22,74 @@
 
 package com.rivescript.lang;
 
-import java.lang.String;
-import java.io.InputStreamReader;
+import com.rivescript.ObjectHandler;
+import com.rivescript.ObjectMacro;
+import com.rivescript.RiveScript;
+import com.rivescript.Util;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
-import org.json.JSONObject;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Perl programming language support for RiveScript-Java.
  *
  * @author Noah Petherbridge
+ * @see ObjectHandler
  */
-public class Perl implements com.rivescript.ObjectHandler {
-	private String rsp4j;                      // Path to the Perl script
-	private com.rivescript.RiveScript parent;  // Parent RS object
-	private HashMap<String, String> codes =
-		new HashMap<String, String>();       // Object codes
+public class Perl implements ObjectHandler {
+
+	private String rsp4j; // Path to the Perl script
+	private RiveScript parent; // Parent RS object
+	private HashMap<String, String> codes = new HashMap<>(); // Object codes
 
 	/**
-	 * Create a Perl handler. Must take the path to the rsp4j script as
-	 * its argument.
+	 * Creates a Perl {@link ObjectHandler}. Must take the path to the rsp4j script as its argument.
 	 *
-	 * @param rivescript Instance of your RiveScript object.
-	 * @param rsp4j      Path to the rsp4j script (either in .pl or .exe format).
+	 * @param rivescript The RiveScript instance, not null.
+	 * @param rsp4j      The path to the rsp4j script (either in .pl or .exe format), not null.
 	 */
-	public Perl (com.rivescript.RiveScript rivescript, String rsp4j) {
-		this.parent = rivescript;
-		this.rsp4j  = rsp4j;
+	public Perl(RiveScript rivescript, String rsp4j) {
+		this.parent = requireNonNull(rivescript, "'rivescript' must not be null");
+		this.rsp4j = requireNonNull(rsp4j, "'rsp4j' must not be null");
+		;
 	}
 
 	/**
-	 * Handler for when object code is read (loaded) by RiveScript.
-	 * Should return true for success or false to indicate error.
+	 * Handler for when object code is read (loaded) by RiveScript. Should return {@code true} for
+	 * success or {@code false} to indicate error.
 	 *
 	 * @param name The name of the object.
 	 * @param code The source code inside the object.
 	 */
-	public boolean onLoad (String name, String[] code) {
-		codes.put(name, com.rivescript.Util.join(code,"\n"));
+	@Override
+	public boolean onLoad(String name, String[] code) {
+		codes.put(name, Util.join(code, "\n"));
 		return true;
 	}
 
 	/**
-	 * Handler for when a user invokes the object. Should return the text
-	 * reply from the object.
+	 * Handler for when a user invokes the object. Should return the text reply from the object.
 	 *
 	 * @param name The name of the object being called.
-	 * @param user The user's ID.
+	 * @param user The user's id.
 	 * @param args The argument list from the call tag.
 	 */
-	public String onCall (String name, String user, String[] args) {
+	@Override
+	public String onCall(String name, String user, String[] args) {
 		// Prepare JSON data to send.
 		try {
 			JSONObject json = new JSONObject();
 
 			// Set the flat scalars first.
 			json.put("id", user);
-			json.put("message", com.rivescript.Util.join(args, " "));
+			json.put("message", Util.join(args, " "));
 			json.put("code", codes.get(name));
 
 			// Transcode the user's data into a JSON object.
@@ -98,14 +106,14 @@ public class Perl implements com.rivescript.ObjectHandler {
 
 			// Stringify.
 			String outgoing = json.toString(); // Query
-			String incoming = "";              // Response
+			String incoming; // Response
 
 			// Run the Perl RiveScript handler.
 			try {
 				Process p = Runtime.getRuntime().exec(this.rsp4j + " --java");
-				OutputStream   stdIn  = p.getOutputStream();
-				BufferedReader stdOut = new BufferedReader(new InputStreamReader(p.getInputStream()));
-				BufferedReader stdErr = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+				OutputStream stdIn = p.getOutputStream();
+				BufferedReader stdOut =
+						new BufferedReader(new InputStreamReader(p.getInputStream()));
 
 				// Send it the JSON-in.
 				stdIn.write(outgoing.getBytes());
@@ -113,14 +121,15 @@ public class Perl implements com.rivescript.ObjectHandler {
 				stdIn.close();
 
 				// Read the results back.
-				Vector<String> result = new Vector<String>();
+				Vector<String> result = new Vector<>();
 				String line;
 				while ((line = stdOut.readLine()) != null) {
 					result.add(line);
 				}
-				incoming = com.rivescript.Util.join( com.rivescript.Util.Sv2s(result), "\n");
+				incoming = Util.join(Util.Sv2s(result), "\n");
 			} catch (java.io.IOException e) {
-				System.err.println("IOException error in com.rivescript.lang.Perl: " + e.getMessage());
+				System.err.println("IOException error in " + this.getClass().getCanonicalName()
+						+ ": " + e.getMessage());
 				return "[ERR: IOException: " + e.getMessage() + "]";
 			}
 
@@ -142,11 +151,15 @@ public class Perl implements com.rivescript.ObjectHandler {
 
 			// OK. Get the reply.
 			return reply.getString("reply");
+
 		} catch (org.json.JSONException e) {
-			System.err.println("JSONException in com.rivescript.lang.Perl: " + e.getMessage());
+			System.err.println("JSONException in " + this.getClass().getCanonicalName() + ": "
+					+ e.getMessage());
 			return "[ERR: JSONException: " + e.getMessage() + "]";
 		}
 	}
 
-	public void setClass (String name, com.rivescript.ObjectMacro impl) {}
+	@Override
+	public void setClass(String name, ObjectMacro impl) {
+	}
 }

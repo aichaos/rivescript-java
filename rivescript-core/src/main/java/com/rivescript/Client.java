@@ -22,8 +22,9 @@
 
 package com.rivescript;
 
-import java.lang.String;
 import java.util.HashMap;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * An object to represent an individual user's data.
@@ -31,21 +32,22 @@ import java.util.HashMap;
  * @author Noah Petherbridge
  */
 public class Client {
+
 	private String id;
-	private HashMap<String, String> data = new HashMap<String, String>(); // User data
-	private String[] input = new String [10]; // User's inputs
-	private String[] reply = new String [10]; // Bot's replies
+	private HashMap<String, String> data = new HashMap<>(); // User data
+	private String[] input = new String[10]; // User's inputs
+	private String[] reply = new String[10]; // Bot's replies
 
 	/**
-	 * Create a new client object.
+	 * Creates a new client object.
 	 *
-	 * @param id A unique ID for this client.
+	 * @param id The unique ID for this client, not null.
 	 */
-	public Client (String id) {
-		this.id = id;
+	public Client(String id) {
+		this.id = requireNonNull(id, "'id' must not be null");
 
 		// Set default vars.
-		set("topic","random");
+		set("topic", "random");
 
 		// Initialize the user's history.
 		for (int i = 0; i < input.length; i++) {
@@ -55,22 +57,22 @@ public class Client {
 	}
 
 	/**
-	 * Set a variable for the client.
+	 * Sets a variable for the client.
 	 *
 	 * @param name  The name of the variable.
 	 * @param value The value to set in the variable.
 	 */
-	public void set (String name, String value) {
+	public void set(String name, String value) {
 		data.put(name, value);
 	}
 
 	/**
-	 * Get a variable from the client. Returns the text "undefined" if it doesn't
+	 * Gets a variable from the client. Returns the text {@code undefined} if it doesn't
 	 * exist.
 	 *
 	 * @param name The name of the variable.
 	 */
-	public String get (String name) {
+	public String get(String name) {
 		if (data.containsKey(name)) {
 			return data.get(name);
 		}
@@ -78,71 +80,75 @@ public class Client {
 	}
 
 	/**
-	 * Delete a variable for the client.
+	 * Deletes a variable for the client.
 	 *
 	 * @param name The name of the variable.
 	 */
-	public void delete (String name) {
+	public void delete(String name) {
 		if (data.containsKey(name)) {
 			data.remove(name);
 		}
 	}
 
 	/**
-	 * Retrieve a hashmap of all the user's vars and values.
+	 * Retrieves a {@link HashMap} of all the user's variables and values.
 	 */
-	public HashMap<String, String> getData () {
+	public HashMap<String, String> getData() {
 		return data;
 	}
 
 	/**
-	 * Replace the internal hashmap with this new data (dangerous!).
+	 * Replace the internal {@link HashMap} with this new data (dangerous!).
+	 *
+	 * @param newdata The new data.
 	 */
-	public boolean setData (HashMap<String, String> newdata) {
+	public boolean setData(HashMap<String, String> newdata) {
 		this.data = newdata;
 		return true;
 	}
 
 	/**
-	 * Add a line to the user's input history.
+	 * Adds a line to the user's input history.
+	 *
+	 * @param text The text to add to the user's input history.
 	 */
-	public void addInput (String text) {
+	public void addInput(String text) {
 		// Push this onto the front of the input array.
 		input = unshift(input, text);
 	}
 
 	/**
-	 * Add a line to the user's reply history.
+	 * Adds a line to the user's reply history.
+	 *
+	 * @param text The text to add to the user's reply history.
 	 */
-	public void addReply (String text) {
+	public void addReply(String text) {
 		// Push this onto the front of the reply array.
 		reply = unshift(reply, text);
 	}
 
 	/**
-	 * Get a specific input value by index.
+	 * Gets a specific input value by index.
 	 *
 	 * @param index The index of the input value to get (1-9).
 	 */
-	public String getInput (int index) throws java.lang.IndexOutOfBoundsException {
+	public String getInput(int index) throws java.lang.IndexOutOfBoundsException {
 		if (index >= 1 && index <= 9) {
-			return this.input[index-1];
-		}
-		else {
+			return this.input[index - 1];
+		} else {
 			throw new java.lang.IndexOutOfBoundsException();
 		}
 	}
 
 	/**
-	 * Get a specific reply value by index.
+	 * Gets a specific reply value by index.
 	 *
 	 * @param index The index of the reply value to get (1-9).
 	 */
-	public String getReply (int index) throws java.lang.IndexOutOfBoundsException {
+	public String getReply(int index) throws java.lang.IndexOutOfBoundsException {
 		if (index >= 1 && index <= 9) {
-			return this.reply[index-1];
-		}
-		else {
+			return this.reply[index - 1];
+		} else {
 			throw new java.lang.IndexOutOfBoundsException();
 		}
 	}
@@ -150,7 +156,7 @@ public class Client {
 	/**
 	 * Shift an item to the beginning of an array and rotate.
 	 */
-	public String[] unshift (String[] array, String addition) {
+	public String[] unshift(String[] array, String addition) {
 		// First rotate all entries from 0 to the end.
 		for (int i = array.length - 1; i > 0; i--) {
 			array[i] = array[i - 1];

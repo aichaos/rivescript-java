@@ -25,17 +25,17 @@ package com.rivescript;
 import java.util.Comparator;
 
 /**
- * A comparator class to sort strings by length, longest to shortest.
+ * A comparator class to sort {@link String}s by length, longest to shortest.
  *
  * @author Noah Petherbridge
  */
 public class StringCompare implements Comparator<String> {
+
 	@Override
-	public int compare (String o1, String o2) {
+	public int compare(String o1, String o2) {
 		if (o1.length() < o2.length()) {
 			return 1;
-		}
-		else if (o1.length() > o2.length()) {
+		} else if (o1.length() > o2.length()) {
 			return -1;
 		}
 		return 0;

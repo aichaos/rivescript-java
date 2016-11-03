@@ -23,38 +23,38 @@
 package com.rivescript;
 
 /**
- * Interface for object handlers.
+ * Interface for RiveScript object handlers.
  *
  * @author Noah Petherbridge
  */
 public interface ObjectHandler {
+
 	/**
-	 * Handler for when object code is read (loaded) by RiveScript.
-	 * Should return true for success or false to indicate error.
+	 * Handler for when object code is read (loaded) by RiveScript. Should return {@code true} for
+	 * success or {@code false} to indicate error.
 	 *
 	 * @param name The name of the object.
 	 * @param code The source code inside the object.
 	 */
-	public boolean onLoad (String name, String[] code);
+	boolean onLoad(String name, String[] code);
 
 	/**
-	 * Handler for when a user invokes the object. Should return the text
-	 * reply from the object.
+	 * Handler for when a user invokes the object. Should return the text reply from the object.
 	 *
 	 * @param name The name of the object being called.
-	 * @param user The user's ID.
+	 * @param user The user's id.
 	 * @param args The argument list from the call tag.
 	 */
-	public String onCall (String name, String user, String[] args);
+	String onCall(String name, String user, String[] args);
 
 	/**
-	 * Set a Java class to handle the macro directly.
-	 *
-	 * This is only useful to the built-in Java handler; other handlers
-	 * do not need to implement this function.
+	 * Sets a Java class to handle the {@link ObjectMacro} directly.
+	 * <p>
+	 * This is only useful to the built-in Java handler; other handlers do not need to implement
+	 * this function.
 	 *
 	 * @param name The name of the object macro.
-	 * @param impl An implementation class of com.rivescript.ObjectMacro.
+	 * @param impl The {@link ObjectMacro} implementation.
 	 */
-	public void setClass (String name, com.rivescript.ObjectMacro impl);
+	void setClass(String name, ObjectMacro impl);
 }

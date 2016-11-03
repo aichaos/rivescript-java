@@ -22,90 +22,92 @@
 
 package com.rivescript;
 
-import com.rivescript.Util;
 import com.rivescript.lang.Java;
 
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FilenameFilter;
 import java.io.FileNotFoundException;
-import java.io.InputStreamReader;
+import java.io.FilenameFilter;
 import java.io.IOException;
-import java.util.Enumeration;
+import java.io.InputStreamReader;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Random;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * A RiveScript interpreter written in Java.<p>
- *
- * SYNOPSIS<p>
- *
- * import com.rivescript.RiveScript;<p>
+ * A RiveScript interpreter written in Java.
+ * <p>
+ * SYNOPSIS:
+ * <p>
+ * <pre>
+ * <code>
+ * import com.rivescript.RiveScript;
  *
  * // Create a new interpreter<br>
- * RiveScript rs = new RiveScript();<p>
+ * RiveScript rs = new RiveScript();
  *
- * // Load a directory full of replies in *.rive files<br>
- * rs.loadDirectory("./replies");<p>
+ * // Load a directory full of replies in *.rive files
+ * rs.loadDirectory("./replies");
  *
- * // Sort replies<br>
- * rs.sortReplies();<p>
+ * // Sort replies
+ * rs.sortReplies();
  *
- * // Get a reply for the user<br>
+ * // Get a reply for the user
  * String reply = rs.reply("user", "Hello bot!");
+ * </code>
+ * </pre>
  *
  * @author Noah Petherbridge
  */
 public class RiveScript {
+
 	// Private class variables.
-	private boolean        debug = false;        // Debug mode
-	private int            depth = 50;           // Recursion depth limit
-	private String         error = "";           // Last error text
-	private static Random  rand  = new Random(); // A random number generator
+	private boolean debug = false;        // Debug mode
+	private int depth = 50;           // Recursion depth limit
+	private String error = "";           // Last error text
+	private static Random rand = new Random(); // A random number generator
 
 	// Module version
 	/**
 	 * The version of the RiveScript Java library.
 	 */
-	public static final String VERSION        = "0.7.0-SNAPSHOT"; // TODO should be retrieved from manifest file
+	public static final String VERSION = "0.7.0-SNAPSHOT"; // TODO should be retrieved from manifest file
 
 	// Constant RiveScript command symbols.
-	private static final double RS_VERSION    = 2.0; // This implements RiveScript 2.0
-	private static final String CMD_DEFINE    = "!";
-	private static final String CMD_TRIGGER   = "+";
-	private static final String CMD_PREVIOUS  = "%";
-	private static final String CMD_REPLY     = "-";
-	private static final String CMD_CONTINUE  = "^";
-	private static final String CMD_REDIRECT  = "@";
+	private static final double RS_VERSION = 2.0; // This implements RiveScript 2.0
+	private static final String CMD_DEFINE = "!";
+	private static final String CMD_TRIGGER = "+";
+	private static final String CMD_PREVIOUS = "%";
+	private static final String CMD_REPLY = "-";
+	private static final String CMD_CONTINUE = "^";
+	private static final String CMD_REDIRECT = "@";
 	private static final String CMD_CONDITION = "*";
-	private static final String CMD_LABEL     = ">";
-	private static final String CMD_ENDLABEL  = "<";
+	private static final String CMD_LABEL = ">";
+	private static final String CMD_ENDLABEL = "<";
 
 	// The topic data structure, and the "thats" data structure.
-	private com.rivescript.TopicManager topics = new com.rivescript.TopicManager();
+	private TopicManager topics = new TopicManager();
 
 	// Bot's users' data structure.
-	private com.rivescript.ClientManager clients = new com.rivescript.ClientManager();
+	private ClientManager clients = new ClientManager();
 
 	// Object handlers
-	private HashMap<String, com.rivescript.ObjectHandler> handlers = new HashMap<String, com.rivescript.ObjectHandler>();
-	private HashMap<String, String>                       objects  = new HashMap<String, String>(); // name->language mappers
+	private HashMap<String, ObjectHandler> handlers = new HashMap<>();
+	private HashMap<String, String> objects = new HashMap<>(); // name->language mappers
 
 	// Simpler internal data structures.
-	private Vector<String> vTopics = new Vector<String>(); // vector containing topic list (for quicker lookups)
-	private HashMap<String, String>         globals  = new HashMap<String, String>();         // ! global
-	private HashMap<String, String>         vars     = new HashMap<String, String>();         // ! var
-	private HashMap<String, Vector<String>> arrays   = new HashMap<String, Vector<String>>(); // ! array
-	private HashMap<String, String>         subs     = new HashMap<String, String>();         // ! sub
-	private String[]                        subs_s   = null;                                  // sorted subs
-	private HashMap<String, String>         person   = new HashMap<String, String>();         // ! person
-	private String[]                        person_s = null;                                  // sorted persons
+	private Vector<String> vTopics = new Vector<>(); // vector containing topic list (for quicker lookups)
+	private HashMap<String, String> globals = new HashMap<>(); // ! global
+	private HashMap<String, String> vars = new HashMap<>(); // ! var
+	private HashMap<String, Vector<String>> arrays = new HashMap<>(); // ! array
+	private HashMap<String, String> subs = new HashMap<>(); // ! sub
+	private String[] subs_s = null;            // sorted subs
+	private HashMap<String, String> person = new HashMap<>(); // ! person
+	private String[] person_s = null;            // sorted persons
 
 	// The current user ID when reply() is called.
 	private String currentUser = null;
@@ -115,24 +117,24 @@ public class RiveScript {
 	/*-------------------------*/
 
 	/**
-	 * Create a new RiveScript interpreter object, specifying the debug mode.
+	 * Creates a new RiveScript interpreter object, specifying the debug mode.
 	 *
 	 * @param debug Enable debug mode (a *lot* of stuff is printed to the terminal)
 	 */
-	public RiveScript (boolean debug) {
+	public RiveScript(boolean debug) {
 		this.debug = debug;
 
 		// Set static debug modes.
-		com.rivescript.Topic.setDebug(this.debug);
+		Topic.setDebug(this.debug);
 
 		// Set the default Java macro handler.
-		this.setHandler("java", new com.rivescript.lang.Java(this));
+		this.setHandler("java", new Java(this));
 	}
 
 	/**
-	 * Create a new RiveScript interpreter object.
+	 * Creates a new RiveScript interpreter object.
 	 */
-	public RiveScript () {
+	public RiveScript() {
 		this(false);
 	}
 
@@ -141,14 +143,14 @@ public class RiveScript {
 	/*-------------------*/
 
 	/**
-	 * Return the text of the last error message given.
+	 * Returns the text of the last error message given.
 	 */
-	public String error () {
+	public String error() {
 		return this.error;
 	}
 
 	/**
-	 * Set the error message.
+	 * Sets the error message.
 	 *
 	 * @param message The new error message to set.
 	 */
@@ -162,13 +164,13 @@ public class RiveScript {
 	/*---------------------*/
 
 	/**
-	 * Load a directory full of RiveScript documents, specifying a custom
+	 * Loads a directory full of RiveScript documents, specifying a custom
 	 * list of valid file extensions.
 	 *
 	 * @param path The path to the directory containing RiveScript documents.
-	 * @param exts A string array containing file extensions to look for.
+	 * @param exts The string array containing file extensions to look for.
 	 */
-	public boolean loadDirectory (String path, String[] exts) {
+	public boolean loadDirectory(String path, String[] exts) {
 		say("Load directory: " + path);
 
 		// Get a directory handle.
@@ -180,7 +182,8 @@ public class RiveScript {
 			say("Searching for files of type: " + exts[i]);
 			final String type = exts[i];
 			String[] files = dh.list(new FilenameFilter() {
-				public boolean accept (File d, String name) {
+
+				public boolean accept(File d, String name) {
 					return name.endsWith(type);
 				}
 			});
@@ -200,21 +203,21 @@ public class RiveScript {
 	}
 
 	/**
-	 * Load a directory full of RiveScript documents (.rive files).
+	 * Loads a directory full of RiveScript documents ({@code .rive} files).
 	 *
 	 * @param path The path to the directory containing RiveScript documents.
 	 */
-	public boolean loadDirectory (String path) {
-		String[] exts = { ".rive", ".rs" };
+	public boolean loadDirectory(String path) {
+		String[] exts = {".rive", ".rs"};
 		return this.loadDirectory(path, exts);
 	}
 
 	/**
-	 * Load a single RiveScript document.
+	 * Loads a single RiveScript document.
 	 *
-	 * @param file Path to a RiveScript document.
+	 * @param file The path to a RiveScript document.
 	 */
-	public boolean loadFile (String file) {
+	public boolean loadFile(String file) {
 		say("Load file: " + file);
 
 		// Create a file handle.
@@ -239,7 +242,7 @@ public class RiveScript {
 
 			// Using buffered input stream for fast reading.
 			DataInputStream dis = new DataInputStream(fis);
-			BufferedReader  br  = new BufferedReader(new InputStreamReader(dis));
+			BufferedReader br = new BufferedReader(new InputStreamReader(dis));
 
 			// Read all the lines.
 			String line;
@@ -258,19 +261,19 @@ public class RiveScript {
 		}
 
 		// Convert the vector into a string array.
-		String[] code = com.rivescript.Util.Sv2s (lines);
+		String[] code = Util.Sv2s(lines);
 
 		// Send the code to the parser.
-		return parse (file, code);
+		return parse(file, code);
 	}
 
 	/**
-	 * Stream some RiveScript code directly into the interpreter (as a single string
+	 * Streams some RiveScript code directly into the interpreter (as a single {@link String}
 	 * containing newlines in it).
 	 *
-	 * @param code A string containing all the RiveScript code.
+	 * @param code The string containing all the RiveScript code.
 	 */
-	public boolean stream (String code) {
+	public boolean stream(String code) {
 		// Split the given code up into lines.
 		String[] lines = code.split("\n");
 
@@ -279,12 +282,12 @@ public class RiveScript {
 	}
 
 	/**
-	 * Stream some RiveScript code directly into the interpreter (as a string array,
+	 * Streams some RiveScript code directly into the interpreter (as a {@link String} array,
 	 * one line per item).
 	 *
-	 * @param code A string array containing all the lines of code.
+	 * @param code The string array containing all the lines of code.
 	 */
-	public boolean stream (String[] code) {
+	public boolean stream(String[] code) {
 		// The coder has already broken the lines for us!
 		return parse("(streamed)", code);
 	}
@@ -294,27 +297,27 @@ public class RiveScript {
 	/*---------------------------*/
 
 	/**
-	 * Add a handler for a programming language to be used with RiveScript object calls.
+	 * Adds an {@link ObjectHandler} for a programming language to be used with RiveScript object calls.
 	 *
 	 * @param name    The name of the programming language.
-	 * @param handler An instance of a class that implements an ObjectHandler.
+	 * @param handler The instance of a class that implements an ObjectHandler.
 	 */
-	public void setHandler (String name, com.rivescript.ObjectHandler handler) {
+	public void setHandler(String name, ObjectHandler handler) {
 		this.handlers.put(name, handler);
 	}
 
 	/**
-	 * Define a Java object macro from your program.
-	 *
+	 * Defines a Java {@link ObjectMacro} from your program.
+	 * <p>
 	 * Because Java is a compiled language, this method must be used to create
 	 * an object macro written in Java.
 	 *
 	 * @param name The name of the object macro.
 	 * @param impl The object macro.
 	 */
-	public void setSubroutine (String name, com.rivescript.ObjectMacro impl) {
+	public void setSubroutine(String name, ObjectMacro impl) {
 		// Is the Java handler available?
-		com.rivescript.ObjectHandler handler = (com.rivescript.ObjectHandler)this.handlers.get("java");
+		ObjectHandler handler = this.handlers.get("java");
 		if (handler == null) {
 			this.error("The Java macro handler is unavailable!");
 			return;
@@ -325,24 +328,24 @@ public class RiveScript {
 	}
 
 	/**
-	 * Set a global variable for the interpreter (equivalent to ! global).
-	 * Set the value to null to delete the variable.<p>
-	 *
+	 * Sets a global variable for the interpreter (equivalent to {@code ! global}).
+	 * Set the value to {@code null} to delete the variable.<p>
+	 * <p>
 	 * There are two special globals that require certain data types:<p>
-	 *
-	 * debug is boolean-like and its value must be a string value containing
+	 * <p>
+	 * {@code debug} is boolean-like and its value must be a string value containing
 	 * "true", "yes", "1", "false", "no" or "0".<p>
-	 *
-	 * depth is integer-like and its value must be a quoted integer like "50".
+	 * <p>
+	 * {@code depth} is integer-like and its value must be a quoted integer like "50".
 	 * The "depth" variable controls how many levels deep RiveScript will go when
 	 * following reply redirections.<p>
-	 *
-	 * Returns true on success, false on error.
+	 * <p>
+	 * Returns {@code true} on success, {@code false} on error.
 	 *
 	 * @param name  The variable name.
 	 * @param value The variable's value.
 	 */
-	public boolean setGlobal (String name, String value) {
+	public boolean setGlobal(String name, String value) {
 		boolean delete = false;
 		if (value == null || value == "<undef>") {
 			delete = true;
@@ -353,15 +356,12 @@ public class RiveScript {
 			// Debug is a boolean.
 			if (value.equals("true") || value.equals("1") || value.equals("yes")) {
 				this.debug = true;
-			}
-			else if (value.equals("false") || value.equals("0") || value.equals("no") || delete) {
+			} else if (value.equals("false") || value.equals("0") || value.equals("no") || delete) {
 				this.debug = false;
-			}
-			else {
+			} else {
 				return error("Global variable \"debug\" needs a boolean value");
 			}
-		}
-		else if (name.equals("depth")) {
+		} else if (name.equals("depth")) {
 			// Depth is an integer.
 			try {
 				this.depth = Integer.parseInt(value);
@@ -373,8 +373,7 @@ public class RiveScript {
 		// It's a user-defined global. OK.
 		if (delete) {
 			globals.remove(name);
-		}
-		else {
+		} else {
 			globals.put(name, value);
 		}
 
@@ -382,19 +381,18 @@ public class RiveScript {
 	}
 
 	/**
-	 * Set a bot variable for the interpreter (equivalent to ! var). A bot
+	 * Sets a bot variable for the interpreter (equivalent to {@code ! var}). A bot
 	 * variable is data about the chatbot, like its name or favorite color.<p>
-	 *
-	 * A null value will delete the variable.
+	 * <p>
+	 * A {@code null} value will delete the variable.
 	 *
 	 * @param name  The variable name.
 	 * @param value The variable's value.
 	 */
-	public boolean setVariable (String name, String value) {
+	public boolean setVariable(String name, String value) {
 		if (value == null || value == "<undef>") {
 			vars.remove(name);
-		}
-		else {
+		} else {
 			vars.put(name, value);
 		}
 
@@ -402,19 +400,18 @@ public class RiveScript {
 	}
 
 	/**
-	 * Set a substitution pattern (equivalent to ! sub). The user's input (and
-	 * the bot's reply, in %Previous) get substituted using these rules.<p>
-	 *
-	 * A null value for the output will delete the substitution.
+	 * Sets a substitution pattern (equivalent to {@code ! sub}). The user's input (and
+	 * the bot's reply, in {@code %Previous}) get substituted using these rules.<p>
+	 * <p>
+	 * A {@code null} value for the output will delete the substitution.
 	 *
 	 * @param pattern The pattern to match in the message.
 	 * @param output  The text to replace it with (must be lowercase, no special characters).
 	 */
-	public boolean setSubstitution (String pattern, String output) {
+	public boolean setSubstitution(String pattern, String output) {
 		if (output == null || output == "<undef>") {
 			subs.remove(pattern);
-		}
-		else {
+		} else {
 			subs.put(pattern, output);
 		}
 
@@ -422,20 +419,19 @@ public class RiveScript {
 	}
 
 	/**
-	 * Set a person substitution pattern (equivalent to ! person). Person
+	 * Sets a person substitution pattern (equivalent to {@code ! person}). Person
 	 * substitutions swap first- and second-person pronouns, so the bot can
 	 * safely echo the user without sounding too mechanical.<p>
-	 *
-	 * A null value for the output will delete the substitution.
+	 * <p>
+	 * A {@code null} value for the output will delete the substitution.
 	 *
 	 * @param pattern The pattern to match in the message.
 	 * @param output  The text to replace it with (must be lowercase, no special characters).
 	 */
-	public boolean setPersonSubstitution (String pattern, String output) {
+	public boolean setPersonSubstitution(String pattern, String output) {
 		if (output == null || output == "<undef>") {
 			person.remove(pattern);
-		}
-		else {
+		} else {
 			person.put(pattern, output);
 		}
 
@@ -443,18 +439,17 @@ public class RiveScript {
 	}
 
 	/**
-	 * Set a variable for one of the bot's users. A null value will delete a
+	 * Sets a variable for one of the bot's users. A {@code null} value will delete a
 	 * variable.
 	 *
-	 * @param user  The user's ID.
+	 * @param user  The user's id.
 	 * @param name  The name of the variable to set.
 	 * @param value The value to set.
 	 */
-	public boolean setUservar (String user, String name, String value) {
+	public boolean setUservar(String user, String name, String value) {
 		if (value == null || value == "<undef>") {
 			clients.client(user).delete(name);
-		}
-		else {
+		} else {
 			clients.client(user).set(name, value);
 		}
 
@@ -462,81 +457,79 @@ public class RiveScript {
 	}
 
 	/**
-	 * Set -all- user vars for a user. This will replace the internal hash for
+	 * Sets -all- user vars for a user. This will replace the internal hash for
 	 * the user. So your hash should at least contain a key/value pair for the
-	 * user's current "topic". This could be useful if you used getUservars to
-	 * store their entire profile somewhere and want to restore it later.
+	 * user's current "topic". This could be useful if you used {@link #getUservars(String)}
+	 * to store their entire profile somewhere and want to restore it later.
 	 *
-	 * @param user  The user's ID.
-	 * @param data  The full hash of the user's data.
+	 * @param user The user's ID.
+	 * @param data The full hash of the user's data.
 	 */
-	public boolean setUservars (String user, HashMap<String, String> data) {
+	public boolean setUservars(String user, HashMap<String, String> data) {
 		// TODO: this should be handled more sanely. ;)
 		clients.client(user).setData(data);
 		return true;
 	}
 
 	/**
-	 * Get a list of all the user IDs the bot knows about.
+	 * Gets a list of all the user id's the bot knows about.
 	 */
-	public String[] getUsers () {
+	public String[] getUsers() {
 		// Get the user list from the clients object.
 		return clients.listClients();
 	}
 
 	/**
-	 * Retrieve a listing of all the uservars for a user as a HashMap.
-	 * Returns null if the user doesn't exist.
+	 * Returns a listing of all the uservars for a user as a {@link HashMap}.
+	 * Returns {@code null} if the user doesn't exist.
 	 *
 	 * @param user The user ID to get the vars for.
 	 */
-	public HashMap<String, String> getUservars (String user) {
+	public HashMap<String, String> getUservars(String user) {
 		if (clients.clientExists(user)) {
 			return clients.client(user).getData();
-		}
-		else {
+		} else {
 			return null;
 		}
 	}
 
 	/**
-	 * Retrieve a single variable from a user's profile.
-	 *
-	 * Returns null if the user doesn't exist. Returns the string "undefined"
+	 * Returns a single variable from a user's profile.
+	 * <p>
+	 * Returns {@code null} if the user doesn't exist. Returns the string "undefined"
 	 * if the variable doesn't exist.
 	 *
-	 * @param user The user ID to get data from.
+	 * @param user The user id to get data from.
 	 * @param name The name of the variable to get.
 	 */
-	public String getUservar (String user, String name) {
+	public String getUservar(String user, String name) {
 		if (clients.clientExists(user)) {
 			return clients.client(user).get(name);
-		}
-		else {
+		} else {
 			return null;
 		}
 	}
 
 	/**
-	 * Get the current user's ID from within an object macro.
-	 *
-	 * This is useful within a (Java) object macro to get the ID of the user
+	 * Returns the current user's id from within an object macro.
+	 * <p>
+	 * This is useful within a (Java) object macro to get the id of the user
 	 * currently executing the macro (for example, to get/set variables for
 	 * them).
-	 *
+	 * <p>
 	 * This function is only available during a reply context; outside of
-	 * that it will return null.
+	 * that it will return {@code null}.
 	 *
-	 * @return string user ID or null.
+	 * @return string user id or {@code null}.
 	 */
-	public String currentUser () {
+	public String currentUser() {
 		return this.currentUser;
 	}
 
 	/**
-	 * Return the last trigger that the user matched.
+	 * Returns the last trigger that the user matched.
 	 */
-	public String lastMatch (String user) {
+	public String lastMatch(String user) {
 		return this.getUservar(user, "__lastmatch__");
 	}
 
@@ -545,26 +538,26 @@ public class RiveScript {
 	/*---------------------*/
 
 	/**
-	 * Parse RiveScript code and load it into internal memory.
+	 * Parses RiveScript code and load it into internal memory.
 	 *
-	 * @param filename A file name to associate with this code (for error reporting)
-	 * @param code     A string array of all the code to parse.
+	 * @param filename The file name to associate with this code (for error reporting).
+	 * @param code     The string array of all the code to parse.
 	 */
-	protected boolean parse (String filename, String[] code) {
+	protected boolean parse(String filename, String[] code) {
 		// Track some state variables for this parsing round.
-		String topic            = "random"; // Default topic = random
-		int lineno              = 0;
-		boolean comment         = false; // In a multi-line comment
-		boolean inobj           = false; // In an object
-		String objName          = "";    // Name of the current object
-		String objLang          = "";    // Programming language of the object
-		Vector<String> objBuff  = null;  // Buffer for the current object
-		String onTrig           = "";    // Trigger we're on
-		String lastcmd          = "";    // Last command code
-		String isThat           = "";    // Is a %Previous trigger
+		String topic = "random";        // Default topic = random
+		int lineno = 0;
+		boolean comment = false;        // In a multi-line comment
+		boolean inobj = false;          // In an object
+		String objName = "";            // Name of the current object
+		String objLang = "";            // Programming language of the object
+		Vector<String> objBuff = null;  // Buffer for the current object
+		String onTrig = "";             // Trigger we're on
+		String lastcmd = "";            // Last command code
+		String isThat = "";             // Is a %Previous trigger
 
 		// File scoped parser options.
-		HashMap<String, String> local_options = new HashMap<String, String>();
+		HashMap<String, String> local_options = new HashMap<>();
 		local_options.put("concat", "none");
 
 		// The given "code" is an array of lines, so jump right in.
@@ -582,7 +575,7 @@ public class RiveScript {
 					// End of the object. Did we have a handler?
 					if (handlers.containsKey(objLang)) {
 						// Yes, call the handler's onLoad function.
-						handlers.get(objLang).onLoad(objName, com.rivescript.Util.Sv2s(objBuff));
+						handlers.get(objLang).onLoad(objName, Util.Sv2s(objBuff));
 
 						// Map the name to the language.
 						objects.put(objName, objLang);
@@ -591,7 +584,7 @@ public class RiveScript {
 					objName = "";
 					objLang = "";
 					objBuff = null;
-					inobj   = false;
+					inobj = false;
 					continue;
 				}
 
@@ -608,12 +601,10 @@ public class RiveScript {
 					continue;
 				}
 				comment = true;
-			}
-			else if (line.startsWith("/")) {
+			} else if (line.startsWith("/")) {
 				// A single line comment.
 				continue;
-			}
-			else if (line.indexOf("*/") > -1) {
+			} else if (line.indexOf("*/") > -1) {
 				// End a multi-line comment.
 				comment = false;
 				continue;
@@ -628,7 +619,7 @@ public class RiveScript {
 			}
 
 			// Separate the command from the rest of the line.
-			String cmd = line.substring(0,1);
+			String cmd = line.substring(0, 1);
 			line = line.substring(1).trim();
 			say("\tCmd: " + cmd);
 
@@ -654,8 +645,8 @@ public class RiveScript {
 				}
 
 				// Get the command.
-				String peekCmd = peek.substring(0,1);
-				peek           = peek.substring(1).trim();
+				String peekCmd = peek.substring(0, 1);
+				peek = peek.substring(1).trim();
 
 				// Only continue if the lookahead line has any data.
 				if (peek.length() > 0) {
@@ -670,8 +661,7 @@ public class RiveScript {
 							// It has a %Previous!
 							isThat = peek;
 							break;
-						}
-						else {
+						} else {
 							isThat = "";
 						}
 					}
@@ -693,13 +683,11 @@ public class RiveScript {
 							String concat = "";
 							if (local_options.get("concat").equals("space")) {
 								concat = " ";
-							}
-							else if (local_options.get("concat").equals("newline")) {
+							} else if (local_options.get("concat").equals("newline")) {
 								concat = "\n";
 							}
 							line += concat + peek;
-						}
-						else {
+						} else {
 							break;
 						}
 					}
@@ -710,12 +698,12 @@ public class RiveScript {
 			if (cmd.equals(CMD_DEFINE)) {
 				say("\t! DEFINE");
 				String[] whatis = line.split("\\s*=\\s*", 2);
-				String[] left   = whatis[0].split("\\s+", 2);
-				String type     = left[0];
-				String var      = "";
-				String value    = "";
-				boolean delete  = false;
-				if (left.length == 2)	{
+				String[] left = whatis[0].split("\\s+", 2);
+				String type = left[0];
+				String var = "";
+				String value = "";
+				boolean delete = false;
+				if (left.length == 2) {
 					var = left[1].trim().toLowerCase();
 				}
 				if (whatis.length == 2) {
@@ -746,8 +734,7 @@ public class RiveScript {
 					}
 
 					continue;
-				}
-				else {
+				} else {
 					// All the other types require a variable and value.
 					if (var.equals("")) {
 						cry("Missing a " + type + " variable name", filename, lineno);
@@ -768,18 +755,15 @@ public class RiveScript {
 					// Local file scoped parser options
 					say("\tSet local parser option " + var + " = " + value);
 					local_options.put(var, value);
-				}
-				else if (type.equals("global")) {
+				} else if (type.equals("global")) {
 					// Is it a special global? (debug or depth or etc).
 					say("\tSet global " + var + " = " + value);
 					this.setGlobal(var, value);
-				}
-				else if (type.equals("var")) {
+				} else if (type.equals("var")) {
 					// Set a bot variable.
 					say("\tSet bot variable " + var + " = " + value);
 					this.setVariable(var, value);
-				}
-				else if (type.equals("array")) {
+				} else if (type.equals("array")) {
 					// Set an array.
 					say("\tSet array " + var);
 
@@ -797,8 +781,7 @@ public class RiveScript {
 						String[] pieces;
 						if (parts[a].indexOf("|") > -1) {
 							pieces = parts[a].split("\\|");
-						}
-						else {
+						} else {
 							pieces = parts[a].split("\\s+");
 						}
 
@@ -810,28 +793,24 @@ public class RiveScript {
 
 					// Store this array.
 					arrays.put(var, items);
-				}
-				else if (type.equals("sub")) {
+				} else if (type.equals("sub")) {
 					// Set a substitution.
 					say("\tSubstitution " + var + " => " + value);
 					this.setSubstitution(var, value);
-				}
-				else if (type.equals("person")) {
+				} else if (type.equals("person")) {
 					// Set a person substitution.
 					say("\tPerson substitution " + var + " => " + value);
 					this.setPersonSubstitution(var, value);
-				}
-				else {
+				} else {
 					cry("Unknown definition type \"" + type + "\"", filename, lineno);
 					continue;
 				}
-			}
-			else if (cmd.equals(CMD_LABEL)) {
+			} else if (cmd.equals(CMD_LABEL)) {
 				// > LABEL
 				say("\t> LABEL");
 				String label[] = line.split("\\s+");
-				String type    = "";
-				String name    = "";
+				String type = "";
+				String name = "";
 				if (label.length >= 1) {
 					type = label[0].trim().toLowerCase();
 				}
@@ -862,16 +841,13 @@ public class RiveScript {
 						for (int a = 2; a < label.length; a++) {
 							if (label[a].toLowerCase().equals("includes")) {
 								mode = mode_includes;
-							}
-							else if (label[a].toLowerCase().equals("inherits")) {
+							} else if (label[a].toLowerCase().equals("inherits")) {
 								mode = mode_inherits;
-							}
-							else if (mode > 0) {
+							} else if (mode > 0) {
 								// This topic is either inherited or included.
 								if (mode == mode_includes) {
 									topics.topic(topic).includes(label[a]);
-								}
-								else if (mode == mode_inherits) {
+								} else if (mode == mode_inherits) {
 									topics.topic(topic).inherits(label[a]);
 								}
 							}
@@ -901,10 +877,9 @@ public class RiveScript {
 					objName = name;
 					objLang = lang;
 					objBuff = new Vector<String>();
-					inobj   = true;
+					inobj = true;
 				}
-			}
-			else if (cmd.equals(CMD_ENDLABEL)) {
+			} else if (cmd.equals(CMD_ENDLABEL)) {
 				// < ENDLABEL
 				say("\t< ENDLABEL");
 				String type = line.trim().toLowerCase();
@@ -912,16 +887,13 @@ public class RiveScript {
 				if (type.equals("begin") || type.equals("topic")) {
 					say("\t\tEnd topic label.");
 					topic = "random";
-				}
-				else if (type.equals("object")) {
+				} else if (type.equals("object")) {
 					say("\t\tEnd object label.");
 					inobj = false;
-				}
-				else {
+				} else {
 					cry("Unknown end topic type \"" + type + "\"", filename, lineno);
 				}
-			}
-			else if (cmd.equals(CMD_TRIGGER)) {
+			} else if (cmd.equals(CMD_TRIGGER)) {
 				// + TRIGGER
 				say("\t+ TRIGGER: " + line);
 
@@ -931,13 +903,11 @@ public class RiveScript {
 					onTrig = line + "{previous}" + isThat;
 					topics.topic(topic).trigger(line).hasPrevious(true);
 					topics.topic(topic).addPrevious(line, isThat);
-				}
-				else {
+				} else {
 					// Set the current trigger to this.
 					onTrig = line;
 				}
-			}
-			else if (cmd.equals(CMD_REPLY)) {
+			} else if (cmd.equals(CMD_REPLY)) {
 				// - REPLY
 				say("\t- REPLY: " + line);
 
@@ -949,16 +919,13 @@ public class RiveScript {
 
 				// Add the reply to the trigger.
 				topics.topic(topic).trigger(onTrig).addReply(line);
-			}
-			else if (cmd.equals(CMD_PREVIOUS)) {
+			} else if (cmd.equals(CMD_PREVIOUS)) {
 				// % PREVIOUS
 				// This was handled above.
-			}
-			else if (cmd.equals(CMD_CONTINUE)) {
+			} else if (cmd.equals(CMD_CONTINUE)) {
 				// ^ CONTINUE
 				// This was handled above.
-			}
-			else if (cmd.equals(CMD_REDIRECT)) {
+			} else if (cmd.equals(CMD_REDIRECT)) {
 				// @ REDIRECT
 				say("\t@ REDIRECT: " + line);
 
@@ -971,8 +938,7 @@ public class RiveScript {
 				// Add the redirect to the trigger.
 				// TODO: this extends RiveScript, not compat w/ Perl yet
 				topics.topic(topic).trigger(onTrig).addRedirect(line);
-			}
-			else if (cmd.equals(CMD_CONDITION)) {
+			} else if (cmd.equals(CMD_CONDITION)) {
 				// * CONDITION
 				say("\t* CONDITION: " + line);
 
@@ -984,8 +950,7 @@ public class RiveScript {
 
 				// Add the condition to the trigger.
 				topics.topic(topic).trigger(onTrig).addCondition(line);
-			}
-			else {
+			} else {
 				cry("Unrecognized command \"" + cmd + "\"", filename, lineno);
 			}
 		}
@@ -998,10 +963,10 @@ public class RiveScript {
 	/*---------------------*/
 
 	/**
-	 * After loading replies into memory, call this method to (re)initialize
-	 * internal sort buffers. This is necessary for accurate trigger matching.
+	 * Sorts the replies. This should be called after loading the replies in memory
+	 * to (re)initialize internal sort buffers. This is necessary for accurate trigger matching.
 	 */
-	public void sortReplies () {
+	public void sortReplies() {
 		// We need to make sort buffers under each topic.
 		String[] topics = this.topics.listTopics();
 		say("There are " + topics.length + " topics to sort replies for.");
@@ -1010,8 +975,8 @@ public class RiveScript {
 		this.topics.sortReplies();
 
 		// Sort the substitutions.
-		subs_s = com.rivescript.Util.sortByLength (com.rivescript.Util.SSh2s(subs));
-		person_s = com.rivescript.Util.sortByLength (com.rivescript.Util.SSh2s(person));
+		subs_s = Util.sortByLength(Util.SSh2s(subs));
+		person_s = Util.sortByLength(Util.SSh2s(person));
 	}
 
 	/*---------------------*/
@@ -1019,46 +984,44 @@ public class RiveScript {
 	/*---------------------*/
 
 	/**
-	 * Get a reply from the RiveScript interpreter.
+	 * Returns a reply from the RiveScript interpreter.
 	 *
-	 * @param username A unique user ID for the user chatting with the bot.
+	 * @param username The unique user id for the user chatting with the bot.
 	 * @param message  The user's message to the bot.
 	 */
-	public String reply (String username, String message) {
+	public String reply(String username, String message) {
 		say("Get reply to [" + username + "] " + message);
 
 		// Store the current ID in case an object macro wants it.
 		this.currentUser = username;
 
 		// Format their message first.
-		message = formatMessage (message);
+		message = formatMessage(message);
 
 		// This will hold the final reply.
-		String reply = "";
+		String reply;
 
 		// If the BEGIN statement exists, consult it first.
 		if (topics.exists("__begin__")) {
-			String begin = this.reply (username, "request", true, 0);
+			String begin = this.reply(username, "request", true, 0);
 
 			// OK to continue?
 			if (begin.indexOf("{ok}") > -1) {
 				// Get a reply then.
-				reply = this.reply (username, message, false, 0);
+				reply = this.reply(username, message, false, 0);
 				begin = begin.replaceAll("\\{ok\\}", reply);
 				reply = begin;
-			}
-			else {
+			} else {
 				reply = begin;
 			}
 
 			// Run final substitutions.
-			reply = processTags (username, clients.client(username), message, reply,
-				new Vector<String>(), new Vector<String>(),
-				0);
-		}
-		else {
+			reply = processTags(username, clients.client(username), message, reply,
+					new Vector<String>(), new Vector<String>(),
+					0);
+		} else {
 			// No BEGIN, just continue.
-			reply = this.reply (username, message, false, 0);
+			reply = this.reply(username, message, false, 0);
 		}
 
 		// Save their chat history.
@@ -1080,16 +1043,16 @@ public class RiveScript {
 	 * @param begin   Whether the context is that we're in the BEGIN statement or not.
 	 * @param step    The recursion depth that we're at so far.
 	 */
-	private String reply (String user, String message, boolean begin, int step) {
+	private String reply(String user, String message, boolean begin, int step) {
 		/*-----------------------*/
 		/*-- Collect User Info --*/
 		/*-----------------------*/
 
-		String topic            = "random";             // Default topic = random
-		Vector<String> stars    = new Vector<String>(); // Wildcard matches
-		Vector<String> botstars = new Vector<String>(); // Wildcards in %Previous
-		String reply            = "";                   // The eventual reply
-		com.rivescript.Client profile;                  // The user's profile object
+		String topic = "random";                  // Default topic = random
+		Vector<String> stars = new Vector<>();    // Wildcard matches
+		Vector<String> botstars = new Vector<>(); // Wildcards in %Previous
+		String reply = "";                        // The eventual reply
+		Client profile;                           // The user's profile object
 
 		// Get the user's profile.
 		profile = clients.client(user);
@@ -1122,15 +1085,15 @@ public class RiveScript {
 		/*------------------*/
 
 		// Create a pointer for the matched data.
-		com.rivescript.Trigger matched = null;
-		boolean foundMatch     = false;
-		String  matchedTrigger = "";
+		Trigger matched = null;
+		boolean foundMatch = false;
+		String matchedTrigger = "";
 
 		// See if there are any %previous's in this topic, or any topic related to it. This
 		// should only be done the first time -- not during a recursive redirection.
 		if (step == 0) {
 			say("Looking for a %Previous");
-			String[] allTopics = { topic };
+			String[] allTopics = {topic};
 			if (this.topics.topic(topic).includes().length > 0 || this.topics.topic(topic).inherits().length > 0) {
 				// We need to walk the topic tree.
 				allTopics = this.topics.getTopicTree(topic, 0);
@@ -1148,12 +1111,12 @@ public class RiveScript {
 
 						// Try to match the bot's last reply against this.
 						String lastReply = formatMessage(profile.getReply(1));
-						String regexp    = triggerRegexp(user, profile, previous[j]);
+						String regexp = triggerRegexp(user, profile, previous[j]);
 						say("Compare " + lastReply + " <=> " + previous[j] + " (" + regexp + ")");
 
 						// Does it match?
 						Pattern re = Pattern.compile("^" + regexp + "$");
-						Matcher m  = re.matcher(lastReply);
+						Matcher m = re.matcher(lastReply);
 						while (m.find() == true) {
 							say("OMFG the lastReply matches!");
 
@@ -1171,7 +1134,7 @@ public class RiveScript {
 								say("Compare " + message + " <=> " + candidates[k] + " (" + humanside + ")");
 
 								Pattern reH = Pattern.compile("^" + humanside + "$");
-								Matcher mH  = reH.matcher(message);
+								Matcher mH = reH.matcher(message);
 								while (mH.find() == true) {
 									say("It's a match!!!");
 
@@ -1218,7 +1181,7 @@ public class RiveScript {
 
 				// Is it a match?
 				Pattern re = Pattern.compile("^" + regexp + "$");
-				Matcher m  = re.matcher(message);
+				Matcher m = re.matcher(message);
 				if (m.find() == true) {
 					say("The trigger matches! Star count: " + m.groupCount());
 
@@ -1234,8 +1197,7 @@ public class RiveScript {
 					if (this.topics.topic(topic).triggerExists(trigger)) {
 						// No, the trigger does belong to us.
 						matched = this.topics.topic(topic).trigger(trigger);
-					}
-					else {
+					} else {
 						say("Trigger doesn't exist under this topic, trying to find it!");
 						matched = this.topics.findTriggerByInheritance(topic, trigger, 0);
 					}
@@ -1282,19 +1244,19 @@ public class RiveScript {
 						// Separate the condition from the potential reply.
 						String[] halves = conditions[c].split("\\s*=>\\s*");
 						String condition = halves[0].trim();
-						String potreply  = halves[1].trim();
+						String potreply = halves[1].trim();
 
 						// Split up the condition.
 						Pattern reCond = Pattern.compile("^(.+?)\\s+(==|eq|\\!=|ne|<>|<|<=|>|>=)\\s+(.+?)$");
-						Matcher mCond  = reCond.matcher(condition);
+						Matcher mCond = reCond.matcher(condition);
 						while (mCond.find()) {
-							String left  = mCond.group(1).trim();
-							String eq    = mCond.group(2).trim();
+							String left = mCond.group(1).trim();
+							String eq = mCond.group(2).trim();
 							String right = mCond.group(3).trim();
 
 							// Process tags on both halves.
-							left = processTags(user, profile, message, left, stars, botstars, step+1);
-							right = processTags(user, profile, message, right, stars, botstars, step+1);
+							left = processTags(user, profile, message, left, stars, botstars, step + 1);
+							right = processTags(user, profile, message, right, stars, botstars, step + 1);
 							say("Compare: " + left + " " + eq + " " + right);
 
 							// Defaults
@@ -1311,8 +1273,7 @@ public class RiveScript {
 								if ((eq.equals("eq") || eq.equals("==")) && left.equals(right)) {
 									truth = true;
 									break;
-								}
-								else if ((eq.equals("ne") || eq.equals("!=") || eq.equals("<>")) && !left.equals(right)) {
+								} else if ((eq.equals("ne") || eq.equals("!=") || eq.equals("<>")) && !left.equals(right)) {
 									truth = true;
 									break;
 								}
@@ -1337,25 +1298,20 @@ public class RiveScript {
 								if (eq.equals("==") && lt == rt) {
 									truth = true;
 									break;
-								}
-								else if ((eq.equals("!=") || eq.equals("<>")) && lt != rt) {
+								} else if ((eq.equals("!=") || eq.equals("<>")) && lt != rt) {
 									truth = true;
 									break;
 								}
-							}
-							else if (eq.equals("<") && lt < rt) {
+							} else if (eq.equals("<") && lt < rt) {
 								truth = true;
 								break;
-							}
-							else if (eq.equals("<=") && lt <= rt) {
+							} else if (eq.equals("<=") && lt <= rt) {
 								truth = true;
 								break;
-							}
-							else if (eq.equals(">") && lt > rt) {
+							} else if (eq.equals(">") && lt > rt) {
 								truth = true;
 								break;
-							}
-							else if (eq.equals(">=") && lt >= rt) {
+							} else if (eq.equals(">=") && lt >= rt) {
 								truth = true;
 								break;
 							}
@@ -1376,10 +1332,10 @@ public class RiveScript {
 
 				// Return one of the replies at random. We lump any redirects in as well.
 				String[] redirects = trigger.listRedirects();
-				String[] replies   = trigger.listReplies();
+				String[] replies = trigger.listReplies();
 
 				// Take into account their weights.
-				Vector<Integer> bucket = new Vector<Integer>();
+				Vector<Integer> bucket = new Vector<>();
 				Pattern reWeight = Pattern.compile("\\{weight=(\\d+?)\\}");
 
 				// Look at weights on redirects.
@@ -1395,8 +1351,7 @@ public class RiveScript {
 									say("Trigger has a redirect (weight " + weight + "): " + redirects[i]);
 									bucket.add(i);
 								}
-							}
-							else {
+							} else {
 								say("Trigger has a redirect (weight " + weight + "): " + redirects[i]);
 								bucket.add(i);
 							}
@@ -1404,8 +1359,7 @@ public class RiveScript {
 							// Only one weight is supported.
 							break;
 						}
-					}
-					else {
+					} else {
 						say("Trigger has a redirect: " + redirects[i]);
 						bucket.add(i);
 					}
@@ -1424,8 +1378,7 @@ public class RiveScript {
 									say("Trigger has a reply (weight " + weight + "): " + replies[i]);
 									bucket.add(redirects.length + i);
 								}
-							}
-							else {
+							} else {
 								say("Trigger has a reply (weight " + weight + "): " + replies[i]);
 								bucket.add(redirects.length + i);
 							}
@@ -1433,26 +1386,24 @@ public class RiveScript {
 							// Only one weight is supported.
 							break;
 						}
-					}
-					else {
+					} else {
 						say("Trigger has a reply: " + replies[i]);
 						bucket.add(redirects.length + i);
 					}
 				}
 
 				// Pull a random value out.
-				int[] choices = com.rivescript.Util.Iv2s(bucket);
+				int[] choices = Util.Iv2s(bucket);
 				if (choices.length > 0) {
-					int choice = choices [ rand.nextInt(choices.length) ];
+					int choice = choices[rand.nextInt(choices.length)];
 					say("Possible choices: " + choices.length + "; chosen: " + choice);
 					if (choice < redirects.length) {
 						// The choice was a redirect!
-						String redirect = redirects[choice].replaceAll("\\{weight=\\d+\\}","");
-						redirect = processTags (user, profile, message, redirect, stars, botstars, step);
+						String redirect = redirects[choice].replaceAll("\\{weight=\\d+\\}", "");
+						redirect = processTags(user, profile, message, redirect, stars, botstars, step);
 						say("Chosen a redirect to " + redirect + "!");
-						reply = reply(user, redirect, begin, step+1);
-					}
-					else {
+						reply = reply(user, redirect, begin, step + 1);
+					} else {
 						// The choice was a reply!
 						choice -= redirects.length;
 						if (choice < replies.length) {
@@ -1467,8 +1418,7 @@ public class RiveScript {
 		// Still no reply?
 		if (!foundMatch) {
 			reply = "ERR: No Reply Matched";
-		}
-		else if (reply.length() == 0) {
+		} else if (reply.length() == 0) {
 			reply = "ERR: No Reply Found";
 		}
 
@@ -1480,10 +1430,10 @@ public class RiveScript {
 			// <set> tag
 			if (reply.indexOf("<set") > -1) {
 				Pattern reSet = Pattern.compile("<set (.+?)=(.+?)>");
-				Matcher mSet  = reSet.matcher(reply);
+				Matcher mSet = reSet.matcher(reply);
 				while (mSet.find()) {
-					String tag   = mSet.group(0);
-					String var   = mSet.group(1);
+					String tag = mSet.group(0);
+					String var = mSet.group(1);
 					String value = mSet.group(2);
 
 					// Set the uservar.
@@ -1495,19 +1445,18 @@ public class RiveScript {
 			// {topic} tag
 			if (reply.indexOf("{topic=") > -1) {
 				Pattern reTopic = Pattern.compile("\\{topic=(.+?)\\}");
-				Matcher mTopic  = reTopic.matcher(reply);
+				Matcher mTopic = reTopic.matcher(reply);
 				while (mTopic.find()) {
 					String tag = mTopic.group(0);
-					topic      = mTopic.group(1);
+					topic = mTopic.group(1);
 					say("Set user's topic to: " + topic);
 					profile.set("topic", topic);
 					reply = reply.replace(tag, "");
 				}
 			}
-		}
-		else {
+		} else {
 			// Process tags.
-			reply = processTags (user, profile, message, reply, stars, botstars, step);
+			reply = processTags(user, profile, message, reply, stars, botstars, step);
 		}
 
 		return reply;
@@ -1516,24 +1465,24 @@ public class RiveScript {
 	/**
 	 * Formats a trigger for the regular expression engine.
 	 *
-	 * @param user    The user ID of the caller.
+	 * @param user    The user id of the caller.
 	 * @param trigger The raw trigger text.
 	 */
-	private String triggerRegexp (String user, com.rivescript.Client profile, String trigger) {
+	private String triggerRegexp(String user, Client profile, String trigger) {
 		// If the trigger is simply '*', it needs to become (.*?) so it catches the empty string.
 		String regexp = trigger.replaceAll("^\\*$", "<zerowidthstar>");
 
 		// Simple regexps are simple.
 		regexp = regexp.replaceAll("\\*", "(.+?)");             // *  ->  (.+?)
-		regexp = regexp.replaceAll("#",   "(\\\\d+?)");         // #  ->  (\d+?)
-		regexp = regexp.replaceAll("_",   "(\\\\w+?)");     // _  ->  ([A-Za-z ]+?)
+		regexp = regexp.replaceAll("#", "(\\\\d+?)");         // #  ->  (\d+?)
+		regexp = regexp.replaceAll("_", "(\\\\w+?)");     // _  ->  ([A-Za-z ]+?)
 		regexp = regexp.replaceAll("\\{weight=\\d+\\}", "");    // Remove {weight} tags
 		regexp = regexp.replaceAll("<zerowidthstar>", "(.*?)"); // *  ->  (.*?)
 
 		// Handle optionals.
 		if (regexp.indexOf("[") > -1) {
 			Pattern reOpts = Pattern.compile("\\s*\\[(.+?)\\]\\s*");
-			Matcher mOpts  = reOpts.matcher(regexp);
+			Matcher mOpts = reOpts.matcher(regexp);
 			while (mOpts.find() == true) {
 				String optional = mOpts.group(0);
 				String contents = mOpts.group(1);
@@ -1571,14 +1520,14 @@ public class RiveScript {
 		if (regexp.indexOf("@") > -1) {
 			// Match the array's name.
 			Pattern reArray = Pattern.compile("\\@(.+?)\\b");
-			Matcher mArray  = reArray.matcher(regexp);
+			Matcher mArray = reArray.matcher(regexp);
 			while (mArray.find() == true) {
 				String array = mArray.group(0);
-				String name  = mArray.group(1);
+				String name = mArray.group(1);
 
 				// Do we have an array by this name?
 				if (arrays.containsKey(name)) {
-					String[] values = com.rivescript.Util.Sv2s(arrays.get(name));
+					String[] values = Util.Sv2s(arrays.get(name));
 					StringBuffer joined = new StringBuffer();
 
 					// Join the array.
@@ -1592,8 +1541,7 @@ public class RiveScript {
 					// Final contents...
 					String rep = "(?:" + joined.toString() + ")";
 					regexp = regexp.replace(array, rep);
-				}
-				else {
+				} else {
 					// No array by this name.
 					regexp = regexp.replace(array, "");
 				}
@@ -1603,17 +1551,16 @@ public class RiveScript {
 		// Filter in bot variables.
 		if (regexp.indexOf("<bot") > -1) {
 			Pattern reBot = Pattern.compile("<bot (.+?)>");
-			Matcher mBot  = reBot.matcher(regexp);
+			Matcher mBot = reBot.matcher(regexp);
 			while (mBot.find()) {
 				String tag = mBot.group(0);
 				String var = mBot.group(1);
-				String value = vars.get(var).toLowerCase().replace("[^a-z0-9 ]+","");
+				String value = vars.get(var).toLowerCase().replace("[^a-z0-9 ]+", "");
 
 				// Have this?
 				if (vars.containsKey(var)) {
 					regexp = regexp.replace(tag, value);
-				}
-				else {
+				} else {
 					regexp = regexp.replace(tag, "undefined");
 				}
 			}
@@ -1622,11 +1569,11 @@ public class RiveScript {
 		// Filter in user variables.
 		if (regexp.indexOf("<get") > -1) {
 			Pattern reGet = Pattern.compile("<get (.+?)>");
-			Matcher mGet  = reGet.matcher(regexp);
+			Matcher mGet = reGet.matcher(regexp);
 			while (mGet.find()) {
 				String tag = mGet.group(0);
 				String var = mGet.group(1);
-				String value = profile.get(var).toLowerCase().replaceAll("[^a-z0-9 ]+","");
+				String value = profile.get(var).toLowerCase().replaceAll("[^a-z0-9 ]+", "");
 
 				// Have this?
 				regexp = regexp.replace(tag, value);
@@ -1638,22 +1585,22 @@ public class RiveScript {
 		regexp = regexp.replaceAll("<reply>", "<reply1>");
 		if (regexp.indexOf("<input") > -1) {
 			Pattern reInput = Pattern.compile("<input([0-9])>");
-			Matcher mInput  = reInput.matcher(regexp);
+			Matcher mInput = reInput.matcher(regexp);
 			while (mInput.find()) {
-				String tag   = mInput.group(0);
-				int    index = Integer.parseInt(mInput.group(1));
-				String text  = profile.getInput(index).toLowerCase().replaceAll("[^a-z0-9 ]+","");
-				regexp       = regexp.replace(tag, text);
+				String tag = mInput.group(0);
+				int index = Integer.parseInt(mInput.group(1));
+				String text = profile.getInput(index).toLowerCase().replaceAll("[^a-z0-9 ]+", "");
+				regexp = regexp.replace(tag, text);
 			}
 		}
 		if (regexp.indexOf("<reply") > -1) {
 			Pattern reReply = Pattern.compile("<reply([0-9])>");
-			Matcher mReply  = reReply.matcher(regexp);
+			Matcher mReply = reReply.matcher(regexp);
 			while (mReply.find()) {
-				String tag   = mReply.group(0);
-				int    index = Integer.parseInt(mReply.group(1));
-				String text  = profile.getReply(index).toLowerCase().replaceAll("[^a-z0-9 ]+","");
-				regexp       = regexp.replace(tag, text);
+				String tag = mReply.group(0);
+				int index = Integer.parseInt(mReply.group(1));
+				String text = profile.getReply(index).toLowerCase().replaceAll("[^a-z0-9 ]+", "");
+				regexp = regexp.replace(tag, text);
 			}
 		}
 
@@ -1663,16 +1610,16 @@ public class RiveScript {
 	/**
 	 * Process reply tags.
 	 *
-	 * @param user     The name of the end user.
-	 * @param profile  The RiveScript client object holding the user's profile
-	 * @param message  The message sent by the user.
-	 * @param reply    The bot's original reply including tags.
-	 * @param stars    The vector of wildcards the user's message matched.
-	 * @param botstars The vector of wildcards in any %Previous.
-	 * @param step     The current recursion depth limit.
+	 * @param user      The name of the end user.
+	 * @param profile   The RiveScript client object holding the user's profile
+	 * @param message   The message sent by the user.
+	 * @param reply     The bot's original reply including tags.
+	 * @param vstars    The vector of wildcards the user's message matched.
+	 * @param vbotstars The vector of wildcards in any @{code %Previous}.
+	 * @param step      The current recursion depth limit.
 	 */
-	private String processTags (String user, com.rivescript.Client profile,
-	String message, String reply, Vector<String> vstars, Vector<String> vbotstars, int step) {
+	private String processTags(String user, Client profile, String message, String reply,
+			Vector<String> vstars, Vector<String> vbotstars, int step) {
 		// Pad the stars.
 		vstars.add(0, "");
 		vbotstars.add(0, "");
@@ -1686,14 +1633,14 @@ public class RiveScript {
 		}
 
 		// Convert the stars into simple arrays.
-		String[] stars    = com.rivescript.Util.Sv2s(vstars);
-		String[] botstars = com.rivescript.Util.Sv2s(vbotstars);
+		String[] stars = Util.Sv2s(vstars);
+		String[] botstars = Util.Sv2s(vbotstars);
 
 		// Shortcut tags.
-		reply = reply.replaceAll("<person>",    "{person}<star>{/person}");
-		reply = reply.replaceAll("<@>",         "{@<star>}");
-		reply = reply.replaceAll("<formal>",    "{formal}<star>{/formal}");
-		reply = reply.replaceAll("<sentence>",  "{sentence}<star>{/sentence}");
+		reply = reply.replaceAll("<person>", "{person}<star>{/person}");
+		reply = reply.replaceAll("<@>", "{@<star>}");
+		reply = reply.replaceAll("<formal>", "{formal}<star>{/formal}");
+		reply = reply.replaceAll("<sentence>", "{sentence}<star>{/sentence}");
 		reply = reply.replaceAll("<uppercase>", "{uppercase}<star>{/uppercase}");
 		reply = reply.replaceAll("<lowercase>", "{lowercase}<star>{/lowercase}");
 
@@ -1721,33 +1668,33 @@ public class RiveScript {
 		// Input and reply tags.
 		if (reply.indexOf("<input") > -1) {
 			Pattern reInput = Pattern.compile("<input([0-9])>");
-			Matcher mInput  = reInput.matcher(reply);
+			Matcher mInput = reInput.matcher(reply);
 			while (mInput.find()) {
-				String tag   = mInput.group(0);
-				int    index = Integer.parseInt(mInput.group(1));
-				String text  = profile.getInput(index).toLowerCase().replaceAll("[^a-z0-9 ]+","");
-				reply        = reply.replace(tag, text);
+				String tag = mInput.group(0);
+				int index = Integer.parseInt(mInput.group(1));
+				String text = profile.getInput(index).toLowerCase().replaceAll("[^a-z0-9 ]+", "");
+				reply = reply.replace(tag, text);
 			}
 		}
 		if (reply.indexOf("<reply") > -1) {
 			Pattern reReply = Pattern.compile("<reply([0-9])>");
-			Matcher mReply  = reReply.matcher(reply);
+			Matcher mReply = reReply.matcher(reply);
 			while (mReply.find()) {
-				String tag   = mReply.group(0);
-				int    index = Integer.parseInt(mReply.group(1));
-				String text  = profile.getReply(index).toLowerCase().replaceAll("[^a-z0-9 ]+","");
-				reply        = reply.replace(tag, text);
+				String tag = mReply.group(0);
+				int index = Integer.parseInt(mReply.group(1));
+				String text = profile.getReply(index).toLowerCase().replaceAll("[^a-z0-9 ]+", "");
+				reply = reply.replace(tag, text);
 			}
 		}
 
 		// {random} tag
 		if (reply.indexOf("{random}") > -1) {
 			Pattern reRandom = Pattern.compile("\\{random\\}(.+?)\\{\\/random\\}");
-			Matcher mRandom  = reRandom.matcher(reply);
+			Matcher mRandom = reRandom.matcher(reply);
 			while (mRandom.find()) {
-				String tag          = mRandom.group(0);
+				String tag = mRandom.group(0);
 				String[] candidates = mRandom.group(1).split("\\|");
-				String chosen = candidates [ rand.nextInt(candidates.length) ];
+				String chosen = candidates[rand.nextInt(candidates.length)];
 				reply = reply.replace(tag, chosen);
 			}
 		}
@@ -1755,7 +1702,7 @@ public class RiveScript {
 		// <bot> tag
 		if (reply.indexOf("<bot") > -1) {
 			Pattern reBot = Pattern.compile("<bot (.+?)>");
-			Matcher mBot  = reBot.matcher(reply);
+			Matcher mBot = reBot.matcher(reply);
 			while (mBot.find()) {
 				String tag = mBot.group(0);
 				String var = mBot.group(1);
@@ -1773,8 +1720,7 @@ public class RiveScript {
 				// Have this?
 				if (vars.containsKey(var)) {
 					reply = reply.replace(tag, vars.get(var));
-				}
-				else {
+				} else {
 					reply = reply.replace(tag, "undefined");
 				}
 			}
@@ -1783,7 +1729,7 @@ public class RiveScript {
 		// <env> tag
 		if (reply.indexOf("<env") > -1) {
 			Pattern reEnv = Pattern.compile("<env (.+?)>");
-			Matcher mEnv  = reEnv.matcher(reply);
+			Matcher mEnv = reEnv.matcher(reply);
 			while (mEnv.find()) {
 				String tag = mEnv.group(0);
 				String var = mEnv.group(1);
@@ -1801,8 +1747,7 @@ public class RiveScript {
 				// Have this?
 				if (globals.containsKey(var)) {
 					reply = reply.replace(tag, globals.get(var));
-				}
-				else {
+				} else {
 					reply = reply.replace(tag, "undefined");
 				}
 			}
@@ -1811,7 +1756,7 @@ public class RiveScript {
 		// {!stream} tag
 		if (reply.indexOf("{!") > -1) {
 			Pattern reStream = Pattern.compile("\\{\\!(.+?)\\}");
-			Matcher mStream  = reStream.matcher(reply);
+			Matcher mStream = reStream.matcher(reply);
 			while (mStream.find()) {
 				String tag = mStream.group(0);
 				String code = mStream.group(1);
@@ -1826,14 +1771,14 @@ public class RiveScript {
 		// {person}
 		if (reply.indexOf("{person}") > -1) {
 			Pattern rePerson = Pattern.compile("\\{person\\}(.+?)\\{\\/person\\}");
-			Matcher mPerson  = rePerson.matcher(reply);
+			Matcher mPerson = rePerson.matcher(reply);
 			while (mPerson.find()) {
-				String tag  = mPerson.group(0);
+				String tag = mPerson.group(0);
 				String text = mPerson.group(1);
 
 				// Run person substitutions.
 				say("Run person substitutions: before: " + text);
-				text = com.rivescript.Util.substitute(person_s, person, text);
+				text = Util.substitute(person_s, person, text);
 				say("After: " + text);
 				reply = reply.replace(tag, text);
 			}
@@ -1841,13 +1786,13 @@ public class RiveScript {
 
 		// {formal,uppercase,lowercase,sentence} tags
 		if (reply.indexOf("{formal}") > -1 || reply.indexOf("{sentence}") > -1 ||
-		reply.indexOf("{uppercase}") > -1 || reply.indexOf("{lowercase}") > -1) {
-			String[] tags = { "formal", "sentence", "uppercase", "lowercase" };
+				reply.indexOf("{uppercase}") > -1 || reply.indexOf("{lowercase}") > -1) {
+			String[] tags = {"formal", "sentence", "uppercase", "lowercase"};
 			for (int i = 0; i < tags.length; i++) {
 				Pattern reTag = Pattern.compile("\\{" + tags[i] + "\\}(.+?)\\{\\/" + tags[i] + "\\}");
-				Matcher mTag  = reTag.matcher(reply);
+				Matcher mTag = reTag.matcher(reply);
 				while (mTag.find()) {
-					String tag  = mTag.group(0);
+					String tag = mTag.group(0);
 					String text = mTag.group(1);
 
 					// String transform.
@@ -1860,10 +1805,10 @@ public class RiveScript {
 		// <set> tag
 		if (reply.indexOf("<set") > -1) {
 			Pattern reSet = Pattern.compile("<set (.+?)=(.+?)>");
-			Matcher mSet  = reSet.matcher(reply);
+			Matcher mSet = reSet.matcher(reply);
 			while (mSet.find()) {
-				String tag   = mSet.group(0);
-				String var   = mSet.group(1);
+				String tag = mSet.group(0);
+				String var = mSet.group(1);
 				String value = mSet.group(2);
 
 				// Set the uservar.
@@ -1875,14 +1820,14 @@ public class RiveScript {
 
 		// <add, sub, mult, div> tags
 		if (reply.indexOf("<add") > -1 || reply.indexOf("<sub") > -1 ||
-		reply.indexOf("<mult") > -1 || reply.indexOf("<div") > -1) {
-			String[] tags = { "add", "sub", "mult", "div" };
+				reply.indexOf("<mult") > -1 || reply.indexOf("<div") > -1) {
+			String[] tags = {"add", "sub", "mult", "div"};
 			for (int i = 0; i < tags.length; i++) {
 				Pattern reTag = Pattern.compile("<" + tags[i] + " (.+?)=(.+?)>");
-				Matcher mTag  = reTag.matcher(reply);
+				Matcher mTag = reTag.matcher(reply);
 				while (mTag.find()) {
-					String tag   = mTag.group(0);
-					String var   = mTag.group(1);
+					String tag = mTag.group(0);
+					String var = mTag.group(1);
 					String value = mTag.group(2);
 
 					// Get the user var.
@@ -1911,14 +1856,11 @@ public class RiveScript {
 					// Run the operation.
 					if (tags[i].equals("add")) {
 						current += modifier;
-					}
-					else if (tags[i].equals("sub")) {
+					} else if (tags[i].equals("sub")) {
 						current -= modifier;
-					}
-					else if (tags[i].equals("mult")) {
+					} else if (tags[i].equals("mult")) {
 						current *= modifier;
-					}
-					else {
+					} else {
 						// Don't divide by zero.
 						if (modifier == 0) {
 							reply = reply.replace(tag, "[ERR: Can't divide by zero!]");
@@ -1937,7 +1879,7 @@ public class RiveScript {
 		// <get> tag
 		if (reply.indexOf("<get") > -1) {
 			Pattern reGet = Pattern.compile("<get (.+?)>");
-			Matcher mGet  = reGet.matcher(reply);
+			Matcher mGet = reGet.matcher(reply);
 			while (mGet.find()) {
 				String tag = mGet.group(0);
 				String var = mGet.group(1);
@@ -1950,9 +1892,9 @@ public class RiveScript {
 		// {topic} tag
 		if (reply.indexOf("{topic=") > -1) {
 			Pattern reTopic = Pattern.compile("\\{topic=(.+?)\\}");
-			Matcher mTopic  = reTopic.matcher(reply);
+			Matcher mTopic = reTopic.matcher(reply);
 			while (mTopic.find()) {
-				String tag   = mTopic.group(0);
+				String tag = mTopic.group(0);
 				String topic = mTopic.group(1);
 				say("Set user's topic to: " + topic);
 				profile.set("topic", topic);
@@ -1963,13 +1905,13 @@ public class RiveScript {
 		// {@redirect} tag
 		if (reply.indexOf("{@") > -1) {
 			Pattern reRed = Pattern.compile("\\{@([^\\}]*?)\\}");
-			Matcher mRed  = reRed.matcher(reply);
+			Matcher mRed = reRed.matcher(reply);
 			while (mRed.find()) {
-				String tag    = mRed.group(0);
+				String tag = mRed.group(0);
 				String target = mRed.group(1).trim();
 
 				// Do the reply redirect.
-				String subreply = this.reply(user, target, false, step+1);
+				String subreply = this.reply(user, target, false, step + 1);
 				reply = reply.replace(tag, subreply);
 			}
 		}
@@ -1977,7 +1919,7 @@ public class RiveScript {
 		// <call> tag
 		if (reply.indexOf("<call>") > -1) {
 			Pattern reCall = Pattern.compile("<call>(.+?)<\\/call>");
-			Matcher mCall  = reCall.matcher(reply);
+			Matcher mCall = reCall.matcher(reply);
 			while (mCall.find()) {
 				String tag = mCall.group(0);
 				String data = mCall.group(1);
@@ -1992,10 +1934,9 @@ public class RiveScript {
 				if (objects.containsKey(name)) {
 					// What language handles it?
 					String lang = objects.get(name);
-					String result = handlers.get(lang).onCall(name, user, com.rivescript.Util.Sv2s(args));
+					String result = handlers.get(lang).onCall(name, user, Util.Sv2s(args));
 					reply = reply.replace(tag, result);
-				}
-				else {
+				} else {
 					reply = reply.replace(tag, "[ERR: Object Not Found]");
 				}
 			}
@@ -2005,19 +1946,17 @@ public class RiveScript {
 	}
 
 	/**
-	 * Reformats a string in a certain way: formal, uppercase, lowercase, sentence.
+	 * Reformats a {@link String} in a certain way: formal, uppercase, lowercase, sentence.
 	 *
 	 * @param format The format you want the string in.
 	 * @param text   The text to format.
 	 */
-	private String stringTransform (String format, String text) {
+	private String stringTransform(String format, String text) {
 		if (format.equals("uppercase")) {
 			return text.toUpperCase();
-		}
-		else if (format.equals("lowercase")) {
+		} else if (format.equals("lowercase")) {
 			return text.toLowerCase();
-		}
-		else if (format.equals("formal")) {
+		} else if (format.equals("formal")) {
 			// Capitalize Each First Letter
 			String[] words = text.split(" ");
 			say("wc: " + words.length);
@@ -2027,37 +1966,35 @@ public class RiveScript {
 				say("cc: " + letters.length);
 				if (letters.length > 1) {
 					letters[0] = letters[0].toUpperCase();
-					words[i] = com.rivescript.Util.join(letters, "");
+					words[i] = Util.join(letters, "");
 					say("new word: " + words[i]);
 				}
 			}
-			return com.rivescript.Util.join(words, " ");
-		}
-		else if (format.equals("sentence")) {
+			return Util.join(words, " ");
+		} else if (format.equals("sentence")) {
 			// Uppercase the first letter of the first word.
 			String[] letters = text.split("");
 			if (letters.length > 1) {
 				letters[0] = letters[0].toUpperCase();
 			}
-			return com.rivescript.Util.join(letters, "");
-		}
-		else {
+			return Util.join(letters, "");
+		} else {
 			return "[ERR: Unknown String Transform " + format + "]";
 		}
 	}
 
 	/**
-	 * Format the user's message to begin reply matching. Lowercases it, runs substitutions,
+	 * Formats the user's message to begin reply matching. Lowercases it, runs substitutions,
 	 * and neutralizes what's left.
 	 *
 	 * @param message The input message to format.
 	 */
-	private String formatMessage (String message) {
+	private String formatMessage(String message) {
 		// Lowercase it first.
 		message = message.toLowerCase();
 
 		// Run substitutions.
-		message = com.rivescript.Util.substitute(subs_s, subs, message);
+		message = Util.substitute(subs_s, subs, message);
 
 		// Sanitize what's left.
 		message = message.replaceAll("[^a-z0-9 ]", "");
@@ -2069,7 +2006,7 @@ public class RiveScript {
 	/*-----------------------*/
 
 	/**
-	 * DEVELOPER: Dump the trigger sort buffers to the terminal.
+	 * DEVELOPER: Dumps the trigger sort buffers to the terminal.
 	 */
 	public void dumpSorted() {
 		String[] topics = this.topics.listTopics();
@@ -2086,9 +2023,9 @@ public class RiveScript {
 	}
 
 	/**
-	 * DEVELOPER: Dump the entire topic/trigger/reply structure to the terminal.
+	 * DEVELOPER: Dumps the entire topic/trigger/reply structure to the terminal.
 	 */
-	public void dumpTopics () {
+	public void dumpTopics() {
 		// Dump the topic list.
 		println("{");
 		String[] topicList = topics.listTopics();
@@ -2160,47 +2097,47 @@ public class RiveScript {
 	/*-- Debug Methods --*/
 	/*-------------------*/
 
-	protected void println (String line) {
+	protected void println(String line) {
 		System.out.println(line);
 	}
 
 	/**
-	 * Print a line of debug text to the terminal.
+	 * Prints a line of debug text to the terminal.
 	 *
 	 * @param line The line of text to print.
 	 */
-	protected void say (String line) {
+	protected void say(String line) {
 		if (this.debug) {
 			System.out.println("[RS] " + line);
 		}
 	}
 
 	/**
-	 * Print a line of warning text to the terminal.
+	 * Prints a line of warning text to the terminal.
 	 *
 	 * @param line The line of warning text.
 	 */
-	protected void cry (String line) {
+	protected void cry(String line) {
 		System.out.println("<RS> " + line);
 	}
 
 	/**
-	 * Print a line of warning text including a file name and line number.
+	 * Prints a line of warning text including a file name and line number.
 	 *
 	 * @param text The warning text.
 	 * @param file The file name.
 	 * @param line The line number.
 	 */
-	protected void cry (String text, String file, int line) {
+	protected void cry(String text, String file, int line) {
 		System.out.println("<RS> " + text + " at " + file + " line " + line + ".");
 	}
 
 	/**
-	 * Print a stack trace to the terminal when debug mode is on.
+	 * Prints a stack trace to the terminal when debug mode is on.
 	 *
 	 * @param e The IOException object.
 	 */
-	protected void trace (IOException e) {
+	protected void trace(IOException e) {
 		if (this.debug) {
 			e.printStackTrace();
 		}
