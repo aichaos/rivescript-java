@@ -10,11 +10,11 @@ cache:
   - $HOME/.m2
 env:
   global:
+  # SIGNING_KEY
+  - secure:
+  # SIGNING_PASSWORD
+  - secure:
   # SONATYPE_OSSRH_USERNAME
   - secure:
   # SONATYPE_OSSRH_PASSWORD
-  - secure:
-  # SIGNING_KEY
-  - secure:
-  # SIGNING_PASSPHRASE
   - secure:
