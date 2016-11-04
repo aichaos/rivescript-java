@@ -66,16 +66,10 @@ import java.util.regex.Pattern;
 public class RiveScript {
 
 	// Private class variables.
-	private boolean debug = false;        // Debug mode
-	private int depth = 50;           // Recursion depth limit
-	private String error = "";           // Last error text
+	private boolean debug = false;             // Debug mode
+	private int depth = 50;                    // Recursion depth limit
+	private String error = "";                 // Last error text
 	private static Random rand = new Random(); // A random number generator
-
-	// Module version
-	/**
-	 * The version of the RiveScript Java library.
-	 */
-	public static final String VERSION = "0.7.0-SNAPSHOT"; // TODO should be retrieved from manifest file
 
 	// Constant RiveScript command symbols.
 	private static final double RS_VERSION = 2.0; // This implements RiveScript 2.0
@@ -97,17 +91,17 @@ public class RiveScript {
 
 	// Object handlers
 	private HashMap<String, ObjectHandler> handlers = new HashMap<>();
-	private HashMap<String, String> objects = new HashMap<>(); // name->language mappers
+	private HashMap<String, String> objects = new HashMap<>();        // name->language mappers
 
 	// Simpler internal data structures.
-	private Vector<String> vTopics = new Vector<>(); // vector containing topic list (for quicker lookups)
-	private HashMap<String, String> globals = new HashMap<>(); // ! global
-	private HashMap<String, String> vars = new HashMap<>(); // ! var
+	private Vector<String> vTopics = new Vector<>();                  // vector containing topic list (for quicker lookups)
+	private HashMap<String, String> globals = new HashMap<>();        // ! global
+	private HashMap<String, String> vars = new HashMap<>();           // ! var
 	private HashMap<String, Vector<String>> arrays = new HashMap<>(); // ! array
-	private HashMap<String, String> subs = new HashMap<>(); // ! sub
-	private String[] subs_s = null;            // sorted subs
-	private HashMap<String, String> person = new HashMap<>(); // ! person
-	private String[] person_s = null;            // sorted persons
+	private HashMap<String, String> subs = new HashMap<>();           // ! sub
+	private String[] subs_s = null;                                   // sorted subs
+	private HashMap<String, String> person = new HashMap<>();         // ! person
+	private String[] person_s = null;                                 // sorted persons
 
 	// The current user ID when reply() is called.
 	private String currentUser = null;
@@ -2141,5 +2135,16 @@ public class RiveScript {
 		if (this.debug) {
 			e.printStackTrace();
 		}
+	}
+
+	/**
+	 * Return the full version string of the present RiveScript Java codebase,
+	 * or {@code null} if it cannot be determined.
+	 *
+	 * @see Package#getImplementationVersion()
+	 */
+	public static String getVersion() {
+		Package pkg = RiveScript.class.getPackage();
+		return (pkg != null ? pkg.getImplementationVersion() : null);
 	}
 }

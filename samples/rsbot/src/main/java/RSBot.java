@@ -26,6 +26,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.lang.String;
 import com.rivescript.RiveScript;
+import com.rivescript.lang.Perl;
 
 /**
  * @author Noah Petherbridge
@@ -36,7 +37,7 @@ public class RSBot {
 		System.out.println(""
 			+ "      .   .       \n"
 			+ "     .:...::      RiveScript Java // RSBot\n"
-			+ "    .::   ::.     Version: " + com.rivescript.RiveScript.VERSION + "\n"
+			+ "    .::   ::.     Version: " + RiveScript.getVersion() + "\n"
 			+ " ..:;;. ' .;;:..  \n"
 			+ "    .  '''  .     Type '/quit' to quit.\n"
 			+ "     :;,:,;:      Type '/help' for more options.\n"
@@ -57,7 +58,7 @@ public class RSBot {
 
 		// Create a handler for Perl as an object macro language.
 		File rsp4jFile = new File(RSBot.class.getClassLoader().getResource("lang/rsp4j.pl").getFile());
-		rs.setHandler("perl", new com.rivescript.lang.Perl(rs, rsp4jFile.getAbsolutePath()));
+		rs.setHandler("perl", new Perl(rs, rsp4jFile.getAbsolutePath()));
 
 		// Define an object macro in Java.
 		rs.setSubroutine("javatest", new ExampleMacro());
