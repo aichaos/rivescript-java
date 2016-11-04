@@ -2,6 +2,8 @@ language: java
 sudo: false
 jdk:
 - oraclejdk7
+before_install:
+- openssl aes-256-cbc -K $encrypted_<hash>_key -iv $encrypted_<hash>_iv -in secring.gpg.enc -out secring.gpg -d
 after_success:
 - ./.travis-deploy-artifacts.sh
 cache:
