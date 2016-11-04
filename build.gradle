@@ -4,9 +4,6 @@ buildscript {
 		mavenCentral()
 		mavenLocal()
 	}
-	dependencies {
-		classpath "nu.studer:gradle-credentials-plugin:1.0.1"
-	}
 }
 
 ext {
@@ -30,7 +27,6 @@ configure(allprojects) { project ->
 	apply plugin: "idea"
 	apply plugin: "maven"
 	apply plugin: "signing"
-	apply plugin: "nu.studer.credentials"
 
 	compileJava {
 		sourceCompatibility = 1.7
@@ -68,11 +64,6 @@ configure(allprojects) { project ->
 configure(subprojects - sampleprojects) { subproject ->
 
 	apply plugin: "signing"
-	apply plugin: "nu.studer.credentials"
-
-	ext."signing.keyId" = credentials.signingKeyId
-	ext."signing.password" = credentials.signingPassword
-	ext."signing.secretKeyRingFile" = credentials.signingSecretKeyRingFile
 
 	jar {
 		manifest.attributes["Created-By"] = "${System.getProperty("java.version")} (${System.getProperty("java.specification.vendor")})"
@@ -103,6 +94,7 @@ configure(subprojects - sampleprojects) { subproject ->
 	}
 
 	signing {
+		required { gradle.taskGraph.hasTask("uploadArchives") }
 		sign configurations.archives
 	}
 
@@ -113,11 +105,11 @@ configure(subprojects - sampleprojects) { subproject ->
 				beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
 				repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-					authentication(userName: credentials.ossrhUsername, password: credentials.ossrhPassword)
+					authentication(userName: System.getenv("SONATYPE_OSSRH_USERNAME"), password: System.getenv("SONATYPE_OSSRH_PASSWORD"))
 				}
 
 				snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-					authentication(userName: credentials.ossrhUsername, password: credentials.ossrhPassword)
+					authentication(userName: System.getenv("SONATYPE_OSSRH_USERNAME"), password: System.getenv("SONATYPE_OSSRH_PASSWORD"))
 				}
 
 				pom.project {

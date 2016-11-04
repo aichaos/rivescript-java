@@ -1,0 +1,20 @@
+language: java
+sudo: false
+jdk:
+- oraclejdk7
+after_success:
+- ./.travis-deploy-artifacts.sh
+cache:
+  directories:
+  - $HOME/.gradle
+  - $HOME/.m2
+env:
+  global:
+  # SONATYPE_OSSRH_USERNAME
+  - secure:
+  # SONATYPE_OSSRH_PASSWORD
+  - secure:
+  # SIGNING_KEY
+  - secure:
+  # SIGNING_PASSPHRASE
+  - secure:
