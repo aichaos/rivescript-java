@@ -76,7 +76,6 @@ configure(subprojects - sampleprojects) { subproject ->
 		options.author = true
 		options.header = "${project.name} ${project.version}"
 		options.docTitle = "${options.header} API"
-		options.addStringOption("Xdoclint:none", "-quiet")
 	}
 
 	task sourcesJar(type: Jar, dependsOn: classes) {
@@ -181,7 +180,6 @@ configure(rootProject) {
 		options.overview = "src/api/overview.html"
 		options.splitIndex = true
 		options.links(javadocLinks)
-		options.addStringOption("Xdoclint:none", "-quiet")
 
 		source coreprojects.collect { project ->
 			project.sourceSets.main.allJava
