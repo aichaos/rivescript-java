@@ -1,7 +1,7 @@
 language: java
 sudo: false
 jdk:
-- oraclejdk7
+- oraclejdk8
 before_install:
 - openssl aes-256-cbc -K $encrypted_69327d5a42d4_key -iv $encrypted_69327d5a42d4_iv -in secring.gpg.enc -out secring.gpg -d
 after_success:
