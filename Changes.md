@@ -1,5 +1,9 @@
 # Revision History for RiveScript-Java
 
+* 0.7.0  December 22 2016
+  * Refactored project setup to allow separate module.
+  * Switched to Gradle as build tool.
+
 * 0.6.0  June 28 2016
   * Switched to semantic versioning; `com.rivescript.RiveScript.VERSION` is now
     a string `"0.6.0"` instead of a floating point number.
