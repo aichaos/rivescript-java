@@ -2,7 +2,7 @@
 
 [![Gitter](https://badges.gitter.im/aichaos/rivescript-java.svg)](https://gitter.im/aichaos/rivescript-java?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 [![Build Status](https://travis-ci.org/aichaos/rivescript-java.svg?branch=master)](https://travis-ci.org/aichaos/rivescript-java)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.rivescript/rivescript-java/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.rivescript/rivescript-java)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.rivescript/rivescript-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.rivescript/rivescript-core)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 This is a Java implementation of a RiveScript interpreter, per the Working Draft
