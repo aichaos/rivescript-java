@@ -1,5 +1,10 @@
 # Java RiveScript Interpreter
 
+[![Gitter](https://badges.gitter.im/aichaos/rivescript-java.svg)](https://gitter.im/aichaos/rivescript-java?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Build Status](https://travis-ci.org/aichaos/rivescript-java.svg?branch=master)](https://travis-ci.org/aichaos/rivescript-java)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.rivescript/rivescript-java/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.rivescript/rivescript-java)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+
 This is a Java implementation of a RiveScript interpreter, per the Working Draft
 at http://www.rivescript.com/wd/RiveScript.html
 
@@ -66,7 +71,7 @@ This library is tested using [JUnit](http://junit.org/). To execute the test sui
 ```
 The MIT License (MIT)
 
-Copyright (c) 2016 Noah Petherbridge
+Copyright (c) 2016 the original author or authors.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
