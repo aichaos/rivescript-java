@@ -1630,6 +1630,30 @@ public class RiveScript {
 		String[] stars = Util.Sv2s(vstars);
 		String[] botstars = Util.Sv2s(vbotstars);
 
+		// Turn arrays into randomized sets.
+		if (reply.indexOf("(@") > -1) {
+			Pattern reArray = Pattern.compile("\\(@([A-Za-z0-9_]+)\\)");
+			Matcher mArray = reArray.matcher(reply);
+			while (mArray.find()) {
+				String tag = mArray.group(0);
+				String name = mArray.group(1);
+				String result;
+				if (arrays.containsKey(name)) {
+					String[] values = Util.Sv2s(arrays.get(name));
+					StringBuffer joined = new StringBuffer();
+					// Join the array.
+					for (int i = 0; i < values.length; i++) {
+						joined.append(values[i]);
+						if (i < values.length - 1) {
+							joined.append("|");
+						}
+					}
+					result = "{random}" + joined.toString() + "{/random}";
+					reply = reply.replace(tag, result);
+				}
+			}
+		}
+
 		// Shortcut tags.
 		reply = reply.replaceAll("<person>", "{person}<star>{/person}");
 		reply = reply.replaceAll("<@>", "{@<star>}");
