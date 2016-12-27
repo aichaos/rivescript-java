@@ -1470,7 +1470,7 @@ public class RiveScript {
 		regexp = regexp.replaceAll("\\*", "(.+?)");             // *  ->  (.+?)
 		regexp = regexp.replaceAll("#", "(\\\\d+?)");         // #  ->  (\d+?)
 		regexp = regexp.replaceAll("_", "(\\\\w+?)");     // _  ->  ([A-Za-z ]+?)
-		regexp = regexp.replaceAll("\\{weight=\\d+\\}", "");    // Remove {weight} tags
+		regexp = regexp.replaceAll("\\s*\\{weight=\\d+\\}\\s*", "");    // Remove {weight} tags
 		regexp = regexp.replaceAll("<zerowidthstar>", "(.*?)"); // *  ->  (.*?)
 
 		// Handle optionals.
