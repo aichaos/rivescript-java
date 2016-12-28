@@ -1662,17 +1662,8 @@ public class RiveScript {
 		reply = reply.replaceAll("<uppercase>", "{uppercase}<star>{/uppercase}");
 		reply = reply.replaceAll("<lowercase>", "{lowercase}<star>{/lowercase}");
 
-		// Quick tags.
+		// Weight and star tags.
 		reply = reply.replaceAll("\\{weight=\\d+\\}", ""); // Remove {weight}s
-		reply = reply.replaceAll("<input>", "<input1>");
-		reply = reply.replaceAll("<reply>", "<reply1>");
-		reply = reply.replaceAll("<id>", user);
-		reply = reply.replaceAll("\\\\s", " ");
-		reply = reply.replaceAll("\\\\n", "\n");
-		reply = reply.replaceAll("\\\\", "\\");
-		reply = reply.replaceAll("\\#", "#");
-
-		// Stars
 		reply = reply.replaceAll("<star>", stars[1]);
 		reply = reply.replaceAll("<botstar>", botstars[1]);
 		for (int i = 1; i < stars.length; i++) {
@@ -1684,6 +1675,8 @@ public class RiveScript {
 		reply = reply.replaceAll("<(star|botstar)\\d+>", "");
 
 		// Input and reply tags.
+		reply = reply.replaceAll("<input>", "<input1>");
+		reply = reply.replaceAll("<reply>", "<reply1>");
 		if (reply.indexOf("<input") > -1) {
 			Pattern reInput = Pattern.compile("<input([0-9])>");
 			Matcher mInput = reInput.matcher(reply);
@@ -1704,6 +1697,13 @@ public class RiveScript {
 				reply = reply.replace(tag, text);
 			}
 		}
+
+		// <id> and escape codes
+		reply = reply.replaceAll("<id>", user);
+		reply = reply.replaceAll("\\\\s", " ");
+		reply = reply.replaceAll("\\\\n", "\n");
+		reply = reply.replaceAll("\\\\", "\\");
+		reply = reply.replaceAll("\\#", "#");
 
 		// {random} tag
 		if (reply.indexOf("{random}") > -1) {
