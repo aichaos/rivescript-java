@@ -32,6 +32,7 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.Vector;
@@ -1608,15 +1609,19 @@ public class RiveScript {
 	 * @param profile   The RiveScript client object holding the user's profile
 	 * @param message   The message sent by the user.
 	 * @param reply     The bot's original reply including tags.
-	 * @param vstars    The vector of wildcards the user's message matched.
-	 * @param vbotstars The vector of wildcards in any @{code %Previous}.
+	 * @param vst       The vector of wildcards the user's message matched.
+	 * @param vbst      The vector of wildcards in any @{code %Previous}.
 	 * @param step      The current recursion depth limit.
 	 */
 	private String processTags(String user, Client profile, String message, String reply,
-			Vector<String> vstars, Vector<String> vbotstars, int step) {
+			Vector<String> vst, Vector<String> vbst, int step) {
 		// Pad the stars.
-		vstars.add(0, "");
-		vbotstars.add(0, "");
+		Vector<String> vstars = new Vector<>();
+		vstars.add("");
+		vstars.addAll(vst);
+		Vector<String> vbotstars = new Vector<>();
+		vbotstars.add("");
+		vbotstars.addAll(vbst);
 
 		// Set a default first star.
 		if (vstars.size() == 1) {
@@ -1717,60 +1722,6 @@ public class RiveScript {
 			}
 		}
 
-		// <bot> tag
-		if (reply.indexOf("<bot") > -1) {
-			Pattern reBot = Pattern.compile("<bot (.+?)>");
-			Matcher mBot = reBot.matcher(reply);
-			while (mBot.find()) {
-				String tag = mBot.group(0);
-				String var = mBot.group(1);
-
-				// Setting the variable?
-				if (var.indexOf("=") > -1) {
-					String[] parts = var.split("\\s*=\\s*", 2);
-					var = parts[0];
-					String val = parts[1];
-					this.setVariable(var, val);
-					reply = reply.replace(tag, "");
-					continue;
-				}
-
-				// Have this?
-				if (vars.containsKey(var)) {
-					reply = reply.replace(tag, vars.get(var));
-				} else {
-					reply = reply.replace(tag, "undefined");
-				}
-			}
-		}
-
-		// <env> tag
-		if (reply.indexOf("<env") > -1) {
-			Pattern reEnv = Pattern.compile("<env (.+?)>");
-			Matcher mEnv = reEnv.matcher(reply);
-			while (mEnv.find()) {
-				String tag = mEnv.group(0);
-				String var = mEnv.group(1);
-
-				// Setting the variable?
-				if (var.indexOf("=") > -1) {
-					String[] parts = var.split("\\s*=\\s*", 2);
-					var = parts[0];
-					String val = parts[1];
-					this.setGlobal(var, val);
-					reply = reply.replace(tag, "");
-					continue;
-				}
-
-				// Have this?
-				if (globals.containsKey(var)) {
-					reply = reply.replace(tag, globals.get(var));
-				} else {
-					reply = reply.replace(tag, "undefined");
-				}
-			}
-		}
-
 		// {!stream} tag
 		if (reply.indexOf("{!") > -1) {
 			Pattern reStream = Pattern.compile("\\{\\!(.+?)\\}");
@@ -1786,126 +1737,139 @@ public class RiveScript {
 			}
 		}
 
-		// {person}
-		if (reply.indexOf("{person}") > -1) {
-			Pattern rePerson = Pattern.compile("\\{person\\}(.+?)\\{\\/person\\}");
-			Matcher mPerson = rePerson.matcher(reply);
-			while (mPerson.find()) {
-				String tag = mPerson.group(0);
-				String text = mPerson.group(1);
-
-				// Run person substitutions.
-				say("Run person substitutions: before: " + text);
-				text = Util.substitute(person_s, person, text);
-				say("After: " + text);
-				reply = reply.replace(tag, text);
-			}
-		}
-
-		// {formal,uppercase,lowercase,sentence} tags
-		if (reply.indexOf("{formal}") > -1 || reply.indexOf("{sentence}") > -1 ||
+		// Person substitutions & string formatting
+		if (reply.indexOf("{person}") > -1 || reply.indexOf("{formal}") > -1 || reply.indexOf("{sentence}") > -1 ||
 				reply.indexOf("{uppercase}") > -1 || reply.indexOf("{lowercase}") > -1) {
-			String[] tags = {"formal", "sentence", "uppercase", "lowercase"};
+			String[] tags = {"person", "formal", "sentence", "uppercase", "lowercase"};
 			for (int i = 0; i < tags.length; i++) {
 				Pattern reTag = Pattern.compile("\\{" + tags[i] + "\\}(.+?)\\{\\/" + tags[i] + "\\}");
 				Matcher mTag = reTag.matcher(reply);
 				while (mTag.find()) {
 					String tag = mTag.group(0);
 					String text = mTag.group(1);
-
-					// String transform.
-					text = stringTransform(tags[i], text);
-					reply = reply.replace(tag, text);
-				}
-			}
-		}
-
-		// <set> tag
-		if (reply.indexOf("<set") > -1) {
-			Pattern reSet = Pattern.compile("<set (.+?)=(.+?)>");
-			Matcher mSet = reSet.matcher(reply);
-			while (mSet.find()) {
-				String tag = mSet.group(0);
-				String var = mSet.group(1);
-				String value = mSet.group(2);
-
-				// Set the uservar.
-				profile.set(var, value);
-				reply = reply.replace(tag, "");
-				say("Set user var " + var + "=" + value);
-			}
-		}
-
-		// <add, sub, mult, div> tags
-		if (reply.indexOf("<add") > -1 || reply.indexOf("<sub") > -1 ||
-				reply.indexOf("<mult") > -1 || reply.indexOf("<div") > -1) {
-			String[] tags = {"add", "sub", "mult", "div"};
-			for (int i = 0; i < tags.length; i++) {
-				Pattern reTag = Pattern.compile("<" + tags[i] + " (.+?)=(.+?)>");
-				Matcher mTag = reTag.matcher(reply);
-				while (mTag.find()) {
-					String tag = mTag.group(0);
-					String var = mTag.group(1);
-					String value = mTag.group(2);
-
-					// Get the user var.
-					String curvalue = profile.get(var);
-					int current = 0;
-					if (!curvalue.equals("undefined")) {
-						// Convert it to a int.
-						try {
-							current = Integer.parseInt(curvalue);
-						} catch (NumberFormatException e) {
-							// Current value isn't a number!
-							reply = reply.replace(tag, "[ERR: Can't \"" + tags[i] + "\" non-numeric variable " + var + "]");
-							continue;
-						}
-					}
-
-					// Value must be a number too.
-					int modifier = 0;
-					try {
-						modifier = Integer.parseInt(value);
-					} catch (NumberFormatException e) {
-						reply = reply.replace(tag, "[ERR: Can't \"" + tags[i] + "\" non-numeric value " + value + "]");
-						continue;
-					}
-
-					// Run the operation.
-					if (tags[i].equals("add")) {
-						current += modifier;
-					} else if (tags[i].equals("sub")) {
-						current -= modifier;
-					} else if (tags[i].equals("mult")) {
-						current *= modifier;
+					if (tags[i].equals("person")) {
+						// Run person substitutions.
+						say("Run person substitutions: before: " + text);
+						text = Util.substitute(person_s, person, text);
+						say("After: " + text);
+						reply = reply.replace(tag, text);
 					} else {
-						// Don't divide by zero.
-						if (modifier == 0) {
-							reply = reply.replace(tag, "[ERR: Can't divide by zero!]");
-							continue;
-						}
-						current /= modifier;
+						// String transform.
+						text = stringTransform(tags[i], text);
+						reply = reply.replace(tag, text);
 					}
-
-					// Store the new value.
-					profile.set(var, Integer.toString(current));
-					reply = reply.replace(tag, "");
 				}
 			}
 		}
 
-		// <get> tag
-		if (reply.indexOf("<get") > -1) {
-			Pattern reGet = Pattern.compile("<get (.+?)>");
-			Matcher mGet = reGet.matcher(reply);
-			while (mGet.find()) {
-				String tag = mGet.group(0);
-				String var = mGet.group(1);
+		// Handle all variable-related tags with an iterative regexp approach, to
+		// allow for nesting of tags in arbitrary ways (think <set a=<get b>>)
+		// Dummy out the <call> tags first, because we don't handle them right here.
+		reply = reply.replaceAll("<call>", "{__call__}");
+		reply = reply.replaceAll("</call>", "{/__call__}");
 
-				// Get the user var.
-				reply = reply.replace(tag, profile.get(var));
+		while (true) {
+			// This regexp will match a <tag> which contains no other tag inside it,
+			// i.e. in the case of <set a=<get b>> it will match <get b> but not the
+			// <set> tag, on the first pass. The second pass will get the <set> tag,
+			// and so on.
+			Pattern reTag = Pattern.compile("<([^<]+?)>");
+			Matcher mTag = reTag.matcher(reply);
+			if (!mTag.find()) {
+				break; // No remaining tags!
 			}
+
+			String match = mTag.group(1);
+			String[] parts = match.split(" ");
+			String tag = parts[0].toLowerCase();
+			String data = "";
+			if (parts.length > 1) {
+				data = Util.join(Arrays.copyOfRange(parts, 1, parts.length), " ");
+			}
+			String insert = "";
+
+			// Handle the tags.
+			if (tag.equals("bot") || tag.equals("env")) {
+				// <bot> and <env> tags are similar
+				HashMap<String, String> target = tag.equals("bot") ? vars : globals;
+				if (data.indexOf("=") > -1) {
+					// Assigning a variable
+					parts = data.split("=", 2);
+					String name = parts[0];
+					String value = parts[1];
+					say("Set " + tag + " variable " + name + " = " + value);
+					target.put(name, value);
+				} else {
+					// Getting a bot/env variable
+					if (target.containsKey(data)) {
+						insert = target.get(data);
+					} else {
+						insert = "undefined";
+					}
+				}
+			} else if (tag.equals("set")) {
+				// <set> user vars
+				parts = data.split("=", 2);
+				String name = parts[0];
+				String value = parts[1];
+				say("Set user var " + name + "=" + value);
+				// Set the uservar.
+				profile.set(name, value);
+			} else if (tag.equals("add") || tag.equals("sub") || tag.equals("mult") || tag.equals("div")) {
+				// Math operator tags
+				parts = data.split("=");
+				String name = parts[0];
+				int result = 0;
+
+				// Initialize the variable?
+				if (profile.get(name).equals("undefined")) {
+					profile.set(name, "0");
+				}
+
+				try {
+					int value = Integer.parseInt(parts[1]);
+					try {
+						result = Integer.parseInt(profile.get(name));
+
+						// Run the operation.
+						if (tag.equals("add")) {
+							result += value;
+						} else if (tag.equals("sub")) {
+							result -= value;
+						} else if (tag.equals("mult")) {
+							result *= value;
+						} else {
+							// Don't divide by zero.
+							if (value == 0) {
+								insert = "[ERR: Can't divide by zero!]";
+							}
+							result /= value;
+						}
+					} catch (NumberFormatException e) {
+						insert = "[ERR: Math can't \"" + tag + "\" non-numeric variable " + name + "]";
+					}
+				} catch (NumberFormatException e) {
+					insert = "[ERR: Math can't \"" + tag + "\" non-numeric value " + parts[1] + "]";
+				}
+
+				// No errors?
+				if (insert.equals("")) {
+					profile.set(name, Integer.toString(result));
+				}
+			} else if (tag.equals("get")) {
+				// Get the user var.
+				insert = profile.get(data);
+			} else {
+				// Unrecognized tag, preserve it
+				insert = "\\x00" + match + "\\x01";
+			}
+
+			reply = reply.replace(mTag.group(0), insert);
 		}
+
+		// Recover mangled HTML-like tags
+		reply = reply.replaceAll("\\\\x00", "<");
+		reply = reply.replaceAll("\\\\x01", ">");
 
 		// {topic} tag
 		if (reply.indexOf("{topic=") > -1) {
@@ -1935,6 +1899,8 @@ public class RiveScript {
 		}
 
 		// <call> tag
+		reply = reply.replaceAll("\\{__call__}", "<call>");
+		reply = reply.replaceAll("\\{/__call__}", "</call>");
 		if (reply.indexOf("<call>") > -1) {
 			Pattern reCall = Pattern.compile("<call>(.+?)<\\/call>");
 			Matcher mCall = reCall.matcher(reply);
