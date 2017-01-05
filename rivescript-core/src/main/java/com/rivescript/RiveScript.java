@@ -1183,8 +1183,12 @@ public class RiveScript {
 					// Harvest the stars.
 					int starcount = m.groupCount();
 					for (int s = 1; s <= starcount; s++) {
-						say("Add star: " + m.group(s));
-						stars.add(m.group(s));
+						String star = m.group(s);
+						if (star == null) {
+							star = "";
+						}
+						say("Add star: " + star);
+						stars.add(star);
 					}
 
 					// We found a match, but what if the trigger we matched belongs to
