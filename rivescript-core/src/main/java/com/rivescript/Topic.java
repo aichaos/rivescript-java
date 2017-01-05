@@ -183,9 +183,12 @@ public class Topic {
 			heritage.get(inherits).add(alltrigs[i]);
 		}
 
-		// Go on and sort each heritage level. We want to loop from level 0 up,
-		// and then do level -1 last.
-		for (int h = -1; h <= highest; h++) {
+		// Move the no-{inherits} triggers to the bottom of the stack.
+		heritage.put(highest + 1, heritage.get(-1));
+		heritage.remove(-1);
+
+		// Go on and sort each heritage level. We want to loop from level 0 up.
+		for (int h = 0; h <= highest + 1; h++) {
 			if (heritage.containsKey(h) == false) {
 				continue;
 			}
