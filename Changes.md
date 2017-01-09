@@ -1,5 +1,19 @@
 # Revision History for RiveScript-Java
 
+* 0.7.1  January 9 2017
+  * Fix for arrays in replies (e.g. `(@greek)`) not being converted to 
+    randomized sets (bug #26).
+  * Fix trigger regexp processing so that if a `{weight}` tag contains a 
+    space before or after it (or: a space between `{weight}` and the rest
+    of the trigger text), the spaces are also stripped so that matching
+    isn't broken for that trigger (bug #29).
+  * Fix to support embedded tags in replies (bug #28).
+  * Fix for list of stars which were growing incorrectly by multiple 
+    calls to `processTags()` (#19).
+  * Fix to avoid adding `null` stars while harvesting the stars (#20).
+  * Fix for moving the no-{inherits} triggers to the bottom of the stack 
+    when sorting the triggers (#8).
+
 * 0.7.0  December 22 2016
   * Refactored project setup to allow separate module.
   * Switched to Gradle as build tool.
