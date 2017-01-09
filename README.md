@@ -31,6 +31,9 @@ Contributions are welcome. See `CONTRIBUTING.md` for more information.
 
 Documentation is available at <https://www.rivescript.com/docs/java/>
 
+Also check out the [**RiveScript Community Wiki**](https://github.com/aichaos/rivescript/wiki)
+for common design patterns and tips & tricks for RiveScript.
+
 ## Building from Source
 
 To compile, test, build all jars and docs run:
