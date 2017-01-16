@@ -105,7 +105,7 @@ public class RiveScript {
 	private String[] person_s = null;                                 // sorted persons
 
 	// The current user ID when reply() is called.
-	private String currentUser = null;
+	private ThreadLocal<String> currentUser = new ThreadLocal<>();
 
 	/*-------------------------*/
 	/*-- Constructor Methods --*/
@@ -518,7 +518,7 @@ public class RiveScript {
 	 * @return string user id or {@code null}.
 	 */
 	public String currentUser() {
-		return this.currentUser;
+		return this.currentUser.get();
 	}
 
 	/**
@@ -988,46 +988,50 @@ public class RiveScript {
 		say("Get reply to [" + username + "] " + message);
 
 		// Store the current ID in case an object macro wants it.
-		this.currentUser = username;
+		this.currentUser.set(username);
 
-		// Format their message first.
-		message = formatMessage(message);
+		try {
 
-		// This will hold the final reply.
-		String reply;
+			// Format their message first.
+			message = formatMessage(message);
 
-		// If the BEGIN statement exists, consult it first.
-		if (topics.exists("__begin__")) {
-			String begin = this.reply(username, "request", true, 0);
+			// This will hold the final reply.
+			String reply;
 
-			// OK to continue?
-			if (begin.indexOf("{ok}") > -1) {
-				// Get a reply then.
-				reply = this.reply(username, message, false, 0);
-				begin = begin.replaceAll("\\{ok\\}", reply);
-				reply = begin;
+			// If the BEGIN statement exists, consult it first.
+			if (topics.exists("__begin__")) {
+				String begin = this.reply(username, "request", true, 0);
+
+				// OK to continue?
+				if (begin.indexOf("{ok}") > -1) {
+					// Get a reply then.
+					reply = this.reply(username, message, false, 0);
+					begin = begin.replaceAll("\\{ok\\}", reply);
+					reply = begin;
+				} else {
+					reply = begin;
+				}
+
+				// Run final substitutions.
+				reply = processTags(username, clients.client(username), message, reply,
+						new Vector<String>(), new Vector<String>(),
+						0);
 			} else {
-				reply = begin;
+				// No BEGIN, just continue.
+				reply = this.reply(username, message, false, 0);
 			}
 
-			// Run final substitutions.
-			reply = processTags(username, clients.client(username), message, reply,
-					new Vector<String>(), new Vector<String>(),
-					0);
-		} else {
-			// No BEGIN, just continue.
-			reply = this.reply(username, message, false, 0);
+			// Save their chat history.
+			clients.client(username).addInput(message);
+			clients.client(username).addReply(reply);
+
+			// Return their reply.
+			return reply;
+
+		} finally {
+			// Clear the current user.
+			this.currentUser.remove();
 		}
-
-		// Save their chat history.
-		clients.client(username).addInput(message);
-		clients.client(username).addReply(reply);
-
-		// Clear the current user.
-		this.currentUser = null;
-
-		// Return their reply.
-		return reply;
 	}
 
 	/**
