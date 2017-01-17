@@ -1,8 +1,9 @@
 # Revision History for RiveScript-Java
 
-* 0.x.x  TBD
+* 0.7.2  January 17 2017
   * Fix to make the `RiveScript` thread safe using a a `ThreadLocal` to store
     the current user.  (#18).
+  * Add support for escaping `_` (underscores) in triggers.
 
 * 0.7.1  January 9 2017
   * Fix for arrays in replies (e.g. `(@greek)`) not being converted to
