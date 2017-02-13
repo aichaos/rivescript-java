@@ -1,9 +1,11 @@
 dependencies {
 	compile project(":rivescript-core")
+	compile "org.json:json:${jsonVersion}"
 }
 
-task runApp(type: JavaExec) {
+task runBot(type: JavaExec) {
 	classpath = sourceSets.main.runtimeClasspath
 	main = "RSBot"
 	standardInput = System.in
+	args "${project.projectDir}/src/main/resources/rivescript"
 }

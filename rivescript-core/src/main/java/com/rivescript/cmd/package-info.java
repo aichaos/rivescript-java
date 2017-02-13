@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 the original author or authors.
+ * Copyright (c) 2016-2017 the original author or authors.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,24 +20,7 @@
  * SOFTWARE.
  */
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
 /**
- * @author Noah Petherbridge
+ * Provides command classes.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-		TestBegin.class,
-		TestBotVariables.class,
-		TestMath.class,
-		TestOptions.class,
-		TestReplies.class,
-		TestRiveScript.class,
-		TestSubstitutions.class,
-		TestTopics.class,
-		TestTriggers.class,
-})
-public class JunitTestSuite {
-
-}
+package com.rivescript.cmd;

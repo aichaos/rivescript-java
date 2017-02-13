@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 the original author or authors.
+ * Copyright (c) 2016-2017 the original author or authors.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,25 +20,7 @@
  * SOFTWARE.
  */
 
-import org.junit.runner.JUnitCore;
-import org.junit.runner.Result;
-import org.junit.runner.notification.Failure;
-
 /**
- * @author Noah Petherbridge
+ * Provides exception classes.
  */
-public class RunTests {
-
-	public static void main(String[] args) {
-		Result result = JUnitCore.runClasses(JunitTestSuite.class);
-		for (Failure failure : result.getFailures()) {
-			System.out.println(failure.toString());
-		}
-		System.out.println(result.getRunCount() + " tests were executed in " + result.getRunTime() + "ms.");
-		if (result.wasSuccessful()) {
-			System.out.println("All tests passed successfully.");
-		} else {
-			System.out.println(result.getFailureCount() + " test(s) failed!");
-		}
-	}
-}
+package com.rivescript.exception;

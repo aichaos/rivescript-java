@@ -1,11 +1,63 @@
-# Revision History for RiveScript-Java
+# Change History
 
-* 0.7.2  January 17 2017
+This documents the history of significant changes to `rivescript-java`.
+
+## v0.8.0 - February 14, 2017
+
+This update focuses on new features and huge code refactoring / reorganization.
+The `rivescript-java` implementations has been aligned with the `rivescript-go`
+implementation.
+
+* **API Breaking Changes:**
+  * Removed `RiveScript(boolean debug)` constructor in favour of 
+    `RiveScript(Config config)` constructor .
+  * The `RiveScript` instance has no notion of `debug` mode anymore.
+    Debug logging is now based on the SLF4J configuration.
+  * Refactored `com.rivescript.ObjectMacro` to `com.rivescript.macro.Subroutine`.
+  * Renamed `ObjectHandler` methods from `onLoad`, `onCall` to respectively 
+    `load` and `call`. Also the `setClass` method has been removed.
+  * The `org.json` dependency is now a optional dependency.
+    Developers using Perl object macros must include this `org.json` dependency 
+    manually to their projects.
+
+* **Changes:**
+  * Replace `System.out` logging by using the SLF4J API.
+  * Add Unicode support (#30, #31).
+  * Add new forceCase config option, which will force-lowercase your triggers
+    during parse time, enabling authors to use uppercase letters in triggers 
+    without it being a syntax error. Do note however that Unicode case folding 
+    can become an issue with certain symbols.
+  * Add customizable error messages config option.
+  * Add throw exceptions config option, which will make the bot throw (runtime)
+    exceptions (e.g. `DeepRecursionException`, `ReplyNotFoundException`)  
+    in case of an error instead of just replying with an error message. 
+    When enabled, developers should catch these exceptions and take the 
+    appropriate actions.
+  * The `RiveScript` constructor now accepts a `Config` object to configure
+    the RiveScript instance. Also a developer `Config.Builder` is available.  
+  * Add support for pluggable session stores for user variables. The default
+    one still keeps user variables in memory, but you can specify your own
+    implementation instead (#33).
+  * Add RiveScript shell to quickly demo and test a RiveScript bot.
+    See `com.rivescript.cmd.Shell`.
+  * Separated the `Parser` which can now be used independently.
+    The parser returns a Abstract Syntax Tree (AST) identical to the 
+    `rivescript-go` parser. It enables third party developers to write 
+    applications that simply parse RiveScript code and getting an AST from it.
+  * Add option to load RiveScript source code from a `java.io.File` or 
+    `java.nio.file.Path`.
+  * Fix for sorting %Previous triggers (#9).
+
+## v0.7.2 - January 17, 2017
+
+* **Changes:**
   * Fix to make the `RiveScript` thread safe using a a `ThreadLocal` to store
     the current user.  (#18).
   * Add support for escaping `_` (underscores) in triggers.
 
-* 0.7.1  January 9 2017
+## v0.7.1 - January 9, 2017
+
+* **Changes:**
   * Fix for arrays in replies (e.g. `(@greek)`) not being converted to
     randomized sets (bug #26).
   * Fix trigger regexp processing so that if a `{weight}` tag contains a
@@ -19,11 +71,15 @@
   * Fix for moving the no-{inherits} triggers to the bottom of the stack
     when sorting the triggers (#8).
 
-* 0.7.0  December 22 2016
+## v0.7.0 - December 22, 2016
+
+* **Changes:**
   * Refactored project setup to allow separate module.
   * Switched to Gradle as build tool.
 
-* 0.6.0  June 28 2016
+## v0.6.0 - June 28, 2016
+
+* **Changes:**
   * Switched to semantic versioning; `com.rivescript.RiveScript.VERSION` is now
     a string `"0.6.0"` instead of a floating point number.
   * Add support for Java object macros (compile-time) via the new API
@@ -52,5 +108,6 @@
       topic inherited other topics, but didn't include other topics. The code
       was checking for inheritance but looping over includes.
 
-* 0.03  Nov 26 2014
-  * Initial official beta release.
+## v0.03-beta - Nov 26, 2014
+
+* Initial official beta release.

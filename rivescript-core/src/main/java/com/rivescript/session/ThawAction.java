@@ -20,37 +20,21 @@
  * SOFTWARE.
  */
 
-import com.rivescript.macro.Subroutine;
-import com.rivescript.util.StringUtils;
-
-import java.lang.String;
-import java.lang.StringBuilder;
+package com.rivescript.session;
 
 /**
- * An example object macro written in Java.
- *
- * To define a Java object macro, you must implement the interface
- * com.rivescript.ZzObjectMacro and register it using setSubroutine().
- *
- * This macro does two things: returns their message reversed, and sets
- * a user variable named `java`.
- *
- * This implements the `reverse` object macro used in Aiden/obj-java.rive
- *
- * See RSBot.java for more details.
+ * Specifies options for thawing the user's variables.
+ * <p>
+ * <ul>
+ * <li>{@code THAW}: Restore the variables and delete the frozen copy.
+ * <li>{@code DISCARD}: Don't restore the variables, just delete the frozen copy.
+ * <li>{@code KEEP}: Keep the frozen copy after restoring.
+ * </ul>
  *
  * @author Noah Petherbridge
+ * @author Marcel Overdijk
  */
-public class ExampleMacro implements Subroutine {
-	public String call (com.rivescript.RiveScript rs, String[] args) {
-		String message = StringUtils.join(args, " ");
+public enum ThawAction {
 
-		// To get/set user variables for the user, you can use currentUser
-		// to find their ID and then use the usual methods.
-		String user = rs.currentUser();
-		rs.setUservar(user, "java", "This variable was set by Java when you said 'reverse " + message + "'");
-
-		// Reverse their message and return it.
-		return new StringBuilder(message).reverse().toString();
-	}
+	THAW, DISCARD, KEEP
 }

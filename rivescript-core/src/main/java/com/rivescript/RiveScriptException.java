@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 the original author or authors.
+ * Copyright (c) 2016-2017 the original author or authors.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,62 +22,46 @@
 
 package com.rivescript;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Vector;
-
 /**
- * A manager for all the bot's users.
+ * Thrown to indicate a RiveScript error.
  *
  * @author Noah Petherbridge
+ * @author Marcel Overdijk
  */
-public class ClientManager {
-
-	private HashMap<String, Client> clients = new HashMap<>(); // List of users
+public class RiveScriptException extends RuntimeException {
 
 	/**
-	 * Creates a client manager. Only one needed per bot.
+	 * Creates a new {@code RiveScriptException}.
 	 */
-	public ClientManager() {
-		// Nothing to construct here.
+	public RiveScriptException() {
+		super();
 	}
 
 	/**
-	 * Gets a {@link Client} object for a given user id.
+	 * Creates a new {@code RiveScriptException} with the given message.
 	 *
-	 * @param userId The user id.
+	 * @param message the message
 	 */
-	public Client client(String userId) {
-		// Is this a new topic?
-		if (clients.containsKey(userId) == false) {
-			// Create it.
-			clients.put(userId, new Client(userId));
-		}
-
-		return clients.get(userId);
+	public RiveScriptException(String message) {
+		super(message);
 	}
 
 	/**
-	 * Gets a list of the {@link Client}s managed.
-	 */
-	public String[] listClients() {
-		Vector<String> result = new Vector<>();
-		Iterator it = clients.keySet().iterator();
-		while (it.hasNext()) {
-			result.add(it.next().toString());
-		}
-		return Util.Sv2s(result);
-	}
-
-	/**
-	 * Queries whether a client is known or not.
+	 * Creates a new {@code RiveScriptException} with the given message and cause.
 	 *
-	 * @param userId The user id.
+	 * @param message the message
+	 * @param cause   the cause
 	 */
-	public boolean clientExists(String userId) {
-		if (clients.containsKey(userId)) {
-			return true;
-		}
-		return false;
+	public RiveScriptException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
+	/**
+	 * Creates a new {@code RiveScriptException} with the given cause.
+	 *
+	 * @param cause the cause
+	 */
+	public RiveScriptException(Throwable cause) {
+		super(cause);
 	}
 }

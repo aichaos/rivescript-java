@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 the original author or authors.
+ * Copyright (c) 2016-2017 the original author or authors.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,24 +20,7 @@
  * SOFTWARE.
  */
 
-package com.rivescript;
-
-import java.util.Comparator;
-
 /**
- * A comparator class to sort {@link String}s by length, longest to shortest.
- *
- * @author Noah Petherbridge
+ * Provides Abstract Syntax Tree (AST) classes.
  */
-public class StringCompare implements Comparator<String> {
-
-	@Override
-	public int compare(String o1, String o2) {
-		if (o1.length() < o2.length()) {
-			return 1;
-		} else if (o1.length() > o2.length()) {
-			return -1;
-		}
-		return 0;
-	}
-}
+package com.rivescript.ast;

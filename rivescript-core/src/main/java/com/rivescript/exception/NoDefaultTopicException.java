@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 the original author or authors.
+ * Copyright (c) 2016-2017 the original author or authors.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,23 +20,31 @@
  * SOFTWARE.
  */
 
-package com.rivescript;
+package com.rivescript.exception;
+
+import com.rivescript.RiveScriptException;
 
 /**
- * Interface for RiveScript object macros written in Java.
+ * Thrown to indicate no default topic exists.
  *
  * @author Noah Petherbridge
+ * @author Marcel Overdijk
  */
-public interface ObjectMacro {
+public class NoDefaultTopicException extends RiveScriptException {
 
 	/**
-	 * The implementation of your object macro function.
-	 * <p>
-	 * This code is executed when a {@code <call>} tag in a RiveScript reply wants to call your object macro.
-	 *
-	 * @param rivescript A reference to the parent RiveScript instance.
-	 * @param args       An array of the word-arguments from the call tag.
-	 * @return A string result of the macro.
+	 * Creates a new {@code NoDefaultTopicException}.
 	 */
-	String call(RiveScript rivescript, String[] args);
+	public NoDefaultTopicException() {
+		super();
+	}
+
+	/**
+	 * Creates a new {@code NoDefaultTopicException} with the given message.
+	 *
+	 * @param message the message
+	 */
+	public NoDefaultTopicException(String message) {
+		super(message);
+	}
 }

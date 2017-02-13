@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 the original author or authors.
+ * Copyright (c) 2016-2017 the original author or authors.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,37 +20,48 @@
  * SOFTWARE.
  */
 
-import com.rivescript.macro.Subroutine;
-import com.rivescript.util.StringUtils;
-
-import java.lang.String;
-import java.lang.StringBuilder;
+package com.rivescript.parser;
 
 /**
- * An example object macro written in Java.
- *
- * To define a Java object macro, you must implement the interface
- * com.rivescript.ZzObjectMacro and register it using setSubroutine().
- *
- * This macro does two things: returns their message reversed, and sets
- * a user variable named `java`.
- *
- * This implements the `reverse` object macro used in Aiden/obj-java.rive
- *
- * See RSBot.java for more details.
+ * Thrown to indicate an error during parsing.
  *
  * @author Noah Petherbridge
+ * @author Marcel Overdijk
  */
-public class ExampleMacro implements Subroutine {
-	public String call (com.rivescript.RiveScript rs, String[] args) {
-		String message = StringUtils.join(args, " ");
+public class ParserException extends RuntimeException {
 
-		// To get/set user variables for the user, you can use currentUser
-		// to find their ID and then use the usual methods.
-		String user = rs.currentUser();
-		rs.setUservar(user, "java", "This variable was set by Java when you said 'reverse " + message + "'");
+	/**
+	 * Creates a new {@code ParserException}.
+	 */
+	public ParserException() {
+		super();
+	}
 
-		// Reverse their message and return it.
-		return new StringBuilder(message).reverse().toString();
+	/**
+	 * Creates a new {@code ParserException} with the given message.
+	 *
+	 * @param message the message
+	 */
+	public ParserException(String message) {
+		super(message);
+	}
+
+	/**
+	 * Creates a new {@code ParserException} with the given message and cause.
+	 *
+	 * @param message the message
+	 * @param cause   the cause
+	 */
+	public ParserException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
+	/**
+	 * Creates a new {@code ParserException} with the given cause.
+	 *
+	 * @param cause the cause
+	 */
+	public ParserException(Throwable cause) {
+		super(cause);
 	}
 }

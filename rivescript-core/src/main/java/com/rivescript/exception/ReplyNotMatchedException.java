@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 the original author or authors.
+ * Copyright (c) 2016-2017 the original author or authors.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,37 +20,31 @@
  * SOFTWARE.
  */
 
-import com.rivescript.macro.Subroutine;
-import com.rivescript.util.StringUtils;
+package com.rivescript.exception;
 
-import java.lang.String;
-import java.lang.StringBuilder;
+import com.rivescript.RiveScriptException;
 
 /**
- * An example object macro written in Java.
- *
- * To define a Java object macro, you must implement the interface
- * com.rivescript.ZzObjectMacro and register it using setSubroutine().
- *
- * This macro does two things: returns their message reversed, and sets
- * a user variable named `java`.
- *
- * This implements the `reverse` object macro used in Aiden/obj-java.rive
- *
- * See RSBot.java for more details.
+ * Thrown to indicate no reply matched.
  *
  * @author Noah Petherbridge
+ * @author Marcel Overdijk
  */
-public class ExampleMacro implements Subroutine {
-	public String call (com.rivescript.RiveScript rs, String[] args) {
-		String message = StringUtils.join(args, " ");
+public class ReplyNotMatchedException extends RiveScriptException {
 
-		// To get/set user variables for the user, you can use currentUser
-		// to find their ID and then use the usual methods.
-		String user = rs.currentUser();
-		rs.setUservar(user, "java", "This variable was set by Java when you said 'reverse " + message + "'");
+	/**
+	 * Creates a new {@code ReplyNotMatchedException}.
+	 */
+	public ReplyNotMatchedException() {
+		super();
+	}
 
-		// Reverse their message and return it.
-		return new StringBuilder(message).reverse().toString();
+	/**
+	 * Creates a new {@code ReplyNotMatchedException} with the given message.
+	 *
+	 * @param message the message
+	 */
+	public ReplyNotMatchedException(String message) {
+		super(message);
 	}
 }

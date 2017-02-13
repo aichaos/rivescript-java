@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 the original author or authors.
+ * Copyright (c) 2016-2017 the original author or authors.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,30 +20,33 @@
  * SOFTWARE.
  */
 
-import com.rivescript.RiveScript;
-import com.rivescript.cmd.Shell;
-import com.rivescript.lang.Perl;
-import java.io.File;
+package com.rivescript.parser;
+
+import org.junit.Test;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
- * @author Noah Petherbridge
+ * Tests for {@link ParserConfig}.
+ *
+ * @author Marcel Overdijk
  */
-public class RSBot extends Shell {
+public class ParserConfigTests {
 
-	@Override
-	protected void init(RiveScript bot) {
-		// Create a handler for Perl as an object macro language.
-		File rsp4jFile = new File(RSBot.class.getClassLoader().getResource("lang/rsp4j.pl").getFile());
-		bot.setHandler("perl", new Perl(bot, rsp4jFile.getAbsolutePath()));
-		// Define an object macro in Java.
-		bot.setSubroutine("javatest", new ExampleMacro());
+	@Test
+	public void testEquals() {
+		ParserConfig config1 = new ParserConfig();
+		ParserConfig config2 = new ParserConfig();
+		assertThat(config1, is(equalTo(config2)));
 	}
 
-	public static void main(String[] args) {
-		if (args.length == 0) {
-			String path = RSBot.class.getClassLoader().getResource("rivescript").getFile();
-			args = new String[] { path };
-		}
-		new RSBot().run(args);
+	@Test
+	public void testToBuilder() {
+		ParserConfig config1 = new ParserConfig();
+		ParserConfig.Builder builder = config1.toBuilder();
+		ParserConfig config2 = builder.build();
+		assertThat(config1, is(equalTo(config2)));
 	}
 }

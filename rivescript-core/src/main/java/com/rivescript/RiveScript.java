@@ -22,22 +22,72 @@
 
 package com.rivescript;
 
+import com.rivescript.ast.ObjectMacro;
+import com.rivescript.ast.Root;
+import com.rivescript.ast.Topic;
+import com.rivescript.ast.Trigger;
+import com.rivescript.exception.DeepRecursionException;
+import com.rivescript.exception.NoDefaultTopicException;
+import com.rivescript.exception.RepliesNotSortedException;
+import com.rivescript.exception.ReplyNotFoundException;
+import com.rivescript.exception.ReplyNotMatchedException;
 import com.rivescript.lang.Java;
+import com.rivescript.macro.ObjectHandler;
+import com.rivescript.macro.Subroutine;
+import com.rivescript.parser.Parser;
+import com.rivescript.parser.ParserConfig;
+import com.rivescript.parser.ParserException;
+import com.rivescript.session.ConcurrentHashMapSessionManager;
+import com.rivescript.session.History;
+import com.rivescript.session.SessionManager;
+import com.rivescript.session.ThawAction;
+import com.rivescript.session.UserData;
+import com.rivescript.sorting.SortBuffer;
+import com.rivescript.sorting.SortTrack;
+import com.rivescript.sorting.SortedTriggerEntry;
+import com.rivescript.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
-import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
-import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.rivescript.regexp.Regexp.RE_ANY_TAG;
+import static com.rivescript.regexp.Regexp.RE_ARRAY;
+import static com.rivescript.regexp.Regexp.RE_BOT_VAR;
+import static com.rivescript.regexp.Regexp.RE_CALL;
+import static com.rivescript.regexp.Regexp.RE_CONDITION;
+import static com.rivescript.regexp.Regexp.RE_INHERITS;
+import static com.rivescript.regexp.Regexp.RE_META;
+import static com.rivescript.regexp.Regexp.RE_OPTIONAL;
+import static com.rivescript.regexp.Regexp.RE_PLACEHOLDER;
+import static com.rivescript.regexp.Regexp.RE_RANDOM;
+import static com.rivescript.regexp.Regexp.RE_REDIRECT;
+import static com.rivescript.regexp.Regexp.RE_SET;
+import static com.rivescript.regexp.Regexp.RE_SYMBOLS;
+import static com.rivescript.regexp.Regexp.RE_TOPIC;
+import static com.rivescript.regexp.Regexp.RE_USER_VAR;
+import static com.rivescript.regexp.Regexp.RE_WEIGHT;
+import static com.rivescript.regexp.Regexp.RE_ZERO_WITH_STAR;
+import static com.rivescript.session.SessionManager.HISTORY_SIZE;
+import static com.rivescript.util.StringUtils.countWords;
+import static com.rivescript.util.StringUtils.quoteMetacharacters;
+import static com.rivescript.util.StringUtils.stripNasties;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A RiveScript interpreter written in Java.
@@ -46,111 +96,420 @@ import java.util.regex.Pattern;
  * <p>
  * <pre>
  * <code>
+ * import com.rivescript.Config;
  * import com.rivescript.RiveScript;
  *
- * // Create a new interpreter<br>
- * RiveScript rs = new RiveScript();
+ * // Create a new bot with the default settings.
+ * RiveScript bot = new RiveScript();
  *
- * // Load a directory full of replies in *.rive files
- * rs.loadDirectory("./replies");
+ * // To enable UTF-8 mode, you'd have initialized the bot like:
+ * RiveScript bot = new RiveScript(Config.utf8());
  *
- * // Sort replies
- * rs.sortReplies();
+ * // Load a directory full of RiveScript documents (.rive files)
+ * bot.loadDirectory("./replies");
  *
- * // Get a reply for the user
- * String reply = rs.reply("user", "Hello bot!");
+ * // Load an individual file.
+ * bot.LoadFile("./testsuite.rive");
+ *
+ * // Sort the replies after loading them!
+ * bot.sortReplies();
+ *
+ * // Get a reply.
+ * String reply = bot.reply("user", "Hello bot!");
  * </code>
  * </pre>
  *
  * @author Noah Petherbridge
+ * @author Marcel Overdijk
  */
 public class RiveScript {
 
-	// Private class variables.
-	private boolean debug = false;             // Debug mode
-	private int depth = 50;                    // Recursion depth limit
-	private String error = "";                 // Last error text
-	private static Random rand = new Random(); // A random number generator
+	private static final String[] DEFAULT_FILE_EXTENSIONS = new String[] {".rive", ".rs"};
+	private static final Random RANDOM = new Random();
+	private static final String UNDEF_TAG = "<undef>";
 
-	// Constant RiveScript command symbols.
-	private static final double RS_VERSION = 2.0; // This implements RiveScript 2.0
-	private static final String CMD_DEFINE = "!";
-	private static final String CMD_TRIGGER = "+";
-	private static final String CMD_PREVIOUS = "%";
-	private static final String CMD_REPLY = "-";
-	private static final String CMD_CONTINUE = "^";
-	private static final String CMD_REDIRECT = "@";
-	private static final String CMD_CONDITION = "*";
-	private static final String CMD_LABEL = ">";
-	private static final String CMD_ENDLABEL = "<";
+	private static Logger logger = LoggerFactory.getLogger(RiveScript.class);
 
-	// The topic data structure, and the "thats" data structure.
-	private TopicManager topics = new TopicManager();
+	private boolean throwExceptions;
+	private boolean strict;
+	private boolean utf8;
+	private boolean forceCase;
+	private int depth;
+	private Pattern unicodePunctuation;
+	private Map<String, String> errorMessages;
 
-	// Bot's users' data structure.
-	private ClientManager clients = new ClientManager();
+	private Parser parser;
 
-	// Object handlers
-	private HashMap<String, ObjectHandler> handlers = new HashMap<>();
-	private HashMap<String, String> objects = new HashMap<>();        // name->language mappers
+	private Map<String, String> global;                 // 'global' variables
+	private Map<String, String> vars;                   // 'vars' bot variables
+	private Map<String, String> sub;                    // 'sub' substitutions
+	private Map<String, String> person;                 // 'person' substitutions
+	private Map<String, List<String>> array;            // 'array' definitions
+	private SessionManager sessions;                    // user variable session manager
+	private Map<String, Map<String, Boolean>> includes; // included topics
+	private Map<String, Map<String, Boolean>> inherits; // inherited topics
+	private Map<String, String> objectLanguages;        // object macro languages
+	private Map<String, ObjectHandler> handlers;        // object language handlers
+	private Map<String, Subroutine> subroutines;        // Java object handlers
+	private Map<String, Topic> topics;                  // main topic structure
+	private SortBuffer sorted;                          // Sorted data from sortReplies()
 
-	// Simpler internal data structures.
-	private Vector<String> vTopics = new Vector<>();                  // vector containing topic list (for quicker lookups)
-	private HashMap<String, String> globals = new HashMap<>();        // ! global
-	private HashMap<String, String> vars = new HashMap<>();           // ! var
-	private HashMap<String, Vector<String>> arrays = new HashMap<>(); // ! array
-	private HashMap<String, String> subs = new HashMap<>();           // ! sub
-	private String[] subs_s = null;                                   // sorted subs
-	private HashMap<String, String> person = new HashMap<>();         // ! person
-	private String[] person_s = null;                                 // sorted persons
-
-	// The current user ID when reply() is called.
+	// State information.
 	private ThreadLocal<String> currentUser = new ThreadLocal<>();
 
-	/*-------------------------*/
-	/*-- Constructor Methods --*/
-	/*-------------------------*/
+	/*------------------*/
+	/*-- Constructors --*/
+	/*------------------*/
 
 	/**
-	 * Creates a new RiveScript interpreter object, specifying the debug mode.
-	 *
-	 * @param debug Enable debug mode (a *lot* of stuff is printed to the terminal)
-	 */
-	public RiveScript(boolean debug) {
-		this.debug = debug;
-
-		// Set static debug modes.
-		Topic.setDebug(this.debug);
-
-		// Set the default Java macro handler.
-		this.setHandler("java", new Java(this));
-	}
-
-	/**
-	 * Creates a new RiveScript interpreter object.
+	 * Creates a new {@link RiveScript} interpreter.
 	 */
 	public RiveScript() {
-		this(false);
-	}
-
-	/*-------------------*/
-	/*-- Error Methods --*/
-	/*-------------------*/
-
-	/**
-	 * Returns the text of the last error message given.
-	 */
-	public String error() {
-		return this.error;
+		this(null);
 	}
 
 	/**
-	 * Sets the error message.
+	 * Creates a new {@link RiveScript} interpreter with the given {@link Config}.
 	 *
-	 * @param message The new error message to set.
+	 * @param config the config
 	 */
-	protected boolean error(String message) {
-		this.error = message;
+	public RiveScript(Config config) {
+		if (config == null) {
+			config = Config.basic();
+		}
+
+		this.throwExceptions = config.isThrowExceptions();
+		this.strict = config.isStrict();
+		this.utf8 = config.isUtf8();
+		this.forceCase = config.isForceCase();
+		this.depth = config.getDepth();
+		this.sessions = config.getSessionManager();
+
+		String unicodePunctuation = config.getUnicodePunctuation();
+		if (unicodePunctuation == null) {
+			unicodePunctuation = Config.DEFAULT_UNICODE_PUNCTUATION_PATTERN;
+		}
+		this.unicodePunctuation = Pattern.compile(unicodePunctuation);
+
+		this.errorMessages = new HashMap<>();
+		this.errorMessages.put("deepRecursion", "ERR: Deep Recursion Detected");
+		this.errorMessages.put("repliesNotSorted", "ERR: Replies Not Sorted");
+		this.errorMessages.put("defaultTopicNotFound", "ERR: No default topic 'random' was found");
+		this.errorMessages.put("replyNotMatched", "ERR: No Reply Matched");
+		this.errorMessages.put("replyNotFound", "ERR: No Reply Found");
+		this.errorMessages.put("objectNotFound", "[ERR: Object Not Found]");
+		this.errorMessages.put("cannotDivideByZero", "[ERR: Can't Divide By Zero]");
+		this.errorMessages.put("cannotMathVariable", "[ERR: Can't perform math operation on non-numeric variable]");
+		this.errorMessages.put("cannotMathValue", "[ERR: Can't perform math operation on non-numeric value]");
+		this.errorMessages.put("undefined", "undefined");
+
+		if (config.getErrorMessages() != null) {
+			for (Map.Entry<String, String> entry : config.getErrorMessages().entrySet()) {
+				this.errorMessages.put(entry.getKey(), entry.getValue());
+			}
+		}
+
+		if (this.depth <= 0) {
+			this.depth = Config.DEFAULT_DEPTH;
+			logger.debug("No depth config: using default {}", Config.DEFAULT_DEPTH);
+		}
+
+		if (this.sessions == null) {
+			this.sessions = new ConcurrentHashMapSessionManager();
+			logger.debug("No SessionManager config: using default ConcurrentHashMapSessionManager");
+		}
+
+		// Initialize the parser.
+		this.parser = new Parser(ParserConfig.newBuilder()
+				.strict(this.strict)
+				.utf8(this.utf8)
+				.forceCase(this.forceCase)
+				.build());
+
+		// Initialize all the data structures.
+		this.global = new HashMap<>();
+		this.vars = new HashMap<>();
+		this.sub = new HashMap<>();
+		this.person = new HashMap<>();
+		this.array = new HashMap<>();
+		this.includes = new HashMap<>();
+		this.inherits = new HashMap<>();
+		this.objectLanguages = new HashMap<>();
+		this.handlers = new HashMap<>();
+		this.subroutines = new HashMap<>();
+		this.topics = new HashMap<>();
+		this.sorted = new SortBuffer();
+
+		// Set the default Java macro handler.
+		setHandler("java", new Java(this));
+	}
+
+	/**
+	 * Returns the RiveScript library version, or {@code null} if it cannot be determined.
+	 *
+	 * @return the version
+	 * @see Package#getImplementationVersion()
+	 */
+	public static String getVersion() {
+		Package pkg = RiveScript.class.getPackage();
+		return (pkg != null ? pkg.getImplementationVersion() : null);
+	}
+
+	/*---------------------------*/
+	/*-- Configuration Methods --*/
+	/*---------------------------*/
+
+	/**
+	 * Returns whether exception throwing is enabled.
+	 *
+	 * @return whether exception throwing is enabled
+	 */
+	public boolean isThrowExceptions() {
+		return throwExceptions;
+	}
+
+	/**
+	 * Returns whether strict syntax checking is enabled.
+	 *
+	 * @return whether strict syntax checking is enabled
+	 */
+	public boolean isStrict() {
+		return strict;
+	}
+
+	/**
+	 * Returns whether UTF-8 mode is enabled for user messages and triggers.
+	 *
+	 * @return whether UTF-8 mode is enabled for user messages and triggers
+	 */
+	public boolean isUtf8() {
+		return utf8;
+	}
+
+	/**
+	 * Returns whether forcing triggers to lowercase is enabled.
+	 *
+	 * @return whether forcing triggers to lowercase is enabled
+	 */
+	public boolean isForceCase() {
+		return forceCase;
+	}
+
+	/**
+	 * Returns the recursion depth limit.
+	 *
+	 * @return the recursion depth limit
+	 */
+	public int getDepth() {
+		return depth;
+	}
+
+	/**
+	 * Returns the unicode punctuation pattern.
+	 *
+	 * @return the unicode punctuation pattern
+	 */
+	public String getUnicodePunctuation() {
+		return unicodePunctuation != null ? unicodePunctuation.toString() : null;
+	}
+
+	/**
+	 * Returns the error messages (unmodifiable).
+	 *
+	 * @return the error messages
+	 */
+	public Map<String, String> getErrorMessages() {
+		return Collections.unmodifiableMap(errorMessages);
+	}
+
+	/**
+	 * Sets a custom language handler for RiveScript object macros.
+	 *
+	 * @param name    the name of the programming language
+	 * @param handler the implementation
+	 */
+	public void setHandler(String name, ObjectHandler handler) {
+		handlers.put(name, handler);
+	}
+
+	/**
+	 * Removes an object macro language handler.
+	 *
+	 * @param name the name of the programming language
+	 */
+	public void removeHandler(String name) {
+		// Purge all loaded objects for this handler.
+		for (Map.Entry<String, String> entry : objectLanguages.entrySet()) {
+			if (entry.getValue().equals(name)) {
+				objectLanguages.remove(entry.getKey());
+			}
+		}
+
+		// And delete the handler itself.
+		handlers.remove(name);
+	}
+
+	/**
+	 * Defines a Java object macro.
+	 * <p>
+	 * Because Java is a compiled language, this method must be used to create an object macro written in Java.
+	 *
+	 * @param name       the name of the object macro for the `<call>` tag
+	 * @param subroutine the subroutine
+	 */
+	public void setSubroutine(String name, Subroutine subroutine) {
+		subroutines.put(name, subroutine);
+	}
+
+	/**
+	 * Removes a Java object macro.
+	 *
+	 * @param name the name of the object macro
+	 */
+	public void removeSubroutine(String name) {
+		subroutines.remove(name);
+	}
+
+	/**
+	 * Sets a global variable.
+	 * <p>
+	 * This is equivalent to {@code ! global} in RiveScript. Set the value to {@code null} to delete a global.
+	 *
+	 * @param name  the variable name
+	 * @param value the variable value or {@code null}
+	 */
+	public void setGlobal(String name, String value) {
+		if (value == null) {
+			global.remove(name);
+		} else if (name.equals("depth")) {
+			try {
+				depth = Integer.parseInt(value);
+			} catch (NumberFormatException e) {
+				logger.warn("Can't set global 'depth' to '{}': {}", value, e.getMessage());
+			}
+		} else {
+			global.put(name, value);
+		}
+	}
+
+	/**
+	 * Returns a global variable.
+	 * <p>
+	 * This is equivalent to {@code <env>} in RiveScript. Returns {@code null} if the variable isn't defined.
+	 *
+	 * @param name the variable name
+	 * @return the variable value or {@code null}
+	 */
+	public String getGlobal(String name) {
+		if (name != null && name.equals("depth")) {
+			return Integer.toString(depth);
+		} else {
+			return global.get(name);
+		}
+	}
+
+	/**
+	 * Sets a bot variable.
+	 * <p>
+	 * This is equivalent to {@code ! vars} in RiveScript. Set the value to {@code null} to delete a bot variable.
+	 *
+	 * @param name  the variable name
+	 * @param value the variable value or {@code null}
+	 */
+	public void setVariable(String name, String value) {
+		if (value == null) {
+			vars.remove(name);
+		} else {
+			vars.put(name, value);
+		}
+	}
+
+	/**
+	 * Returns a bot variable.
+	 * <p>
+	 * This is equivalent to {@code <bot>} in RiveScript. Returns {@code null} if the variable isn't defined.
+	 *
+	 * @param name the variable name
+	 * @return the variable value or {@code null}
+	 */
+	public String getVariable(String name) {
+		return vars.get(name);
+	}
+
+	/**
+	 * Sets a substitution pattern.
+	 * <p>
+	 * This is equivalent to {@code ! sub} in RiveScript. Set the value to {@code null} to delete a substitution.
+	 *
+	 * @param name  the substitution name
+	 * @param value the substitution pattern or {@code null}
+	 */
+	public void setSubstitution(String name, String value) {
+		if (value == null) {
+			sub.remove(name);
+		} else {
+			sub.put(name, value);
+		}
+	}
+
+	/**
+	 * Returns a substitution pattern.
+	 * <p>
+	 * Returns {@code null} if the substitution isn't defined.
+	 *
+	 * @param name the substitution name
+	 * @return the substitution pattern or {@code null}
+	 */
+	public String getSubstitution(String name) {
+		return sub.get(name);
+	}
+
+	/**
+	 * Sets a person substitution pattern.
+	 * <p>
+	 * This is equivalent to {@code ! person} in RiveScript. Set the value to {@code null} to delete a person substitution.
+	 *
+	 * @param name  the person substitution name
+	 * @param value the person substitution pattern or {@code null}
+	 */
+	public void setPerson(String name, String value) {
+		if (value == null) {
+			person.remove(name);
+		} else {
+			person.put(name, value);
+		}
+	}
+
+	/**
+	 * Returns a person substitution pattern.
+	 * <p>
+	 * This is equivalent to {@code <person>} in RiveScript. Returns {@code null} if the person substitution isn't defined.
+	 *
+	 * @param name the person substitution name
+	 * @return the person substitution pattern or {@code null}
+	 */
+	public String getPerson(String name) {
+		return person.get(name);
+	}
+
+	/**
+	 * Checks whether deep recursion is detected.
+	 * <p>
+	 * Throws a {@link DeepRecursionException} in case exception throwing is enabled, otherwise logs a warning.
+	 *
+	 * @param depth   the recursion depth counter
+	 * @param message the message to log
+	 * @return whether deep recursion is detected
+	 * @throws DeepRecursionException in case deep recursion is detected and exception throwing is enabled
+	 */
+	private boolean checkDeepRecursion(int depth, String message) throws DeepRecursionException {
+		if (depth > this.depth) {
+			logger.warn(message);
+			if (throwExceptions) {
+				throw new DeepRecursionException(message);
+			}
+			return true;
+		}
 		return false;
 	}
 
@@ -159,373 +518,155 @@ public class RiveScript {
 	/*---------------------*/
 
 	/**
-	 * Loads a directory full of RiveScript documents, specifying a custom
-	 * list of valid file extensions.
+	 * Loads a single RiveScript document from disk.
 	 *
-	 * @param path The path to the directory containing RiveScript documents.
-	 * @param exts The string array containing file extensions to look for.
+	 * @param file the RiveScript file
+	 * @throws RiveScriptException in case of a loading error
+	 * @throws ParserException     in case of a parsing error
 	 */
-	public boolean loadDirectory(String path, String[] exts) {
-		say("Load directory: " + path);
+	public void loadFile(File file) throws RiveScriptException, ParserException {
+		requireNonNull(file, "'file' must not be null");
+		logger.debug("Loading RiveScript file: {}", file);
 
-		// Get a directory handle.
-		File dh = new File(path);
-
-		// Search it for files.
-		for (int i = 0; i < exts.length; i++) {
-			// Search the directory for files of this type.
-			say("Searching for files of type: " + exts[i]);
-			final String type = exts[i];
-			String[] files = dh.list(new FilenameFilter() {
-
-				public boolean accept(File d, String name) {
-					return name.endsWith(type);
-				}
-			});
-
-			// No results?
-			if (files == null) {
-				return error("Couldn't read any files from directory " + path);
-			}
-
-			// Parse each file.
-			for (int j = 0; j < files.length; j++) {
-				loadFile(path + "/" + files[j]);
-			}
+		// Run some sanity checks on the file.
+		if (!file.exists()) {
+			throw new RiveScriptException("File '" + file + "' not found");
+		} else if (!file.isFile()) {
+			throw new RiveScriptException("File '" + file + "' is not a regular file");
+		} else if (!file.canRead()) {
+			throw new RiveScriptException("File '" + file + "' cannot be read");
 		}
 
-		return true;
-	}
-
-	/**
-	 * Loads a directory full of RiveScript documents ({@code .rive} files).
-	 *
-	 * @param path The path to the directory containing RiveScript documents.
-	 */
-	public boolean loadDirectory(String path) {
-		String[] exts = {".rive", ".rs"};
-		return this.loadDirectory(path, exts);
-	}
-
-	/**
-	 * Loads a single RiveScript document.
-	 *
-	 * @param file The path to a RiveScript document.
-	 */
-	public boolean loadFile(String file) {
-		say("Load file: " + file);
-
-		// Create a file handle.
-		File fh = new File(file);
-
-		// Run some sanity checks on the file handle.
-		if (fh.exists() == false) {
-			return error(file + ": file not found.");
-		}
-		if (fh.isFile() == false) {
-			return error(file + ": not a regular file.");
-		}
-		if (fh.canRead() == false) {
-			return error(file + ": can't read from file.");
-		}
+		List<String> code = new ArrayList<>();
 
 		// Slurp the file's contents.
-		Vector<String> lines = new Vector<String>();
-
-		try {
-			FileInputStream fis = new FileInputStream(fh);
-
-			// Using buffered input stream for fast reading.
-			DataInputStream dis = new DataInputStream(fis);
-			BufferedReader br = new BufferedReader(new InputStreamReader(dis));
-
-			// Read all the lines.
+		try (BufferedReader br = new BufferedReader(new FileReader(file))) {
 			String line;
 			while ((line = br.readLine()) != null) {
-				lines.add((String) line);
+				code.add(line);
 			}
-
-			// Dispose of the resources we don't need anymore.
-			dis.close();
-		} catch (FileNotFoundException e) {
-			// How did this happen? We checked it earlier.
-			return error(file + ": file not found exception.");
 		} catch (IOException e) {
-			trace(e);
-			return error(file + ": IOException while reading.");
+			throw new RiveScriptException("Error reading file '" + file + "'", e);
 		}
 
-		// Convert the vector into a string array.
-		String[] code = Util.Sv2s(lines);
-
-		// Send the code to the parser.
-		return parse(file, code);
+		parse(file.toString(), code.toArray(new String[0]));
 	}
 
 	/**
-	 * Streams some RiveScript code directly into the interpreter (as a single {@link String}
-	 * containing newlines in it).
+	 * Loads a single RiveScript document from disk.
 	 *
-	 * @param code The string containing all the RiveScript code.
+	 * @param path the path to the RiveScript document
+	 * @throws RiveScriptException in case of a loading error
+	 * @throws ParserException     in case of a parsing error
 	 */
-	public boolean stream(String code) {
-		// Split the given code up into lines.
+	public void loadFile(Path path) throws RiveScriptException, ParserException {
+		requireNonNull(path, "'path' must not be null");
+		loadFile(path.toFile());
+	}
+
+	/**
+	 * Loads a single RiveScript document from disk.
+	 *
+	 * @param path the path to the RiveScript document
+	 * @throws RiveScriptException in case of a loading error
+	 * @throws ParserException     in case of a parsing error
+	 */
+	public void loadFile(String path) throws RiveScriptException, ParserException {
+		requireNonNull(path, "'path' must not be null");
+		loadFile(new File(path));
+	}
+
+	/**
+	 * Loads multiple RiveScript documents from a directory on disk.
+	 *
+	 * @param directory the directory containing the RiveScript documents
+	 * @throws RiveScriptException in case of a loading error
+	 * @throws ParserException     in case of a parsing error
+	 */
+	public void loadDirectory(File directory, String... extensions) throws RiveScriptException, ParserException {
+		requireNonNull(directory, "'directory' must not be null");
+		logger.debug("Loading RiveScript files from directory: {}", directory);
+
+		if (extensions.length == 0) {
+			extensions = DEFAULT_FILE_EXTENSIONS;
+		}
+		final String[] exts = extensions;
+
+		// Run some sanity checks on the directory.
+		if (!directory.exists()) {
+			throw new RiveScriptException("Directory '" + directory + "' not found");
+		} else if (!directory.isDirectory()) {
+			throw new RiveScriptException("Directory '" + directory + "' is not a directory");
+		}
+
+		// Search for the files.
+		File[] files = directory.listFiles(new FilenameFilter() {
+
+			@Override
+			public boolean accept(File dir, String name) {
+				for (String ext : exts) {
+					if (name.endsWith(ext)) {
+						return true;
+					}
+				}
+				return false;
+			}
+		});
+
+		// No results?
+		if (files.length == 0) {
+			logger.warn("No files found in directory: {}", directory);
+		}
+
+		// Parse each file.
+		for (File file : files) {
+			loadFile(file);
+		}
+	}
+
+	/**
+	 * Loads multiple RiveScript documents from a directory on disk.
+	 *
+	 * @param path The path to the directory containing the RiveScript documents
+	 * @throws RiveScriptException in case of a loading error
+	 * @throws ParserException     in case of a parsing error
+	 */
+	public void loadDirectory(Path path, String... extensions) throws RiveScriptException, ParserException {
+		requireNonNull(path, "'path' must not be null");
+		loadDirectory(path.toFile(), extensions);
+	}
+
+	/**
+	 * Loads multiple RiveScript documents from a directory on disk.
+	 *
+	 * @param path The path to the directory containing the RiveScript documents
+	 * @throws RiveScriptException in case of a loading error
+	 * @throws ParserException     in case of a parsing error
+	 */
+	public void loadDirectory(String path, String... extensions) throws RiveScriptException, ParserException {
+		requireNonNull(path, "'path' must not be null");
+		loadDirectory(new File(path), extensions);
+	}
+
+	/**
+	 * Loads RiveScript source code from a text buffer, with line breaks after each line.
+	 *
+	 * @param code the RiveScript source code
+	 * @throws ParserException in case of a parsing error
+	 */
+	public void stream(String code) throws ParserException {
 		String[] lines = code.split("\n");
-
-		// Send the lines to the parser.
-		return parse("(streamed)", lines);
+		stream(lines);
 	}
 
 	/**
-	 * Streams some RiveScript code directly into the interpreter (as a {@link String} array,
-	 * one line per item).
+	 * Loads RiveScript source code from a {@link String} array, one line per item.
 	 *
-	 * @param code The string array containing all the lines of code.
+	 * @param code the lines of RiveScript source code
+	 * @throws ParserException in case of a parsing error
 	 */
-	public boolean stream(String[] code) {
-		// The coder has already broken the lines for us!
-		return parse("(streamed)", code);
-	}
-
-	/*---------------------------*/
-	/*-- Configuration Methods --*/
-	/*---------------------------*/
-
-	/**
-	 * Adds an {@link ObjectHandler} for a programming language to be used with RiveScript object calls.
-	 *
-	 * @param name    The name of the programming language.
-	 * @param handler The instance of a class that implements an ObjectHandler.
-	 */
-	public void setHandler(String name, ObjectHandler handler) {
-		this.handlers.put(name, handler);
-	}
-
-	/**
-	 * Defines a Java {@link ObjectMacro} from your program.
-	 * <p>
-	 * Because Java is a compiled language, this method must be used to create
-	 * an object macro written in Java.
-	 *
-	 * @param name The name of the object macro.
-	 * @param impl The object macro.
-	 */
-	public void setSubroutine(String name, ObjectMacro impl) {
-		// Is the Java handler available?
-		ObjectHandler handler = this.handlers.get("java");
-		if (handler == null) {
-			this.error("The Java macro handler is unavailable!");
-			return;
-		}
-
-		handler.setClass(name, impl);
-		this.objects.put(name, "java");
-	}
-
-	/**
-	 * Sets a global variable for the interpreter (equivalent to {@code ! global}).
-	 * Set the value to {@code null} to delete the variable.<p>
-	 * <p>
-	 * There are two special globals that require certain data types:<p>
-	 * <p>
-	 * {@code debug} is boolean-like and its value must be a string value containing
-	 * "true", "yes", "1", "false", "no" or "0".<p>
-	 * <p>
-	 * {@code depth} is integer-like and its value must be a quoted integer like "50".
-	 * The "depth" variable controls how many levels deep RiveScript will go when
-	 * following reply redirections.<p>
-	 * <p>
-	 * Returns {@code true} on success, {@code false} on error.
-	 *
-	 * @param name  The variable name.
-	 * @param value The variable's value.
-	 */
-	public boolean setGlobal(String name, String value) {
-		boolean delete = false;
-		if (value == null || value == "<undef>") {
-			delete = true;
-		}
-
-		// Special globals
-		if (name.equals("debug")) {
-			// Debug is a boolean.
-			if (value.equals("true") || value.equals("1") || value.equals("yes")) {
-				this.debug = true;
-			} else if (value.equals("false") || value.equals("0") || value.equals("no") || delete) {
-				this.debug = false;
-			} else {
-				return error("Global variable \"debug\" needs a boolean value");
-			}
-		} else if (name.equals("depth")) {
-			// Depth is an integer.
-			try {
-				this.depth = Integer.parseInt(value);
-			} catch (NumberFormatException e) {
-				return error("Global variable \"depth\" needs an integer value");
-			}
-		}
-
-		// It's a user-defined global. OK.
-		if (delete) {
-			globals.remove(name);
-		} else {
-			globals.put(name, value);
-		}
-
-		return true;
-	}
-
-	/**
-	 * Sets a bot variable for the interpreter (equivalent to {@code ! var}). A bot
-	 * variable is data about the chatbot, like its name or favorite color.<p>
-	 * <p>
-	 * A {@code null} value will delete the variable.
-	 *
-	 * @param name  The variable name.
-	 * @param value The variable's value.
-	 */
-	public boolean setVariable(String name, String value) {
-		if (value == null || value == "<undef>") {
-			vars.remove(name);
-		} else {
-			vars.put(name, value);
-		}
-
-		return true;
-	}
-
-	/**
-	 * Sets a substitution pattern (equivalent to {@code ! sub}). The user's input (and
-	 * the bot's reply, in {@code %Previous}) get substituted using these rules.<p>
-	 * <p>
-	 * A {@code null} value for the output will delete the substitution.
-	 *
-	 * @param pattern The pattern to match in the message.
-	 * @param output  The text to replace it with (must be lowercase, no special characters).
-	 */
-	public boolean setSubstitution(String pattern, String output) {
-		if (output == null || output == "<undef>") {
-			subs.remove(pattern);
-		} else {
-			subs.put(pattern, output);
-		}
-
-		return true;
-	}
-
-	/**
-	 * Sets a person substitution pattern (equivalent to {@code ! person}). Person
-	 * substitutions swap first- and second-person pronouns, so the bot can
-	 * safely echo the user without sounding too mechanical.<p>
-	 * <p>
-	 * A {@code null} value for the output will delete the substitution.
-	 *
-	 * @param pattern The pattern to match in the message.
-	 * @param output  The text to replace it with (must be lowercase, no special characters).
-	 */
-	public boolean setPersonSubstitution(String pattern, String output) {
-		if (output == null || output == "<undef>") {
-			person.remove(pattern);
-		} else {
-			person.put(pattern, output);
-		}
-
-		return true;
-	}
-
-	/**
-	 * Sets a variable for one of the bot's users. A {@code null} value will delete a
-	 * variable.
-	 *
-	 * @param user  The user's id.
-	 * @param name  The name of the variable to set.
-	 * @param value The value to set.
-	 */
-	public boolean setUservar(String user, String name, String value) {
-		if (value == null || value == "<undef>") {
-			clients.client(user).delete(name);
-		} else {
-			clients.client(user).set(name, value);
-		}
-
-		return true;
-	}
-
-	/**
-	 * Sets -all- user vars for a user. This will replace the internal hash for
-	 * the user. So your hash should at least contain a key/value pair for the
-	 * user's current "topic". This could be useful if you used {@link #getUservars(String)}
-	 * to store their entire profile somewhere and want to restore it later.
-	 *
-	 * @param user The user's ID.
-	 * @param data The full hash of the user's data.
-	 */
-	public boolean setUservars(String user, HashMap<String, String> data) {
-		// TODO: this should be handled more sanely. ;)
-		clients.client(user).setData(data);
-		return true;
-	}
-
-	/**
-	 * Gets a list of all the user id's the bot knows about.
-	 */
-	public String[] getUsers() {
-		// Get the user list from the clients object.
-		return clients.listClients();
-	}
-
-	/**
-	 * Returns a listing of all the uservars for a user as a {@link HashMap}.
-	 * Returns {@code null} if the user doesn't exist.
-	 *
-	 * @param user The user ID to get the vars for.
-	 */
-	public HashMap<String, String> getUservars(String user) {
-		if (clients.clientExists(user)) {
-			return clients.client(user).getData();
-		} else {
-			return null;
-		}
-	}
-
-	/**
-	 * Returns a single variable from a user's profile.
-	 * <p>
-	 * Returns {@code null} if the user doesn't exist. Returns the string "undefined"
-	 * if the variable doesn't exist.
-	 *
-	 * @param user The user id to get data from.
-	 * @param name The name of the variable to get.
-	 */
-	public String getUservar(String user, String name) {
-		if (clients.clientExists(user)) {
-			return clients.client(user).get(name);
-		} else {
-			return null;
-		}
-	}
-
-	/**
-	 * Returns the current user's id from within an object macro.
-	 * <p>
-	 * This is useful within a (Java) object macro to get the id of the user
-	 * currently executing the macro (for example, to get/set variables for
-	 * them).
-	 * <p>
-	 * This function is only available during a reply context; outside of
-	 * that it will return {@code null}.
-	 *
-	 * @return string user id or {@code null}.
-	 */
-	public String currentUser() {
-		return this.currentUser.get();
-	}
-
-	/**
-	 * Returns the last trigger that the user matched.
-	 */
-	public String lastMatch(String user) {
-		return this.getUservar(user, "__lastmatch__");
+	public void stream(String[] code) throws ParserException {
+		parse("stream()", code);
 	}
 
 	/*---------------------*/
@@ -533,424 +674,104 @@ public class RiveScript {
 	/*---------------------*/
 
 	/**
-	 * Parses RiveScript code and load it into internal memory.
+	 * Parses the RiveScript source code into the bot's memory.
 	 *
-	 * @param filename The file name to associate with this code (for error reporting).
-	 * @param code     The string array of all the code to parse.
+	 * @param filename the arbitrary name for the source code being parsed
+	 * @param code     the lines of RiveScript source code
+	 * @throws ParserException in case of a parsing error
 	 */
-	protected boolean parse(String filename, String[] code) {
-		// Track some state variables for this parsing round.
-		String topic = "random";        // Default topic = random
-		int lineno = 0;
-		boolean comment = false;        // In a multi-line comment
-		boolean inobj = false;          // In an object
-		String objName = "";            // Name of the current object
-		String objLang = "";            // Programming language of the object
-		Vector<String> objBuff = null;  // Buffer for the current object
-		String onTrig = "";             // Trigger we're on
-		String lastcmd = "";            // Last command code
-		String isThat = "";             // Is a %Previous trigger
+	private void parse(String filename, String[] code) throws ParserException {
+		// Get the abstract syntax tree of this file.
+		Root ast = this.parser.parse(filename, code);
 
-		// File scoped parser options.
-		HashMap<String, String> local_options = new HashMap<>();
-		local_options.put("concat", "none");
-
-		// The given "code" is an array of lines, so jump right in.
-		for (int i = 0; i < code.length; i++) {
-			lineno++; // Increment the line counter.
-			String line = code[i];
-			say("Line: " + line);
-
-			// Trim the line of whitespaces.
-			line = line.trim();
-
-			// Are we inside an object?
-			if (inobj) {
-				if (line.startsWith("<object") || line.startsWith("< object")) { // TODO regexp
-					// End of the object. Did we have a handler?
-					if (handlers.containsKey(objLang)) {
-						// Yes, call the handler's onLoad function.
-						handlers.get(objLang).onLoad(objName, Util.Sv2s(objBuff));
-
-						// Map the name to the language.
-						objects.put(objName, objLang);
-					}
-
-					objName = "";
-					objLang = "";
-					objBuff = null;
-					inobj = false;
-					continue;
-				}
-
-				// Collect the code.
-				objBuff.add(line);
-				continue;
-			}
-
-			// Look for comments.
-			if (line.startsWith("/*")) {
-				// Beginning a multi-line comment.
-				if (line.indexOf("*/") > -1) {
-					// It ends on the same line.
-					continue;
-				}
-				comment = true;
-			} else if (line.startsWith("/")) {
-				// A single line comment.
-				continue;
-			} else if (line.indexOf("*/") > -1) {
-				// End a multi-line comment.
-				comment = false;
-				continue;
-			}
-			if (comment) {
-				continue;
-			}
-
-			// Skip any blank lines.
-			if (line.length() < 2) {
-				continue;
-			}
-
-			// Separate the command from the rest of the line.
-			String cmd = line.substring(0, 1);
-			line = line.substring(1).trim();
-			say("\tCmd: " + cmd);
-
-			// Ignore inline comments.
-			if (line.indexOf(" // ") > -1) {
-				String[] split = line.split(" // ");
-				line = split[0];
-			}
-
-			// Reset the %Previous if this is a new +Trigger.
-			if (cmd.equals(CMD_TRIGGER)) {
-				isThat = "";
-			}
-
-			// Do a look-ahead to see ^Continue and %Previous.
-			for (int j = (i + 1); j < code.length; j++) {
-				// Peek ahead.
-				String peek = code[j].trim();
-
-				// Skip blank.
-				if (peek.length() == 0) {
-					continue;
-				}
-
-				// Get the command.
-				String peekCmd = peek.substring(0, 1);
-				peek = peek.substring(1).trim();
-
-				// Only continue if the lookahead line has any data.
-				if (peek.length() > 0) {
-					// The lookahead command has to be a % or a ^
-					if (peekCmd.equals(CMD_CONTINUE) == false && peekCmd.equals(CMD_PREVIOUS) == false) {
-						break;
-					}
-
-					// If the current command is a +, see if the following is a %.
-					if (cmd.equals(CMD_TRIGGER)) {
-						if (peekCmd.equals(CMD_PREVIOUS)) {
-							// It has a %Previous!
-							isThat = peek;
-							break;
-						} else {
-							isThat = "";
-						}
-					}
-
-					// If the current command is a ! and the next command(s) are
-					// ^, we'll tack each extension on as a "line break".
-					if (cmd.equals(CMD_DEFINE)) {
-						if (peekCmd.equals(CMD_CONTINUE)) {
-							line += "<crlf>" + peek;
-						}
-					}
-
-					// If the current command is not a ^ and the line after is
-					// not a %, but the line after IS a ^, then tack it onto the
-					// end of the current line.
-					if (cmd.equals(CMD_CONTINUE) == false && cmd.equals(CMD_PREVIOUS) == false && cmd.equals(CMD_DEFINE) == false) {
-						if (peekCmd.equals(CMD_CONTINUE)) {
-							// Concatenation character?
-							String concat = "";
-							if (local_options.get("concat").equals("space")) {
-								concat = " ";
-							} else if (local_options.get("concat").equals("newline")) {
-								concat = "\n";
-							}
-							line += concat + peek;
-						} else {
-							break;
-						}
-					}
-				}
-			}
-
-			// Start handling command types.
-			if (cmd.equals(CMD_DEFINE)) {
-				say("\t! DEFINE");
-				String[] whatis = line.split("\\s*=\\s*", 2);
-				String[] left = whatis[0].split("\\s+", 2);
-				String type = left[0];
-				String var = "";
-				String value = "";
-				boolean delete = false;
-				if (left.length == 2) {
-					var = left[1].trim().toLowerCase();
-				}
-				if (whatis.length == 2) {
-					value = whatis[1].trim();
-				}
-
-				// Remove line breaks unless this is an array.
-				if (!type.equals("array")) {
-					value = value.replaceAll("<crlf>", "");
-				}
-
-				// Version is the only type that doesn't have a var.
-				if (type.equals("version")) {
-					say("\tUsing RiveScript version " + value);
-
-					// Convert the value into a double, catch exceptions.
-					double version = 0;
-					try {
-						version = Double.valueOf(value).doubleValue();
-					} catch (NumberFormatException e) {
-						cry("RiveScript version \"" + value + "\" not a valid floating number", filename, lineno);
-						continue;
-					}
-
-					if (version > RS_VERSION) {
-						cry("We can't parse RiveScript v" + value + " documents", filename, lineno);
-						return false;
-					}
-
-					continue;
-				} else {
-					// All the other types require a variable and value.
-					if (var.equals("")) {
-						cry("Missing a " + type + " variable name", filename, lineno);
-						continue;
-					}
-					if (value.equals("")) {
-						cry("Missing a " + type + " value", filename, lineno);
-						continue;
-					}
-					if (value.equals("<undef>")) {
-						// Deleting its value.
-						delete = true;
-					}
-				}
-
-				// Handle the variable set types.
-				if (type.equals("local")) {
-					// Local file scoped parser options
-					say("\tSet local parser option " + var + " = " + value);
-					local_options.put(var, value);
-				} else if (type.equals("global")) {
-					// Is it a special global? (debug or depth or etc).
-					say("\tSet global " + var + " = " + value);
-					this.setGlobal(var, value);
-				} else if (type.equals("var")) {
-					// Set a bot variable.
-					say("\tSet bot variable " + var + " = " + value);
-					this.setVariable(var, value);
-				} else if (type.equals("array")) {
-					// Set an array.
-					say("\tSet array " + var);
-
-					// Deleting it?
-					if (delete) {
-						arrays.remove(var);
-						continue;
-					}
-
-					// Did the array have multiple lines?
-					String[] parts = value.split("<crlf>");
-					Vector<String> items = new Vector<String>();
-					for (int a = 0; a < parts.length; a++) {
-						// Split at pipes or spaces?
-						String[] pieces;
-						if (parts[a].indexOf("|") > -1) {
-							pieces = parts[a].split("\\|");
-						} else {
-							pieces = parts[a].split("\\s+");
-						}
-
-						// Add the pieces to the final array.
-						for (int b = 0; b < pieces.length; b++) {
-							items.add(pieces[b]);
-						}
-					}
-
-					// Store this array.
-					arrays.put(var, items);
-				} else if (type.equals("sub")) {
-					// Set a substitution.
-					say("\tSubstitution " + var + " => " + value);
-					this.setSubstitution(var, value);
-				} else if (type.equals("person")) {
-					// Set a person substitution.
-					say("\tPerson substitution " + var + " => " + value);
-					this.setPersonSubstitution(var, value);
-				} else {
-					cry("Unknown definition type \"" + type + "\"", filename, lineno);
-					continue;
-				}
-			} else if (cmd.equals(CMD_LABEL)) {
-				// > LABEL
-				say("\t> LABEL");
-				String label[] = line.split("\\s+");
-				String type = "";
-				String name = "";
-				if (label.length >= 1) {
-					type = label[0].trim().toLowerCase();
-				}
-				if (label.length >= 2) {
-					name = label[1].trim();
-				}
-
-				// Handle the label types.
-				if (type.equals("begin")) {
-					// The BEGIN statement.
-					say("\tFound the BEGIN Statement.");
-
-					// A BEGIN is just a special topic.
-					type = "topic";
-					name = "__begin__";
-				}
-				if (type.equals("topic")) {
-					// Starting a new topic.
-					say("\tSet topic to " + name);
-					onTrig = "";
-					topic = name;
-
-					// Does this topic include or inherit another one?
-					if (label.length >= 3) {
-						final int mode_includes = 1;
-						final int mode_inherits = 2;
-						int mode = 0;
-						for (int a = 2; a < label.length; a++) {
-							if (label[a].toLowerCase().equals("includes")) {
-								mode = mode_includes;
-							} else if (label[a].toLowerCase().equals("inherits")) {
-								mode = mode_inherits;
-							} else if (mode > 0) {
-								// This topic is either inherited or included.
-								if (mode == mode_includes) {
-									topics.topic(topic).includes(label[a]);
-								} else if (mode == mode_inherits) {
-									topics.topic(topic).inherits(label[a]);
-								}
-							}
-						}
-					}
-				}
-				if (type.equals("object")) {
-					// If a field was provided, it should be the programming language.
-					String lang = "";
-					if (label.length >= 3) {
-						lang = label[2].toLowerCase();
-					}
-
-					// Only try to parse a language we support.
-					onTrig = "";
-					if (lang.length() == 0) {
-						cry("Trying to parse unknown programming language (assuming it's JavaScript)", filename, lineno);
-						lang = "javascript"; // Assume it's JavaScript
-					}
-					if (!handlers.containsKey(lang)) {
-						// We don't have a handler for this language.
-						say("We can't handle " + lang + " object code!");
-						continue;
-					}
-
-					// Start collecting its code!
-					objName = name;
-					objLang = lang;
-					objBuff = new Vector<String>();
-					inobj = true;
-				}
-			} else if (cmd.equals(CMD_ENDLABEL)) {
-				// < ENDLABEL
-				say("\t< ENDLABEL");
-				String type = line.trim().toLowerCase();
-
-				if (type.equals("begin") || type.equals("topic")) {
-					say("\t\tEnd topic label.");
-					topic = "random";
-				} else if (type.equals("object")) {
-					say("\t\tEnd object label.");
-					inobj = false;
-				} else {
-					cry("Unknown end topic type \"" + type + "\"", filename, lineno);
-				}
-			} else if (cmd.equals(CMD_TRIGGER)) {
-				// + TRIGGER
-				say("\t+ TRIGGER: " + line);
-
-				if (isThat.length() > 0) {
-					// This trigger had a %Previous. To prevent conflict, tag the
-					// trigger with the "that" text.
-					onTrig = line + "{previous}" + isThat;
-					topics.topic(topic).trigger(line).hasPrevious(true);
-					topics.topic(topic).addPrevious(line, isThat);
-				} else {
-					// Set the current trigger to this.
-					onTrig = line;
-				}
-			} else if (cmd.equals(CMD_REPLY)) {
-				// - REPLY
-				say("\t- REPLY: " + line);
-
-				// This can't come before a trigger!
-				if (onTrig.length() == 0) {
-					cry("Reply found before trigger", filename, lineno);
-					continue;
-				}
-
-				// Add the reply to the trigger.
-				topics.topic(topic).trigger(onTrig).addReply(line);
-			} else if (cmd.equals(CMD_PREVIOUS)) {
-				// % PREVIOUS
-				// This was handled above.
-			} else if (cmd.equals(CMD_CONTINUE)) {
-				// ^ CONTINUE
-				// This was handled above.
-			} else if (cmd.equals(CMD_REDIRECT)) {
-				// @ REDIRECT
-				say("\t@ REDIRECT: " + line);
-
-				// This can't come before a trigger!
-				if (onTrig.length() == 0) {
-					cry("Redirect found before trigger", filename, lineno);
-					continue;
-				}
-
-				// Add the redirect to the trigger.
-				// TODO: this extends RiveScript, not compat w/ Perl yet
-				topics.topic(topic).trigger(onTrig).addRedirect(line);
-			} else if (cmd.equals(CMD_CONDITION)) {
-				// * CONDITION
-				say("\t* CONDITION: " + line);
-
-				// This can't come before a trigger!
-				if (onTrig.length() == 0) {
-					cry("Redirect found before trigger", filename, lineno);
-					continue;
-				}
-
-				// Add the condition to the trigger.
-				topics.topic(topic).trigger(onTrig).addCondition(line);
+		// Get all of the "begin" type variables.
+		for (Map.Entry<String, String> entry : ast.getBegin().getGlobal().entrySet()) {
+			if (entry.getValue().equals(UNDEF_TAG)) {
+				this.global.remove(entry.getKey());
 			} else {
-				cry("Unrecognized command \"" + cmd + "\"", filename, lineno);
+				this.global.put(entry.getKey(), entry.getValue());
+			}
+		}
+		for (Map.Entry<String, String> entry : ast.getBegin().getVar().entrySet()) {
+			if (entry.getValue().equals(UNDEF_TAG)) {
+				this.vars.remove(entry.getKey());
+			} else {
+				this.vars.put(entry.getKey(), entry.getValue());
+			}
+		}
+		for (Map.Entry<String, String> entry : ast.getBegin().getSub().entrySet()) {
+			if (entry.getValue().equals(UNDEF_TAG)) {
+				this.sub.remove(entry.getKey());
+			} else {
+				this.sub.put(entry.getKey(), entry.getValue());
+			}
+		}
+		for (Map.Entry<String, String> entry : ast.getBegin().getPerson().entrySet()) {
+			if (entry.getValue().equals(UNDEF_TAG)) {
+				this.person.remove(entry.getKey());
+			} else {
+				this.person.put(entry.getKey(), entry.getValue());
+			}
+		}
+		for (Map.Entry<String, List<String>> entry : ast.getBegin().getArray().entrySet()) {
+			if (entry.getValue().equals(UNDEF_TAG)) {
+				this.array.remove(entry.getKey());
+			} else {
+				this.array.put(entry.getKey(), entry.getValue());
 			}
 		}
 
-		return true;
+		// Consume all the parsed triggers.
+		for (Map.Entry<String, Topic> entry : ast.getTopics().entrySet()) {
+			String topic = entry.getKey();
+			Topic data = entry.getValue();
+
+			// Keep a map of the topics that are included/inherited under this topic.
+			if (!this.includes.containsKey(topic)) {
+				this.includes.put(topic, new HashMap<String, Boolean>());
+			}
+			if (!this.inherits.containsKey(topic)) {
+				this.inherits.put(topic, new HashMap<String, Boolean>());
+			}
+
+			// Merge in the topic inclusions/inherits.
+			for (String included : data.getIncludes().keySet()) {
+				this.includes.get(topic).put(included, true);
+			}
+			for (String inherited : data.getInherits().keySet()) {
+				this.inherits.get(topic).put(inherited, true);
+			}
+
+			// Initialize the topic structure.
+			if (!this.topics.containsKey(topic)) {
+				this.topics.put(topic, new Topic());
+			}
+
+			// Consume the AST triggers into the brain.
+			for (Trigger astTrigger : data.getTriggers()) {
+				// Convert this AST trigger into an internal trigger.
+				Trigger trigger = new Trigger();
+				trigger.setTrigger(astTrigger.getTrigger());
+				trigger.setReply(new ArrayList<>(astTrigger.getReply()));
+				trigger.setCondition(new ArrayList<>(astTrigger.getCondition()));
+				trigger.setRedirect(astTrigger.getRedirect());
+				trigger.setPrevious(astTrigger.getPrevious());
+
+				this.topics.get(topic).addTrigger(trigger);
+			}
+		}
+
+		// Load all the parsed objects.
+		for (ObjectMacro object : ast.getObjects()) {
+			// Have a language handler for this?
+			if (this.handlers.containsKey(object.getLanguage())) {
+				this.handlers.get(object.getLanguage()).load(object.getName(), object.getCode().toArray(new String[0]));
+				this.objectLanguages.put(object.getName(), object.getLanguage());
+			} else {
+				logger.warn("Object '{}' not loaded as no handler was found for programming language '{}'", object.getName(),
+						object.getLanguage());
+			}
+		}
 	}
 
 	/*---------------------*/
@@ -958,20 +779,458 @@ public class RiveScript {
 	/*---------------------*/
 
 	/**
-	 * Sorts the replies. This should be called after loading the replies in memory
-	 * to (re)initialize internal sort buffers. This is necessary for accurate trigger matching.
+	 * Sorts the reply structures in memory for optimal matching.
+	 * <p>
+	 * After finishing loading the RiveScript code, this method needs to be called to populate the various sort buffers.
+	 * This is absolutely necessary for reply matching to work efficiently!
 	 */
 	public void sortReplies() {
-		// We need to make sort buffers under each topic.
-		String[] topics = this.topics.listTopics();
-		say("There are " + topics.length + " topics to sort replies for.");
+		// (Re)initialize the sort cache.
+		this.sorted.getTopics().clear();
+		this.sorted.getThats().clear();
+		logger.debug("Sorting triggers...");
 
-		// Tell the topic manager to sort its topics' replies.
-		this.topics.sortReplies();
+		// Loop through all the topics.
+		for (String topic : this.topics.keySet()) {
+			logger.debug("Analyzing topic {}", topic);
 
-		// Sort the substitutions.
-		subs_s = Util.sortByLength(Util.SSh2s(subs));
-		person_s = Util.sortByLength(Util.SSh2s(person));
+			// Collect a list of all the triggers we're going to worry about.
+			// If this topic inherits another topic, we need to recursively add those to the list as well.
+			List<SortedTriggerEntry> allTriggers = getTopicTriggers(topic, false, 0, 0, false);
+
+			// Sort these triggers.
+			this.sorted.addTopic(topic, sortTriggerSet(allTriggers, true));
+
+			// Get all of the %Previous triggers for this topic.
+			List<SortedTriggerEntry> thatTriggers = getTopicTriggers(topic, true, 0, 0, false);
+
+			// And sort them, too.
+			this.sorted.addThats(topic, sortTriggerSet(thatTriggers, false));
+		}
+
+		// Sort the substitution lists.
+		this.sorted.setSub(sortList(this.sub.keySet()));
+		this.sorted.setPerson(sortList(this.person.keySet()));
+	}
+
+	/**
+	 * Recursively scans topics and collects triggers therein.
+	 * <p>
+	 * This method scans through a topic and collects its triggers, along with the triggers belonging to any topic that's inherited by or
+	 * included by the parent topic. Some triggers will come out with an {@code {inherits}} tag to signify inheritance depth.
+	 * <p>
+	 * Keep in mind here that there is a difference between 'includes' and 'inherits' -- topics that inherit other topics are able to
+	 * OVERRIDE triggers that appear in the inherited topic. This means that if the top topic has a trigger of simply {@code *}, then NO
+	 * triggers are capable of matching in ANY inherited topic, because even though {@code *} has the lowest priority, it has an automatic
+	 * priority over all inherited topics.
+	 * <p>
+	 * The {@link #getTopicTriggers(String, boolean, int, int, boolean)} method takes this into account. All topics that inherit other
+	 * topics will have their triggers prefixed with a fictional {@code {inherits}} tag, which would start at {@code {inherits=0}} and
+	 * increment if this topic has other inheriting topics. So we can use this tag to make sure topics that inherit things will have their
+	 * triggers always be on top of the stack, from {@code inherits=0} to {@code inherits=n}.
+	 * <p>
+	 * Important info about the {@code depth} vs. {@code inheritance} params to this function:
+	 * {@code depth} increments by 1 each time this method recursively calls itself. {@code inheritance} increments by 1 only when this
+	 * topic inherits another topic.
+	 * <p>
+	 * This way, {@code > topic alpha includes beta inherits gamma} will have this effect:
+	 * alpha and beta's triggers are combined together into one matching pool, and then those triggers have higher priority than gamma's.
+	 * <p>
+	 * The {@code inherited} option is {@code true} if this is a recursive call, from a topic that inherits other topics. This forces the
+	 * {@code {inherits}} tag to be added to the triggers. This only applies when the top topic 'includes' another topic.
+	 *
+	 * @param topic       the name of the topic to scan through
+	 * @param thats       indicates to get replies with {@code %Previous} or not
+	 * @param depth       the recursion depth counter
+	 * @param inheritance the inheritance counter
+	 * @param inherited   the inherited status
+	 * @return the list of triggers
+	 */
+	private List<SortedTriggerEntry> getTopicTriggers(String topic, boolean thats, int depth, int inheritance, boolean inherited) {
+		// Break if we're in too deep.
+		if (checkDeepRecursion(depth, "Deep recursion while scanning topic inheritance!")) {
+			return new ArrayList<>();
+		}
+
+		logger.debug("Collecting trigger list for topic {} (depth={}; inheritance={}; inherited={})", topic, depth, inheritance, inherited);
+
+		// Collect an array of triggers to return.
+		List<SortedTriggerEntry> triggers = new ArrayList<>();
+
+		// Get those that exist in this topic directly.
+		List<SortedTriggerEntry> inThisTopic = new ArrayList<>();
+		if (this.topics.containsKey(topic)) {
+			for (Trigger trigger : this.topics.get(topic).getTriggers()) {
+				if (!thats) {
+					// All triggers.
+					SortedTriggerEntry entry = new SortedTriggerEntry(trigger.getTrigger(), trigger);
+					inThisTopic.add(entry);
+				} else {
+					// Only triggers that have %Previous.
+					if (trigger.getPrevious() != null) {
+						SortedTriggerEntry entry = new SortedTriggerEntry(trigger.getPrevious(), trigger);
+						inThisTopic.add(entry);
+					}
+				}
+			}
+		}
+
+		// Does this topic include others?
+		if (this.includes.containsKey(topic)) {
+			for (String includes : this.includes.get(topic).keySet()) {
+				logger.debug("Topic {} includes {}", topic, includes);
+				triggers.addAll(getTopicTriggers(includes, thats, depth + 1, inheritance + 1, false));
+			}
+		}
+
+		// Does this topic inherit others?
+		if (this.inherits.containsKey(topic)) {
+			for (String inherits : this.inherits.get(topic).keySet()) {
+				logger.debug("Topic {} inherits {}", topic, inherits);
+				triggers.addAll(getTopicTriggers(inherits, thats, depth + 1, inheritance + 1, true));
+			}
+		}
+
+		// Collect the triggers for *this* topic. If this topic inherits any other topics, it means that this topic's triggers have higher
+		// priority than those in any inherited topics. Enforce this with an {inherits} tag.
+		if ((this.inherits.containsKey(topic) && this.inherits.get(topic).size() > 0) || inherited) {
+			for (SortedTriggerEntry trigger : inThisTopic) {
+				logger.debug("Prefixing trigger with {inherits={}} {}", inheritance, trigger.getTrigger());
+				String label = String.format("{inherits=%d}%s", inheritance, trigger.getTrigger());
+				triggers.add(new SortedTriggerEntry(label, trigger.getPointer()));
+			}
+		} else {
+			for (SortedTriggerEntry trigger : inThisTopic) {
+				triggers.add(new SortedTriggerEntry(trigger.getTrigger(), trigger.getPointer()));
+			}
+		}
+
+		return triggers;
+	}
+
+	/**
+	 * Sorts a group of triggers in an optimal sorting order.
+	 * <p>
+	 * This function has two use cases:
+	 * <p>
+	 * <ol>
+	 * <li>Create a sort buffer for "normal" (matchable) triggers, which are triggers that are NOT accompanied by a {@code %Previous} tag.
+	 * <li>Create a sort buffer for triggers that had {@code %Previous} tags.
+	 * </ol>
+	 * <p>
+	 * Use the {@code excludePrevious} parameter to control which one is being done.
+	 * This function will return a list of {@link SortedTriggerEntry} items, and it's intended to have no duplicate trigger patterns
+	 * (unless the source RiveScript code explicitly uses the same duplicate pattern twice, which is a user error).
+	 *
+	 * @param triggers        the triggers to sort
+	 * @param excludePrevious indicates to exclude triggers with {@code %Previous} or not
+	 * @return the sorted triggers
+	 */
+	private List<SortedTriggerEntry> sortTriggerSet(List<SortedTriggerEntry> triggers, boolean excludePrevious) {
+		// Create a priority map, of priority numbers -> their triggers.
+		Map<Integer, List<SortedTriggerEntry>> priority = new HashMap<>();
+
+		// Go through and bucket each trigger by weight (priority).
+		for (SortedTriggerEntry trigger : triggers) {
+			if (excludePrevious && trigger.getPointer().getPrevious() != null) {
+				continue;
+			}
+
+			// Check the trigger text for any {weight} tags, default being 0.
+			int weight = 0;
+			Matcher matcher = RE_WEIGHT.matcher(trigger.getTrigger());
+			if (matcher.find()) {
+				weight = Integer.parseInt(matcher.group(1));
+			}
+
+			// First trigger of this priority? Initialize the weight map.
+			if (!priority.containsKey(weight)) {
+				priority.put(weight, new ArrayList<SortedTriggerEntry>());
+			}
+
+			priority.get(weight).add(trigger);
+		}
+
+		// Keep a running list of sorted triggers for this topic.
+		List<SortedTriggerEntry> running = new ArrayList<>();
+
+		// Sort the priorities with the highest number first.
+		List<Integer> sortedPriorities = new ArrayList<>();
+		for (Integer k : priority.keySet()) {
+			sortedPriorities.add(k);
+		}
+		Collections.sort(sortedPriorities);
+		Collections.reverse(sortedPriorities);
+
+		// Go through each priority set.
+		for (Integer p : sortedPriorities) {
+			logger.debug("Sorting triggers with priority {}", p);
+
+			// So, some of these triggers may include an {inherits} tag, if they came from a topic which inherits another topic.
+			// Lower inherits values mean higher priority on the stack.
+			// Triggers that have NO inherits value at all (which will default to -1),
+			// will be moved to the END of the stack at the end (have the highest number/lowest priority).
+			int inherits = -1;        // -1 means no {inherits} tag
+			int highestInherits = -1; // Highest number seen so far
+
+			// Loop through and categorize these triggers.
+			Map<Integer, SortTrack> track = new HashMap<>();
+			track.put(inherits, new SortTrack());
+
+			// Loop through all the triggers.
+			for (SortedTriggerEntry trigger : priority.get(p)) {
+				String pattern = trigger.getTrigger();
+				logger.debug("Looking at trigger: {}", pattern);
+
+				// See if the trigger has an {inherits} tag.
+				Matcher matcher = RE_INHERITS.matcher(pattern);
+				if (matcher.find()) {
+					inherits = Integer.parseInt(matcher.group(1));
+					if (inherits > highestInherits) {
+						highestInherits = inherits;
+					}
+					logger.debug("Trigger belongs to a topic that inherits other topics. Level={}", inherits);
+					pattern = pattern.replaceAll("\\{inherits=\\d+\\}", "");
+					trigger.setTrigger(pattern);
+				} else {
+					inherits = -1;
+				}
+
+				// If this is the first time we've seen this inheritance level, initialize its sort track structure.
+				if (!track.containsKey(inherits)) {
+					track.put(inherits, new SortTrack());
+				}
+
+				// Start inspecting the trigger's contents.
+				if (pattern.contains("_")) {
+					// Alphabetic wildcard included.
+					int count = countWords(pattern, false);
+					logger.debug("Has a _ wildcard with {} words", count);
+					if (count > 0) {
+						if (!track.get(inherits).getAlpha().containsKey(count)) {
+							track.get(inherits).getAlpha().put(count, new ArrayList<SortedTriggerEntry>());
+						}
+						track.get(inherits).getAlpha().get(count).add(trigger);
+					} else {
+						track.get(inherits).getUnder().add(trigger);
+					}
+				} else if (pattern.contains("#")) {
+					// Numeric wildcard included.
+					int count = countWords(pattern, false);
+					logger.debug("Has a # wildcard with {} words", count);
+					if (count > 0) {
+						if (!track.get(inherits).getNumber().containsKey(count)) {
+							track.get(inherits).getNumber().put(count, new ArrayList<SortedTriggerEntry>());
+						}
+						track.get(inherits).getNumber().get(count).add(trigger);
+					} else {
+						track.get(inherits).getPound().add(trigger);
+					}
+				} else if (pattern.contains("*")) {
+					// Wildcard included.
+					int count = countWords(pattern, false);
+					logger.debug("Has a * wildcard with {} words", count);
+					if (count > 0) {
+						if (!track.get(inherits).getWild().containsKey(count)) {
+							track.get(inherits).getWild().put(count, new ArrayList<SortedTriggerEntry>());
+						}
+						track.get(inherits).getWild().get(count).add(trigger);
+					} else {
+						track.get(inherits).getStar().add(trigger);
+					}
+				} else if (pattern.contains("[")) {
+					// Optionals included.
+					int count = countWords(pattern, false);
+					logger.debug("Has optionals with {} words", count);
+					if (!track.get(inherits).getOption().containsKey(count)) {
+						track.get(inherits).getOption().put(count, new ArrayList<SortedTriggerEntry>());
+					}
+					track.get(inherits).getOption().get(count).add(trigger);
+				} else {
+					// Totally atomic.
+					int count = countWords(pattern, false);
+					logger.debug("Totally atomic trigger with {} words", count);
+					if (!track.get(inherits).getAtomic().containsKey(count)) {
+						track.get(inherits).getAtomic().put(count, new ArrayList<SortedTriggerEntry>());
+					}
+					track.get(inherits).getAtomic().get(count).add(trigger);
+				}
+			}
+
+			// Move the no-{inherits} triggers to the bottom of the stack.
+			track.put(highestInherits + 1, track.get(-1));
+			track.remove(-1);
+
+			// Sort the track from the lowest to the highest.
+			List<Integer> trackSorted = new ArrayList<>();
+			for (Integer k : track.keySet()) {
+				trackSorted.add(k);
+			}
+			Collections.sort(trackSorted);
+
+			// Go through each priority level from greatest to smallest.
+			for (Integer ip : trackSorted) {
+				logger.debug("ip={}", ip);
+
+				// Sort each of the main kinds of triggers by their word counts.
+				running.addAll(sortByWords(track.get(ip).getAtomic()));
+				running.addAll(sortByWords(track.get(ip).getOption()));
+				running.addAll(sortByWords(track.get(ip).getAlpha()));
+				running.addAll(sortByWords(track.get(ip).getNumber()));
+				running.addAll(sortByWords(track.get(ip).getWild()));
+
+				// Add the single wildcard triggers, sorted by length.
+				running.addAll(sortByLength(track.get(ip).getUnder()));
+				running.addAll(sortByLength(track.get(ip).getPound()));
+				running.addAll(sortByLength(track.get(ip).getStar()));
+			}
+		}
+
+		return running;
+	}
+
+	/**
+	 * Sorts a list of strings by their word counts and lengths.
+	 *
+	 * @param list the list to sort
+	 * @return the sorted list
+	 */
+	private List<String> sortList(Iterable<String> list) {
+		List<String> output = new ArrayList<>();
+
+		// Track by number of words.
+		Map<Integer, List<String>> track = new HashMap<>();
+
+		// Loop through each item.
+		for (String item : list) {
+			int count = StringUtils.countWords(item, true);
+			if (!track.containsKey(count)) {
+				track.put(count, new ArrayList<String>());
+			}
+			track.get(count).add(item);
+		}
+
+		// Sort them by word count, descending.
+		List<Integer> sortedCounts = new ArrayList<>();
+		for (Integer count : track.keySet()) {
+			sortedCounts.add(count);
+		}
+		Collections.sort(sortedCounts);
+		Collections.reverse(sortedCounts);
+
+		for (Integer count : sortedCounts) {
+			// Sort the strings of this word-count by their lengths.
+			List<String> sortedLengths = track.get(count);
+			Collections.sort(sortedLengths, byLengthReverse());
+			for (String item : sortedLengths) {
+				output.add(item);
+			}
+		}
+
+		return output;
+	}
+
+	/**
+	 * Sorts a set of triggers by word count and overall length.
+	 * <p>
+	 * This is a helper function for sorting the {@code atomic}, {@code option}, {@code alpha}, {@code number} and
+	 * {@code wild} attributes of the {@link SortTrack} and adding them to the running sort buffer in that specific order.
+	 *
+	 * @param triggers the triggers to sort
+	 * @return the sorted triggers
+	 */
+	private List<SortedTriggerEntry> sortByWords(Map<Integer, List<SortedTriggerEntry>> triggers) {
+		// Sort the triggers by their word counts from greatest to smallest.
+		List<Integer> sortedWords = new ArrayList<>();
+		for (Integer wc : triggers.keySet()) {
+			sortedWords.add(wc);
+		}
+		Collections.sort(sortedWords);
+		Collections.reverse(sortedWords);
+
+		List<SortedTriggerEntry> sorted = new ArrayList<>();
+
+		for (Integer wc : sortedWords) {
+			// Triggers with equal word lengths should be sorted by overall trigger length.
+			List<String> sortedPatterns = new ArrayList<>();
+			Map<String, List<SortedTriggerEntry>> patternMap = new HashMap<>();
+
+			for (SortedTriggerEntry trigger : triggers.get(wc)) {
+				sortedPatterns.add(trigger.getTrigger());
+				if (!patternMap.containsKey(trigger.getTrigger())) {
+					patternMap.put(trigger.getTrigger(), new ArrayList<SortedTriggerEntry>());
+				}
+				patternMap.get(trigger.getTrigger()).add(trigger);
+			}
+			Collections.sort(sortedPatterns, byLengthReverse());
+
+			// Add the triggers to the sorted triggers bucket.
+			for (String pattern : sortedPatterns) {
+				sorted.addAll(patternMap.get(pattern));
+			}
+		}
+
+		return sorted;
+	}
+
+	/**
+	 * Sorts a set of triggers purely by character length.
+	 * <p>
+	 * This is like {@link #sortByWords(Map)}, but it's intended for triggers that consist solely of wildcard-like symbols with no real words.
+	 * For example a trigger of {@code * * *} qualifies for this, and it has no words,
+	 * so we sort by length so it gets a higher priority than simply {@code *}.
+	 *
+	 * @param triggers the triggers to sort
+	 * @return the sorted triggers
+	 */
+	private List<SortedTriggerEntry> sortByLength(List<SortedTriggerEntry> triggers) {
+		List<String> sortedPatterns = new ArrayList<>();
+		Map<String, List<SortedTriggerEntry>> patternMap = new HashMap<>();
+		for (SortedTriggerEntry trigger : triggers) {
+			sortedPatterns.add(trigger.getTrigger());
+			if (!patternMap.containsKey(trigger.getTrigger())) {
+				patternMap.put(trigger.getTrigger(), new ArrayList<SortedTriggerEntry>());
+			}
+			patternMap.get(trigger.getTrigger()).add(trigger);
+		}
+		Collections.sort(sortedPatterns, byLengthReverse());
+
+		// Only loop through unique patterns.
+		Map<String, Boolean> patternSet = new HashMap<>();
+
+		List<SortedTriggerEntry> sorted = new ArrayList<>();
+
+		// Add them to the sorted triggers bucket.
+		for (String pattern : sortedPatterns) {
+			if (patternSet.containsKey(pattern) && patternSet.get(pattern)) {
+				continue;
+			}
+			patternSet.put(pattern, true);
+			sorted.addAll(patternMap.get(pattern));
+		}
+
+		return sorted;
+	}
+
+
+	/**
+	 * Returns a {@link Comparator<String>} to sort a list of {@link String}s by reverse length.
+	 * Strings with equal length will be sorted alphabetically (natural ordering).
+	 *
+	 * @return the comparator
+	 */
+	private Comparator<String> byLengthReverse() {
+		return new Comparator<String>() {
+
+			@Override
+			public int compare(String o1, String o2) {
+				int result = Integer.compare(o2.length(), o1.length());
+				if (result == 0) {
+					result = o1.compareTo(o2);
+				}
+				return result;
+			}
+		};
 	}
 
 	/*---------------------*/
@@ -979,186 +1238,200 @@ public class RiveScript {
 	/*---------------------*/
 
 	/**
-	 * Returns a reply from the RiveScript interpreter.
+	 * Returns a reply from the bot for a user's message.
+	 * <p>
+	 * In case of an exception and exception throwing is enabled a {@link RiveScriptException} is thrown.
+	 * Check the subclasses to see which types exceptions can be thrown.
 	 *
-	 * @param username The unique user id for the user chatting with the bot.
-	 * @param message  The user's message to the bot.
+	 * @param username the username
+	 * @param message  the user's message
+	 * @return the reply
+	 * @throws RiveScriptException in case of an exception and exception throwing is enabled
 	 */
-	public String reply(String username, String message) {
-		say("Get reply to [" + username + "] " + message);
+	public String reply(String username, String message) throws RiveScriptException {
+		logger.debug("Asked to reply to [{}] {}", username, message);
 
-		// Store the current ID in case an object macro wants it.
+		long startTime = System.currentTimeMillis();
+
+		// Store the current user's ID.
 		this.currentUser.set(username);
 
 		try {
+			// Initialize a user profile for this user?
+			this.sessions.init(username);
 
-			// Format their message first.
-			message = formatMessage(message);
+			// Format their message.
+			message = formatMessage(message, false);
 
-			// This will hold the final reply.
 			String reply;
 
-			// If the BEGIN statement exists, consult it first.
-			if (topics.exists("__begin__")) {
-				String begin = this.reply(username, "request", true, 0);
+			// If the BEGIN block exists, consult it first.
+			if (this.topics.containsKey("__begin__")) {
+				String begin = getReply(username, "request", true, 0);
 
 				// OK to continue?
-				if (begin.indexOf("{ok}") > -1) {
-					// Get a reply then.
-					reply = this.reply(username, message, false, 0);
+				if (begin.contains("{ok}")) {
+					reply = getReply(username, message, false, 0);
 					begin = begin.replaceAll("\\{ok\\}", reply);
-					reply = begin;
-				} else {
-					reply = begin;
 				}
 
-				// Run final substitutions.
-				reply = processTags(username, clients.client(username), message, reply,
-						new Vector<String>(), new Vector<String>(),
-						0);
+				reply = begin;
+				reply = processTags(username, message, reply, new ArrayList<String>(), new ArrayList<String>(), 0);
 			} else {
-				// No BEGIN, just continue.
-				reply = this.reply(username, message, false, 0);
+				reply = getReply(username, message, false, 0);
 			}
 
-			// Save their chat history.
-			clients.client(username).addInput(message);
-			clients.client(username).addReply(reply);
+			// Save their message history.
+			this.sessions.addHistory(username, message, reply);
 
-			// Return their reply.
+			if (logger.isDebugEnabled()) {
+				long elapsedTime = System.currentTimeMillis() - startTime;
+				logger.debug("Replied [{}] to [{}] in {} ms", reply, username, elapsedTime);
+			}
+
 			return reply;
 
 		} finally {
-			// Clear the current user.
+			// Unset the current user's ID.
 			this.currentUser.remove();
 		}
 	}
 
 	/**
-	 * Internal method for getting a reply.
+	 * Returns a reply from the bot for a user's message.
 	 *
-	 * @param user    The username of the calling user.
-	 * @param message The (formatted!) message sent by the user.
-	 * @param begin   Whether the context is that we're in the BEGIN statement or not.
-	 * @param step    The recursion depth that we're at so far.
+	 * @param username the username
+	 * @param message  the user's message
+	 * @param isBegin  whether this reply is for the {@code BEGIN} block context or not.
+	 * @param step     the recursion depth counter
+	 * @return the reply
 	 */
-	private String reply(String user, String message, boolean begin, int step) {
-		/*-----------------------*/
-		/*-- Collect User Info --*/
-		/*-----------------------*/
+	private String getReply(String username, String message, boolean isBegin, int step) {
+		// Needed to sort replies?
+		if (this.sorted.getTopics().size() == 0) {
+			logger.warn("You forgot to call sortReplies()!");
+			String errorMessage = this.errorMessages.get("repliesNotSorted");
+			if (this.throwExceptions) {
+				throw new RepliesNotSortedException(errorMessage);
+			}
+			return errorMessage;
+		}
 
-		String topic = "random";                  // Default topic = random
-		Vector<String> stars = new Vector<>();    // Wildcard matches
-		Vector<String> botstars = new Vector<>(); // Wildcards in %Previous
-		String reply = "";                        // The eventual reply
-		Client profile;                           // The user's profile object
-
-		// Get the user's profile.
-		profile = clients.client(user);
-
-		// Update their topic.
-		topic = profile.get("topic");
-
-		// Avoid letting the user fall into a missing topic.
-		if (topics.exists(topic) == false) {
-			cry("User " + user + " was in a missing topic named \"" + topic + "\"!");
+		// Collect data on this user.
+		String topic = this.sessions.get(username, "topic");
+		if (topic == null) {
 			topic = "random";
-			profile.set("topic", "random");
+		}
+		List<String> stars = new ArrayList<>();
+		List<String> thatStars = new ArrayList<>();
+		String reply = null;
+
+		// Avoid letting them fall into a missing topic.
+		if (!this.topics.containsKey(topic)) {
+			logger.warn("User {} was in an empty topic named '{}'", username, topic);
+			topic = "random";
+			this.sessions.set(username, "topic", topic);
 		}
 
 		// Avoid deep recursion.
-		if (step > depth) {
-			reply = "ERR: Deep Recursion Detected!";
-			cry(reply);
-			return reply;
+		if (checkDeepRecursion(step, "Deep recursion while getting reply!")) {
+			return this.errorMessages.get("deepRecursion");
 		}
 
-		// Are we in the BEGIN statement?
-		if (begin) {
-			// This implies the begin topic.
+		// Are we in the BEGIN block?
+		if (isBegin) {
 			topic = "__begin__";
 		}
 
-		/*------------------*/
-		/*-- Find a Reply --*/
-		/*------------------*/
-
-		// Create a pointer for the matched data.
-		Trigger matched = null;
-		boolean foundMatch = false;
-		String matchedTrigger = "";
-
-		// See if there are any %previous's in this topic, or any topic related to it. This
-		// should only be done the first time -- not during a recursive redirection.
-		if (step == 0) {
-			say("Looking for a %Previous");
-			String[] allTopics = {topic};
-			if (this.topics.topic(topic).includes().length > 0 || this.topics.topic(topic).inherits().length > 0) {
-				// We need to walk the topic tree.
-				allTopics = this.topics.getTopicTree(topic, 0);
+		// More topic sanity checking.
+		if (!this.topics.containsKey(topic)) {
+			// This was handled before, which would mean topic=random and it doesn't exist. Serious issue!
+			String errorMessage = this.errorMessages.get("defaultTopicNotFound");
+			if (this.throwExceptions) {
+				throw new NoDefaultTopicException(errorMessage);
 			}
-			for (int i = 0; i < allTopics.length; i++) {
-				// Does this topic have a %Previous anywhere?
-				say("Seeing if " + allTopics[i] + " has a %Previous");
-				if (this.topics.topic(allTopics[i]).hasPrevious()) {
-					say("Topic " + allTopics[i] + " has at least one %Previous");
+			return errorMessage;
+		}
 
-					// Get them.
-					String[] previous = this.topics.topic(allTopics[i]).listPrevious();
-					for (int j = 0; j < previous.length; j++) {
-						say("Candidate: " + previous[j]);
+		// Create a pointer for the matched data when we find it.
+		Trigger matched = null;
+		String matchedTrigger = null;
+		boolean foundMatch = false;
 
-						// Try to match the bot's last reply against this.
-						String lastReply = formatMessage(profile.getReply(1));
-						String regexp = triggerRegexp(user, profile, previous[j]);
-						say("Compare " + lastReply + " <=> " + previous[j] + " (" + regexp + ")");
+		// See if there were any %Previous's in this topic, or any topic related to it.
+		// This should only be done the first time -- not during a recursive redirection.
+		// This is because in a redirection, "lastReply" is still gonna be the same as it was the first time,
+		// resulting in an infinite loop!
+		if (step == 0) {
+			List<String> allTopics = new ArrayList<>(Arrays.asList(topic));
+			if (this.includes.get(topic).size() > 0 || this.inherits.get(topic).size() > 0) {
+				// Get ALL the topics!
+				allTopics = getTopicTree(topic, 0);
+			}
 
-						// Does it match?
-						Pattern re = Pattern.compile("^" + regexp + "$");
-						Matcher m = re.matcher(lastReply);
-						while (m.find() == true) {
-							say("OMFG the lastReply matches!");
+			// Scan them all.
+			for (String top : allTopics) {
+				logger.debug("Checking topic {} for any %Previous's", top);
 
-							// Harvest the botstars.
-							for (int s = 1; s <= m.groupCount(); s++) {
-								say("Add botstar: " + m.group(s));
-								botstars.add(m.group(s));
+				if (this.sorted.getThats(top).size() > 0) {
+					logger.debug("There's a %Previous in this topic!");
+
+					// Get the bot's last reply to the user.
+					History history = this.sessions.getHistory(username);
+					String lastReply = history.getReply().get(0);
+
+					// Format the bot's reply the same way as the human's.
+					lastReply = formatMessage(lastReply, true);
+					logger.debug("Bot's last reply: {}", lastReply);
+
+					// See if it's a match.
+					for (SortedTriggerEntry trigger : this.sorted.getThats(top)) {
+						String pattern = trigger.getPointer().getPrevious();
+						String botside = triggerRegexp(username, pattern);
+						logger.debug("Try to match lastReply {} to {} ({})", lastReply, pattern, botside);
+
+						// Match?
+						Pattern re = Pattern.compile("^" + botside + "$");
+						Matcher matcher = re.matcher(lastReply);
+						if (matcher.find()) {
+							// Huzzah! See if OUR message is right too...
+							logger.debug("Bot side matched!");
+
+							// Collect the bot stars.
+							for (int i = 1; i <= matcher.groupCount(); i++) {
+								thatStars.add(matcher.group(i));
 							}
 
-							// Now see if the user matched this trigger too!
-							String[] candidates = this.topics.topic(allTopics[i]).listPreviousTriggers(previous[j]);
-							for (int k = 0; k < candidates.length; k++) {
-								say("Does the user's message match " + candidates[k] + "?");
-								String humanside = triggerRegexp(user, profile, candidates[k]);
-								say("Compare " + message + " <=> " + candidates[k] + " (" + humanside + ")");
+							// Compare the triggers to the user's message.
+							Trigger userSide = trigger.getPointer();
+							String regexp = triggerRegexp(username, userSide.getTrigger());
+							logger.debug("Try to match {} against {} ({})", message, userSide.getTrigger(), regexp);
 
-								Pattern reH = Pattern.compile("^" + humanside + "$");
-								Matcher mH = reH.matcher(message);
-								while (mH.find() == true) {
-									say("It's a match!!!");
+							// If the trigger is atomic, we don't need to deal with the regexp engine.
+							boolean isMatch = false;
+							if (isAtomic(userSide.getTrigger())) {
+								if (message.equals(regexp)) {
+									isMatch = true;
+								}
+							} else {
+								re = Pattern.compile("^" + regexp + "$");
+								matcher = re.matcher(message);
+								if (matcher.find()) {
+									isMatch = true;
 
-									// Make sure it's all valid.
-									String realTrigger = candidates[k] + "{previous}" + previous[j];
-									if (this.topics.topic(allTopics[i]).triggerExists(realTrigger)) {
-										// Seems to be! Collect the stars.
-										for (int s = 1; s <= mH.groupCount(); s++) {
-											say("Add star: " + mH.group(s));
-											stars.add(mH.group(s));
-										}
-
-										foundMatch = true;
-										matchedTrigger = candidates[k];
-										matched = this.topics.topic(allTopics[i]).trigger(realTrigger);
+									// Get the user's message stars.
+									for (int i = 1; i <= matcher.groupCount(); i++) {
+										stars.add(matcher.group(i));
 									}
-
-									break;
-								}
-
-								if (foundMatch) {
-									break;
 								}
 							}
-							if (foundMatch) {
+
+							// Was it a match?
+							if (isMatch) {
+								// Keep the trigger pointer.
+								matched = userSide;
+								foundMatch = true;
+								matchedTrigger = userSide.getTrigger();
 								break;
 							}
 						}
@@ -1168,101 +1441,78 @@ public class RiveScript {
 		}
 
 		// Search their topic for a match to their trigger.
-		if (foundMatch == false) {
-			// Go through the sort buffer for their topic.
-			String[] triggers = topics.topic(topic).listTriggers();
-			for (int a = 0; a < triggers.length; a++) {
-				String trigger = triggers[a];
+		if (!foundMatch) {
+			logger.debug("Searching their topic for a match...");
+			for (SortedTriggerEntry trigger : this.sorted.getTopic(topic)) {
+				String pattern = trigger.getTrigger();
+				String regexp = triggerRegexp(username, pattern);
+				logger.debug("Try to match \"{}\" against {} ({})", message, pattern, regexp);
 
-				// Prepare the trigger for the regular expression engine.
-				String regexp = triggerRegexp(user, profile, trigger);
-				say("Try to match \"" + message + "\" against \"" + trigger + "\" (" + regexp + ")");
+				// If the trigger is atomic, we don't need to bother with the regexp engine.
+				boolean isMatch = false;
+				if (isAtomic(pattern) && message.equals(regexp)) {
+					isMatch = true;
+				} else {
+					// Non-atomic triggers always need the regexp.
+					Pattern re = Pattern.compile("^" + regexp + "$");
+					Matcher matcher = re.matcher(message);
+					if (matcher.find()) {
+						// The regexp matched!
+						isMatch = true;
 
-				// Is it a match?
-				Pattern re = Pattern.compile("^" + regexp + "$");
-				Matcher m = re.matcher(message);
-				if (m.find() == true) {
-					say("The trigger matches! Star count: " + m.groupCount());
-
-					// Harvest the stars.
-					int starcount = m.groupCount();
-					for (int s = 1; s <= starcount; s++) {
-						String star = m.group(s);
-						if (star == null) {
-							star = "";
+						// Collect the stars.
+						for (int i = 1; i <= matcher.groupCount(); i++) {
+							stars.add(matcher.group(i));
 						}
-						say("Add star: " + star);
-						stars.add(star);
 					}
+				}
 
-					// We found a match, but what if the trigger we matched belongs to
-					// an inherited topic? Check for that.
-					if (this.topics.topic(topic).triggerExists(trigger)) {
-						// No, the trigger does belong to us.
-						matched = this.topics.topic(topic).trigger(trigger);
-					} else {
-						say("Trigger doesn't exist under this topic, trying to find it!");
-						matched = this.topics.findTriggerByInheritance(topic, trigger, 0);
-					}
+				// A match somehow?
+				if (isMatch) {
+					logger.debug("Found a match!");
 
+					// Keep the pointer to this trigger's data.
+					matched = trigger.getPointer();
 					foundMatch = true;
-					matchedTrigger = trigger;
+					matchedTrigger = pattern;
 					break;
 				}
 			}
 		}
 
-		// Store what trigger they matched on (matchedTrigger can be blank if they didn't match).
-		profile.set("__lastmatch__", matchedTrigger);
+		// Store what trigger they matched on.
+		this.sessions.setLastMatch(username, matchedTrigger);
 
-		// Did they match anything?
+		// Did we match?
 		if (foundMatch) {
-			say("They were successfully matched to a trigger!");
-
-			/*---------------------------------*/
-			/*-- Process Their Matched Reply --*/
-			/*---------------------------------*/
-
-			// Make a dummy once loop so we can break out anytime.
-			for (int n = 0; n < 1; n++) {
-				// Exists?
-				if (matched == null) {
-					cry("Unknown error: they matched trigger " + matchedTrigger + ", but it doesn't exist?");
-					foundMatch = false;
+			for (int n = 0; n < 1; n++) { // A single loop so we can break out early.
+				// See if there are any hard redirects.
+				if (matched.getRedirect() != null && matched.getRedirect().length() > 0) {
+					logger.debug("Redirecting us to {}", matched.getRedirect());
+					String redirect = matched.getRedirect();
+					redirect = processTags(username, message, redirect, stars, thatStars, 0);
+					redirect = redirect.toLowerCase();
+					logger.debug("Pretend user said: {}", redirect);
+					reply = getReply(username, redirect, isBegin, step + 1);
 					break;
 				}
 
-				// Get the trigger object.
-				Trigger trigger = matched;
-				say("The trigger matched belongs to topic " + trigger.topic());
+				// Check the conditionals.
+				for (String row : matched.getCondition()) {
+					String[] halves = row.split("=>");
+					if (halves.length == 2) {
+						Matcher matcher = RE_CONDITION.matcher(halves[0].trim());
+						if (matcher.find()) {
+							String left = matcher.group(1).trim();
+							String eq = matcher.group(2);
+							String right = matcher.group(3).trim();
+							String potentialReply = halves[1].trim();
 
-				// Check for conditions.
-				String[] conditions = trigger.listConditions();
-				if (conditions.length > 0) {
-					say("This trigger has some conditions!");
+							// Process tags all around.
+							left = processTags(username, message, left, stars, thatStars, step);
+							right = processTags(username, message, right, stars, thatStars, step);
 
-					// See if any conditions are true.
-					boolean truth = false;
-					for (int c = 0; c < conditions.length; c++) {
-						// Separate the condition from the potential reply.
-						String[] halves = conditions[c].split("\\s*=>\\s*");
-						String condition = halves[0].trim();
-						String potreply = halves[1].trim();
-
-						// Split up the condition.
-						Pattern reCond = Pattern.compile("^(.+?)\\s+(==|eq|\\!=|ne|<>|<|<=|>|>=)\\s+(.+?)$");
-						Matcher mCond = reCond.matcher(condition);
-						while (mCond.find()) {
-							String left = mCond.group(1).trim();
-							String eq = mCond.group(2).trim();
-							String right = mCond.group(3).trim();
-
-							// Process tags on both halves.
-							left = processTags(user, profile, message, left, stars, botstars, step + 1);
-							right = processTags(user, profile, message, right, stars, botstars, step + 1);
-							say("Compare: " + left + " " + eq + " " + right);
-
-							// Defaults
+							// Defaults?
 							if (left.length() == 0) {
 								left = "undefined";
 							}
@@ -1270,405 +1520,221 @@ public class RiveScript {
 								right = "undefined";
 							}
 
-							// Validate the expression.
-							if (eq.equals("eq") || eq.equals("ne") || eq.equals("==") || eq.equals("!=") || eq.equals("<>")) {
-								// String equality comparing.
-								if ((eq.equals("eq") || eq.equals("==")) && left.equals(right)) {
-									truth = true;
-									break;
-								} else if ((eq.equals("ne") || eq.equals("!=") || eq.equals("<>")) && !left.equals(right)) {
-									truth = true;
-									break;
+							logger.debug("Check if {} {} {}", left, eq, right);
+
+							// Validate it.
+							boolean passed = false;
+
+							if (eq.equals("eq") || eq.equals("==")) {
+								if (left.equals(right)) {
+									passed = true;
 								}
-							}
-
-							// Numeric comparing.
-							int lt = 0;
-							int rt = 0;
-
-							// Turn the two sides into numbers.
-							try {
-								lt = Integer.parseInt(left);
-								rt = Integer.parseInt(right);
-							} catch (NumberFormatException e) {
-								// Oh well!
-								break;
-							}
-
-							// Run the remaining equality checks.
-							if (eq.equals("==") || eq.equals("!=") || eq.equals("<>")) {
-								// Equality checks.
-								if (eq.equals("==") && lt == rt) {
-									truth = true;
-									break;
-								} else if ((eq.equals("!=") || eq.equals("<>")) && lt != rt) {
-									truth = true;
-									break;
+							} else if (eq.equals("ne") || eq.equals("!=") || eq.equals("<>")) {
+								if (!left.equals(right)) {
+									passed = true;
 								}
-							} else if (eq.equals("<") && lt < rt) {
-								truth = true;
-								break;
-							} else if (eq.equals("<=") && lt <= rt) {
-								truth = true;
-								break;
-							} else if (eq.equals(">") && lt > rt) {
-								truth = true;
-								break;
-							} else if (eq.equals(">=") && lt >= rt) {
-								truth = true;
+							} else {
+								// Dealing with numbers here.
+								int intLeft;
+								int intRight;
+								try {
+									intLeft = Integer.parseInt(left);
+									intRight = Integer.parseInt(right);
+									if (eq.equals("<") && intLeft < intRight) {
+										passed = true;
+									} else if (eq.equals("<=") && intLeft <= intRight) {
+										passed = true;
+									} else if (eq.equals(">") && intLeft > intRight) {
+										passed = true;
+									} else if (eq.equals(">=") && intLeft >= intRight) {
+										passed = true;
+									}
+
+								} catch (NumberFormatException e) {
+									logger.warn("Failed to evaluate numeric condition!");
+								}
+
+							}
+
+							if (passed) {
+								reply = potentialReply;
 								break;
 							}
-						}
-
-						// True condition?
-						if (truth) {
-							reply = potreply;
-							break;
 						}
 					}
 				}
 
-				// Break if we got a reply from the conditions.
-				if (reply.length() > 0) {
+				// Have our reply yet?
+				if (reply != null && reply.length() > 0) {
 					break;
 				}
 
-				// Return one of the replies at random. We lump any redirects in as well.
-				String[] redirects = trigger.listRedirects();
-				String[] replies = trigger.listReplies();
+				// Process weights in the replies.
+				List<String> bucket = new ArrayList<>();
+				for (String rep : matched.getReply()) {
+					int weight;
+					Matcher matcher = RE_WEIGHT.matcher(rep);
+					if (matcher.find()) {
+						weight = Integer.parseInt(matcher.group(1));
+						if (weight <= 0) {
+							weight = 1;
+						}
 
-				// Take into account their weights.
-				Vector<Integer> bucket = new Vector<>();
-				Pattern reWeight = Pattern.compile("\\{weight=(\\d+?)\\}");
-
-				// Look at weights on redirects.
-				for (int i = 0; i < redirects.length; i++) {
-					if (redirects[i].indexOf("{weight=") > -1) {
-						Matcher mWeight = reWeight.matcher(redirects[i]);
-						while (mWeight.find()) {
-							int weight = Integer.parseInt(mWeight.group(1));
-
-							// Add to the bucket this many times.
-							if (weight > 1) {
-								for (int j = 0; j < weight; j++) {
-									say("Trigger has a redirect (weight " + weight + "): " + redirects[i]);
-									bucket.add(i);
-								}
-							} else {
-								say("Trigger has a redirect (weight " + weight + "): " + redirects[i]);
-								bucket.add(i);
-							}
-
-							// Only one weight is supported.
-							break;
+						for (int i = weight; i > 0; i--) {
+							bucket.add(rep);
 						}
 					} else {
-						say("Trigger has a redirect: " + redirects[i]);
-						bucket.add(i);
+						bucket.add(rep);
 					}
 				}
 
-				// Look at weights on replies.
-				for (int i = 0; i < replies.length; i++) {
-					if (replies[i].indexOf("{weight=") > -1) {
-						Matcher mWeight = reWeight.matcher(replies[i]);
-						while (mWeight.find()) {
-							int weight = Integer.parseInt(mWeight.group(1));
-
-							// Add to the bucket this many times.
-							if (weight > 1) {
-								for (int j = 0; j < weight; j++) {
-									say("Trigger has a reply (weight " + weight + "): " + replies[i]);
-									bucket.add(redirects.length + i);
-								}
-							} else {
-								say("Trigger has a reply (weight " + weight + "): " + replies[i]);
-								bucket.add(redirects.length + i);
-							}
-
-							// Only one weight is supported.
-							break;
-						}
-					} else {
-						say("Trigger has a reply: " + replies[i]);
-						bucket.add(redirects.length + i);
-					}
+				// Get a random reply.
+				if (bucket.size() > 0) {
+					reply = bucket.get(RANDOM.nextInt(bucket.size()));
 				}
-
-				// Pull a random value out.
-				int[] choices = Util.Iv2s(bucket);
-				if (choices.length > 0) {
-					int choice = choices[rand.nextInt(choices.length)];
-					say("Possible choices: " + choices.length + "; chosen: " + choice);
-					if (choice < redirects.length) {
-						// The choice was a redirect!
-						String redirect = redirects[choice].replaceAll("\\{weight=\\d+\\}", "");
-						redirect = processTags(user, profile, message, redirect, stars, botstars, step);
-						say("Chosen a redirect to " + redirect + "!");
-						reply = reply(user, redirect, begin, step + 1);
-					} else {
-						// The choice was a reply!
-						choice -= redirects.length;
-						if (choice < replies.length) {
-							say("Chosen a reply: " + replies[choice]);
-							reply = replies[choice];
-						}
-					}
-				}
+				break;
 			}
 		}
 
-		// Still no reply?
+		// Still no reply?? Give up with the fallback error replies.
 		if (!foundMatch) {
-			reply = "ERR: No Reply Matched";
-		} else if (reply.length() == 0) {
-			reply = "ERR: No Reply Found";
+			String errorMessage = this.errorMessages.get("replyNotMatched");
+			if (this.throwExceptions) {
+				throw new ReplyNotFoundException(errorMessage);
+			}
+			reply = errorMessage;
+		} else if (reply == null || reply.length() == 0) {
+			String errorMessage = this.errorMessages.get("replyNotFound");
+			if (this.throwExceptions) {
+				throw new ReplyNotMatchedException(errorMessage);
+			}
+			reply = errorMessage;
 		}
 
-		say("Final reply: " + reply + " (begin: " + begin + ")");
+		logger.debug("Reply: {}", reply);
 
-		// Special tag processing for the BEGIN statement.
-		if (begin) {
-			// The BEGIN block may have {topic} or <set> tags and that's all.
-			// <set> tag
-			if (reply.indexOf("<set") > -1) {
-				Pattern reSet = Pattern.compile("<set (.+?)=(.+?)>");
-				Matcher mSet = reSet.matcher(reply);
-				while (mSet.find()) {
-					String tag = mSet.group(0);
-					String var = mSet.group(1);
-					String value = mSet.group(2);
+		// Process tags for the BEGIN block.
+		if (isBegin) {
+			// The BEGIN block can set {topic} and user vars.
 
-					// Set the uservar.
-					profile.set(var, value);
-					reply = reply.replace(tag, "");
+			// Topic setter.
+			Matcher matcher = RE_TOPIC.matcher(reply);
+			int giveup = 0;
+			while (matcher.find()) {
+				giveup++;
+				if (checkDeepRecursion(giveup, "Infinite loop looking for topic tag!")) {
+					break;
 				}
+				String name = matcher.group(1);
+				this.sessions.set(username, "topic", name);
+				reply = reply.replace(matcher.group(0), "");
 			}
 
-			// {topic} tag
-			if (reply.indexOf("{topic=") > -1) {
-				Pattern reTopic = Pattern.compile("\\{topic=(.+?)\\}");
-				Matcher mTopic = reTopic.matcher(reply);
-				while (mTopic.find()) {
-					String tag = mTopic.group(0);
-					topic = mTopic.group(1);
-					say("Set user's topic to: " + topic);
-					profile.set("topic", topic);
-					reply = reply.replace(tag, "");
+			// Set user vars.
+			matcher = RE_SET.matcher(reply);
+			giveup = 0;
+			while (matcher.find()) {
+				giveup++;
+				if (checkDeepRecursion(giveup, "Infinite loop looking for set tag!")) {
+					break;
 				}
+				String name = matcher.group(1);
+				String value = matcher.group(2);
+				this.sessions.set(username, name, value);
+				reply = reply.replace(matcher.group(0), "");
 			}
 		} else {
-			// Process tags.
-			reply = processTags(user, profile, message, reply, stars, botstars, step);
+			reply = processTags(username, message, reply, stars, thatStars, 0);
 		}
 
 		return reply;
 	}
 
 	/**
-	 * Formats a trigger for the regular expression engine.
+	 * Formats a user's message for safe processing.
 	 *
-	 * @param user    The user id of the caller.
-	 * @param trigger The raw trigger text.
+	 * @param message  the user's message
+	 * @param botReply whether it is a bot reply or not
+	 * @return the formatted message
 	 */
-	private String triggerRegexp(String user, Client profile, String trigger) {
-		// If the trigger is simply '*', it needs to become (.*?) so it catches the empty string.
-		String regexp = trigger.replaceAll("^\\*$", "<zerowidthstar>");
+	private String formatMessage(String message, boolean botReply) {
+		// Lowercase it.
+		message = "" + message;
+		message = message.toLowerCase();
 
-		// Simple regexps are simple.
-		regexp = regexp.replaceAll("\\*", "(.+?)");                  // *  ->  (.+?)
-		regexp = regexp.replaceAll("#", "(\\\\d+?)");                // #  ->  (\d+?)
-		regexp = regexp.replaceAll("(?<!\\\\)_", "(\\\\w+?)");       // _  ->  ([A-Za-z ]+?)
-		regexp = regexp.replaceAll("\\\\_", "_");                    // \_ ->  _
-		regexp = regexp.replaceAll("\\s*\\{weight=\\d+\\}\\s*", ""); // Remove {weight} tags
-		regexp = regexp.replaceAll("<zerowidthstar>", "(.*?)");      // *  ->  (.*?)
+		// Run substitutions and sanitize what's left.
+		message = substitute(message, this.sub, this.sorted.getSub());
 
-		// Handle optionals.
-		if (regexp.indexOf("[") > -1) {
-			Pattern reOpts = Pattern.compile("\\s*\\[(.+?)\\]\\s*");
-			Matcher mOpts = reOpts.matcher(regexp);
-			while (mOpts.find() == true) {
-				String optional = mOpts.group(0);
-				String contents = mOpts.group(1);
-
-				// Split them at the pipes.
-				String[] parts = contents.split("\\|");
-
-				// Construct a regexp part.
-				StringBuffer re = new StringBuffer();
-				for (int i = 0; i < parts.length; i++) {
-					// See: https://github.com/aichaos/rivescript-js/commit/02f236e78c5d237cb046d2347fe704f5f70231c9
-					re.append("(?:\\s|\\b)+" + parts[i] + "(?:\\s|\\b)+");
-					if (i < parts.length - 1) {
-						re.append("|");
-					}
-				}
-				String pipes = re.toString();
-
-				// If this optional had a star or anything in it, e.g. [*],
-				// make it non-matching.
-				pipes = pipes.replaceAll("\\(\\.\\+\\?\\)", "(?:.+?)");
-				pipes = pipes.replaceAll("\\(\\d\\+\\?\\)", "(?:\\\\d+?)");
-				pipes = pipes.replaceAll("\\(\\w\\+\\?\\)", "(?:\\\\w+?)");
-
-				// Put the new text in.
-				pipes = "(?:" + pipes + "|(?:\\b|\\s)+)";
-				regexp = regexp.replace(optional, pipes);
+		// In UTF-8 mode, only strip metacharacters and HTML brackets (to protect against obvious XSS attacks).
+		if (this.utf8) {
+			message = RE_META.matcher(message).replaceAll("");
+			if (this.unicodePunctuation != null) {
+				message = this.unicodePunctuation.matcher(message).replaceAll("");
 			}
+
+			// For the bot's reply, also strip common punctuation.
+			if (botReply) {
+				message = RE_SYMBOLS.matcher(message).replaceAll("");
+			}
+		} else {
+			// For everything else, strip all non-alphanumerics.
+			message = stripNasties(message);
 		}
 
-		// Make \w more accurate for our purposes.
-		regexp = regexp.replaceAll("\\\\w", "[A-Za-z]");
+		// Cut leading and trailing blanks once punctuation dropped office.
+		message = message.trim();
+		message = message.replaceAll("\\s+", " ");
 
-		// Filter in arrays.
-		if (regexp.indexOf("@") > -1) {
-			// Match the array's name.
-			Pattern reArray = Pattern.compile("\\@(.+?)\\b");
-			Matcher mArray = reArray.matcher(regexp);
-			while (mArray.find() == true) {
-				String array = mArray.group(0);
-				String name = mArray.group(1);
-
-				// Do we have an array by this name?
-				if (arrays.containsKey(name)) {
-					String[] values = Util.Sv2s(arrays.get(name));
-					StringBuffer joined = new StringBuffer();
-
-					// Join the array.
-					for (int i = 0; i < values.length; i++) {
-						joined.append(values[i]);
-						if (i < values.length - 1) {
-							joined.append("|");
-						}
-					}
-
-					// Final contents...
-					String rep = "(?:" + joined.toString() + ")";
-					regexp = regexp.replace(array, rep);
-				} else {
-					// No array by this name.
-					regexp = regexp.replace(array, "");
-				}
-			}
-		}
-
-		// Filter in bot variables.
-		if (regexp.indexOf("<bot") > -1) {
-			Pattern reBot = Pattern.compile("<bot (.+?)>");
-			Matcher mBot = reBot.matcher(regexp);
-			while (mBot.find()) {
-				String tag = mBot.group(0);
-				String var = mBot.group(1);
-				String value = vars.get(var).toLowerCase().replace("[^a-z0-9 ]+", "");
-
-				// Have this?
-				if (vars.containsKey(var)) {
-					regexp = regexp.replace(tag, value);
-				} else {
-					regexp = regexp.replace(tag, "undefined");
-				}
-			}
-		}
-
-		// Filter in user variables.
-		if (regexp.indexOf("<get") > -1) {
-			Pattern reGet = Pattern.compile("<get (.+?)>");
-			Matcher mGet = reGet.matcher(regexp);
-			while (mGet.find()) {
-				String tag = mGet.group(0);
-				String var = mGet.group(1);
-				String value = profile.get(var).toLowerCase().replaceAll("[^a-z0-9 ]+", "");
-
-				// Have this?
-				regexp = regexp.replace(tag, value);
-			}
-		}
-
-		// Input and reply tags.
-		regexp = regexp.replaceAll("<input>", "<input1>");
-		regexp = regexp.replaceAll("<reply>", "<reply1>");
-		if (regexp.indexOf("<input") > -1) {
-			Pattern reInput = Pattern.compile("<input([0-9])>");
-			Matcher mInput = reInput.matcher(regexp);
-			while (mInput.find()) {
-				String tag = mInput.group(0);
-				int index = Integer.parseInt(mInput.group(1));
-				String text = profile.getInput(index).toLowerCase().replaceAll("[^a-z0-9 ]+", "");
-				regexp = regexp.replace(tag, text);
-			}
-		}
-		if (regexp.indexOf("<reply") > -1) {
-			Pattern reReply = Pattern.compile("<reply([0-9])>");
-			Matcher mReply = reReply.matcher(regexp);
-			while (mReply.find()) {
-				String tag = mReply.group(0);
-				int index = Integer.parseInt(mReply.group(1));
-				String text = profile.getReply(index).toLowerCase().replaceAll("[^a-z0-9 ]+", "");
-				regexp = regexp.replace(tag, text);
-			}
-		}
-
-		return regexp;
+		return message;
 	}
 
 	/**
-	 * Process reply tags.
+	 * Processes tags in a reply element.
 	 *
-	 * @param user      The name of the end user.
-	 * @param profile   The RiveScript client object holding the user's profile
-	 * @param message   The message sent by the user.
-	 * @param reply     The bot's original reply including tags.
-	 * @param vst       The vector of wildcards the user's message matched.
-	 * @param vbst      The vector of wildcards in any @{code %Previous}.
-	 * @param step      The current recursion depth limit.
+	 * @param username
+	 * @param message
+	 * @param reply
+	 * @param st
+	 * @param bst
+	 * @param step
+	 * @return
 	 */
-	private String processTags(String user, Client profile, String message, String reply,
-			Vector<String> vst, Vector<String> vbst, int step) {
-		// Pad the stars.
-		Vector<String> vstars = new Vector<>();
-		vstars.add("");
-		vstars.addAll(vst);
-		Vector<String> vbotstars = new Vector<>();
-		vbotstars.add("");
-		vbotstars.addAll(vbst);
-
-		// Set a default first star.
-		if (vstars.size() == 1) {
-			vstars.add("undefined");
+	private String processTags(String username, String message, String reply, List<String> st, List<String> bst, int step) {
+		// Prepare the stars and botstars.
+		List<String> stars = new ArrayList<>();
+		stars.add("");
+		stars.addAll(st);
+		List<String> botstars = new ArrayList<>();
+		botstars.add("");
+		botstars.addAll(bst);
+		if (stars.size() == 1) {
+			stars.add("undefined");
 		}
-		if (vbotstars.size() == 1) {
-			vbotstars.add("undefined");
+		if (botstars.size() == 1) {
+			botstars.add("undefined");
 		}
-
-		// Convert the stars into simple arrays.
-		String[] stars = Util.Sv2s(vstars);
-		String[] botstars = Util.Sv2s(vbotstars);
 
 		// Turn arrays into randomized sets.
-		if (reply.indexOf("(@") > -1) {
-			Pattern reArray = Pattern.compile("\\(@([A-Za-z0-9_]+)\\)");
-			Matcher mArray = reArray.matcher(reply);
-			while (mArray.find()) {
-				String tag = mArray.group(0);
-				String name = mArray.group(1);
-				String result;
-				if (arrays.containsKey(name)) {
-					String[] values = Util.Sv2s(arrays.get(name));
-					StringBuffer joined = new StringBuffer();
-					// Join the array.
-					for (int i = 0; i < values.length; i++) {
-						joined.append(values[i]);
-						if (i < values.length - 1) {
-							joined.append("|");
-						}
-					}
-					result = "{random}" + joined.toString() + "{/random}";
-					reply = reply.replace(tag, result);
-				}
+		Pattern re = Pattern.compile("\\(@([A-Za-z0-9_]+)\\)");
+		Matcher matcher = re.matcher(reply);
+		int giveup = 0;
+		while (matcher.find()) {
+			if (checkDeepRecursion(giveup, "Infinite loop looking for arrays in reply!")) {
+				break;
 			}
-		}
 
-		// Shortcut tags.
+			String name = matcher.group(1);
+			String result;
+			if (this.array.containsKey(name)) {
+				result = "{random}" + StringUtils.join(this.array.get(name).toArray(new String[0]), "|") + "{/random}";
+			} else {
+				result = "\\x00@" + name + "\\x00"; // Dummy it out so we can reinsert it later.
+			}
+			reply = reply.replace(matcher.group(0), result);
+		}
+		reply = reply.replaceAll("\\\\x00@([A-Za-z0-9_]+)\\\\x00", "(@$1)");
+
+		// Tag shortcuts.
 		reply = reply.replaceAll("<person>", "{person}<star>{/person}");
 		reply = reply.replaceAll("<@>", "{@<star>}");
 		reply = reply.replaceAll("<formal>", "{formal}<star>{/formal}");
@@ -1677,139 +1743,144 @@ public class RiveScript {
 		reply = reply.replaceAll("<lowercase>", "{lowercase}<star>{/lowercase}");
 
 		// Weight and star tags.
-		reply = reply.replaceAll("\\{weight=\\d+\\}", ""); // Remove {weight}s
-		reply = reply.replaceAll("<star>", stars[1]);
-		reply = reply.replaceAll("<botstar>", botstars[1]);
-		for (int i = 1; i < stars.length; i++) {
-			reply = reply.replaceAll("<star" + i + ">", stars[i]);
+		reply = RE_WEIGHT.matcher(reply).replaceAll(""); // Remove {weight} tags.
+		reply = reply.replaceAll("<star>", stars.get(1));
+		reply = reply.replaceAll("<botstar>", botstars.get(1));
+		for (int i = 1; i < stars.size(); i++) {
+			reply = reply.replaceAll("<star" + i + ">", stars.get(i));
 		}
-		for (int i = 1; i < botstars.length; i++) {
-			reply = reply.replaceAll("<botstar" + i + ">", botstars[i]);
+		for (int i = 1; i < botstars.size(); i++) {
+			reply = reply.replaceAll("<botstar" + i + ">", botstars.get(i));
 		}
-		reply = reply.replaceAll("<(star|botstar)\\d+>", "");
 
-		// Input and reply tags.
+		// <input> and <reply> tags.
 		reply = reply.replaceAll("<input>", "<input1>");
 		reply = reply.replaceAll("<reply>", "<reply1>");
-		if (reply.indexOf("<input") > -1) {
-			Pattern reInput = Pattern.compile("<input([0-9])>");
-			Matcher mInput = reInput.matcher(reply);
-			while (mInput.find()) {
-				String tag = mInput.group(0);
-				int index = Integer.parseInt(mInput.group(1));
-				String text = profile.getInput(index).toLowerCase().replaceAll("[^a-z0-9 ]+", "");
-				reply = reply.replace(tag, text);
-			}
-		}
-		if (reply.indexOf("<reply") > -1) {
-			Pattern reReply = Pattern.compile("<reply([0-9])>");
-			Matcher mReply = reReply.matcher(reply);
-			while (mReply.find()) {
-				String tag = mReply.group(0);
-				int index = Integer.parseInt(mReply.group(1));
-				String text = profile.getReply(index).toLowerCase().replaceAll("[^a-z0-9 ]+", "");
-				reply = reply.replace(tag, text);
+		History history = this.sessions.getHistory(username);
+		if (history != null) {
+			for (int i = 1; i <= HISTORY_SIZE; i++) {
+				reply = reply.replaceAll("<input" + i + ">", history.getInput(i - 1));
+				reply = reply.replaceAll("<reply" + i + ">", history.getReply(i - 1));
 			}
 		}
 
-		// <id> and escape codes
-		reply = reply.replaceAll("<id>", user);
+		// <id> and escape codes.
+		reply = reply.replaceAll("<id>", username);
 		reply = reply.replaceAll("\\\\s", " ");
 		reply = reply.replaceAll("\\\\n", "\n");
-		reply = reply.replaceAll("\\\\", "\\");
 		reply = reply.replaceAll("\\#", "#");
 
-		// {random} tag
-		if (reply.indexOf("{random}") > -1) {
-			Pattern reRandom = Pattern.compile("\\{random\\}(.+?)\\{\\/random\\}");
-			Matcher mRandom = reRandom.matcher(reply);
-			while (mRandom.find()) {
-				String tag = mRandom.group(0);
-				String[] candidates = mRandom.group(1).split("\\|");
-				String chosen = candidates[rand.nextInt(candidates.length)];
-				reply = reply.replace(tag, chosen);
+		// {random}
+		matcher = RE_RANDOM.matcher(reply);
+		giveup = 0;
+		while (matcher.find()) {
+			giveup++;
+			if (checkDeepRecursion(giveup, "Infinite loop looking for random tag!")) {
+				break;
 			}
+
+			String[] random;
+			String text = matcher.group(1);
+			if (text.contains("|")) {
+				random = text.split("\\|");
+			} else {
+				random = text.split(" ");
+			}
+
+			String output = "";
+			if (random.length > 0) {
+				output = random[RANDOM.nextInt(random.length)];
+			}
+
+			reply = reply.replace(matcher.group(0), output);
 		}
 
-		// {!stream} tag
-		if (reply.indexOf("{!") > -1) {
-			Pattern reStream = Pattern.compile("\\{\\!(.+?)\\}");
-			Matcher mStream = reStream.matcher(reply);
-			while (mStream.find()) {
-				String tag = mStream.group(0);
-				String code = mStream.group(1);
-				say("Stream new code in: " + code);
+		// Person substitution and string formatting.
+		String[] formats = new String[] {"person", "formal", "sentence", "uppercase", "lowercase"};
+		for (String format : formats) {
+			re = Pattern.compile("\\{" + format + "\\}(.+?)\\{\\/" + format + "\\}");
+			matcher = re.matcher(reply);
+			giveup = 0;
+			while (matcher.find()) {
+				giveup++;
+				if (checkDeepRecursion(giveup, "Infinite loop looking for {} tag!")) {
+					break;
+				}
 
-				// Stream it.
-				this.stream(code);
-				reply = reply.replace(tag, "");
-			}
-		}
-
-		// Person substitutions & string formatting
-		if (reply.indexOf("{person}") > -1 || reply.indexOf("{formal}") > -1 || reply.indexOf("{sentence}") > -1 ||
-				reply.indexOf("{uppercase}") > -1 || reply.indexOf("{lowercase}") > -1) {
-			String[] tags = {"person", "formal", "sentence", "uppercase", "lowercase"};
-			for (int i = 0; i < tags.length; i++) {
-				Pattern reTag = Pattern.compile("\\{" + tags[i] + "\\}(.+?)\\{\\/" + tags[i] + "\\}");
-				Matcher mTag = reTag.matcher(reply);
-				while (mTag.find()) {
-					String tag = mTag.group(0);
-					String text = mTag.group(1);
-					if (tags[i].equals("person")) {
-						// Run person substitutions.
-						say("Run person substitutions: before: " + text);
-						text = Util.substitute(person_s, person, text);
-						say("After: " + text);
-						reply = reply.replace(tag, text);
-					} else {
-						// String transform.
-						text = stringTransform(tags[i], text);
-						reply = reply.replace(tag, text);
+				String content = matcher.group(1);
+				String replace = null;
+				if (format.equals("person")) {
+					replace = substitute(content, this.person, this.sorted.getPerson());
+				} else {
+					if (format.equals("uppercase")) {
+						replace = content.toUpperCase();
+					} else if (format.equals("lowercase")) {
+						replace = content.toLowerCase();
+					} else if (format.equals("sentence")) {
+						if (content.length() > 1) {
+							replace = content.substring(0, 1).toUpperCase() + content.substring(1).toLowerCase();
+						} else {
+							replace = content.toUpperCase();
+						}
+					} else if (format.equals("formal")) {
+						String[] words = content.split(" ");
+						for (int i = 0; i < words.length; i++) {
+							String word = words[i];
+							if (word.length() > 1) {
+								words[i] = word.substring(0, 1).toUpperCase() + word.substring(1).toLowerCase();
+							} else {
+								words[i] = word.toUpperCase();
+							}
+						}
+						replace = StringUtils.join(words, " ");
 					}
 				}
+
+				reply = reply.replace(matcher.group(0), replace);
 			}
 		}
 
-		// Handle all variable-related tags with an iterative regexp approach, to
+		// Handle all variable-related tags with an iterative regexp approach to
 		// allow for nesting of tags in arbitrary ways (think <set a=<get b>>)
-		// Dummy out the <call> tags first, because we don't handle them right here.
+		// Dummy out the <call> tags first, because we don't handle them here.
 		reply = reply.replaceAll("<call>", "{__call__}");
 		reply = reply.replaceAll("</call>", "{/__call__}");
-
 		while (true) {
-			// This regexp will match a <tag> which contains no other tag inside it,
-			// i.e. in the case of <set a=<get b>> it will match <get b> but not the
-			// <set> tag, on the first pass. The second pass will get the <set> tag,
-			// and so on.
-			Pattern reTag = Pattern.compile("<([^<]+?)>");
-			Matcher mTag = reTag.matcher(reply);
-			if (!mTag.find()) {
-				break; // No remaining tags!
+
+			// Look for tags that don't contain any other tags inside them.
+			matcher = RE_ANY_TAG.matcher(reply);
+			if (!matcher.find()) {
+				break; // No tags left!
 			}
 
-			String match = mTag.group(1);
+			String match = matcher.group(1);
 			String[] parts = match.split(" ");
 			String tag = parts[0].toLowerCase();
 			String data = "";
 			if (parts.length > 1) {
-				data = Util.join(Arrays.copyOfRange(parts, 1, parts.length), " ");
+				data = StringUtils.join(Arrays.copyOfRange(parts, 1, parts.length), " ");
 			}
 			String insert = "";
 
-			// Handle the tags.
+			// Handle the various types of tags.
 			if (tag.equals("bot") || tag.equals("env")) {
-				// <bot> and <env> tags are similar
-				HashMap<String, String> target = tag.equals("bot") ? vars : globals;
-				if (data.indexOf("=") > -1) {
-					// Assigning a variable
-					parts = data.split("=", 2);
+				// <bot> and <env> tags are similar.
+				Map<String, String> target;
+				if (tag.equals("bot")) {
+					target = this.vars;
+				} else {
+					target = this.global;
+				}
+
+				if (data.contains("=")) {
+					// Assigning the value.
+					parts = data.split("=");
 					String name = parts[0];
 					String value = parts[1];
-					say("Set " + tag + " variable " + name + " = " + value);
+					logger.debug("Assign {} variable {} = }{", tag, name, value);
 					target.put(name, value);
 				} else {
-					// Getting a bot/env variable
+					// Getting a bot/env variable.
 					if (target.containsKey(data)) {
 						insert = target.get(data);
 					} else {
@@ -1817,28 +1888,35 @@ public class RiveScript {
 					}
 				}
 			} else if (tag.equals("set")) {
-				// <set> user vars
-				parts = data.split("=", 2);
-				String name = parts[0];
-				String value = parts[1];
-				say("Set user var " + name + "=" + value);
-				// Set the uservar.
-				profile.set(name, value);
+				// <set> user vars.
+				parts = data.split("=");
+				if (parts.length > 1) {
+					String name = parts[0];
+					String value = parts[1];
+					logger.debug("Set uservar {} = {}", name, value);
+					this.sessions.set(username, name, value);
+				} else {
+					logger.warn("Malformed <set> tag: {}", match);
+				}
 			} else if (tag.equals("add") || tag.equals("sub") || tag.equals("mult") || tag.equals("div")) {
 				// Math operator tags
 				parts = data.split("=");
 				String name = parts[0];
+				String strValue = parts[1];
 				int result = 0;
 
 				// Initialize the variable?
-				if (profile.get(name).equals("undefined")) {
-					profile.set(name, "0");
+				String origStr = this.sessions.get(username, name);
+				if (origStr == null) {
+					origStr = "0";
+					this.sessions.set(username, name, origStr);
 				}
 
+				// Sanity check.
 				try {
-					int value = Integer.parseInt(parts[1]);
+					int value = Integer.parseInt(strValue);
 					try {
-						result = Integer.parseInt(profile.get(name));
+						result = Integer.parseInt(origStr);
 
 						// Run the operation.
 						if (tag.equals("add")) {
@@ -1850,148 +1928,461 @@ public class RiveScript {
 						} else {
 							// Don't divide by zero.
 							if (value == 0) {
-								insert = "[ERR: Can't divide by zero!]";
+								logger.warn("Can't divide by zero");
+								insert = this.errorMessages.get("cannotDivideByZero");
 							}
 							result /= value;
 						}
+						this.sessions.set(username, name, Integer.toString(result));
 					} catch (NumberFormatException e) {
-						insert = "[ERR: Math can't \"" + tag + "\" non-numeric variable " + name + "]";
+						logger.warn("Math can't " + tag + " non-numeric variable " + name);
+						insert = this.errorMessages.get("cannotMathVariable");
 					}
 				} catch (NumberFormatException e) {
-					insert = "[ERR: Math can't \"" + tag + "\" non-numeric value " + parts[1] + "]";
-				}
-
-				// No errors?
-				if (insert.equals("")) {
-					profile.set(name, Integer.toString(result));
+					logger.warn("Math can't " + tag + " non-numeric value " + strValue);
+					insert = this.errorMessages.get("cannotMathValue");
 				}
 			} else if (tag.equals("get")) {
-				// Get the user var.
-				insert = profile.get(data);
+				// <get> user vars.
+				insert = this.sessions.get(username, data);
+				if (insert == null) {
+					insert = "undefined";
+				}
 			} else {
-				// Unrecognized tag, preserve it
+				// Unrecognized tag; preserve it.
 				insert = "\\x00" + match + "\\x01";
 			}
 
-			reply = reply.replace(mTag.group(0), insert);
+			reply = reply.replace(matcher.group(0), insert);
 		}
 
-		// Recover mangled HTML-like tags
+		// Recover mangled HTML-like tags.
 		reply = reply.replaceAll("\\\\x00", "<");
 		reply = reply.replaceAll("\\\\x01", ">");
 
-		// {topic} tag
-		if (reply.indexOf("{topic=") > -1) {
-			Pattern reTopic = Pattern.compile("\\{topic=(.+?)\\}");
-			Matcher mTopic = reTopic.matcher(reply);
-			while (mTopic.find()) {
-				String tag = mTopic.group(0);
-				String topic = mTopic.group(1);
-				say("Set user's topic to: " + topic);
-				profile.set("topic", topic);
-				reply = reply.replace(tag, "");
+		// Topic setter.
+		matcher = RE_TOPIC.matcher(reply);
+		giveup = 0;
+		while (matcher.find()) {
+			giveup++;
+			if (checkDeepRecursion(giveup, "Infinite loop looking for topic tag!")) {
+				break;
 			}
+
+			String name = matcher.group(1);
+			this.sessions.set(username, "topic", name);
+			reply = reply.replace(matcher.group(0), "");
 		}
 
-		// {@redirect} tag
-		if (reply.indexOf("{@") > -1) {
-			Pattern reRed = Pattern.compile("\\{@([^\\}]*?)\\}");
-			Matcher mRed = reRed.matcher(reply);
-			while (mRed.find()) {
-				String tag = mRed.group(0);
-				String target = mRed.group(1).trim();
-
-				// Do the reply redirect.
-				String subreply = this.reply(user, target, false, step + 1);
-				reply = reply.replace(tag, subreply);
+		// Inline redirector.
+		matcher = RE_REDIRECT.matcher(reply);
+		giveup = 0;
+		while (matcher.find()) {
+			giveup++;
+			if (checkDeepRecursion(giveup, "Infinite loop looking for redirect tag!")) {
+				break;
 			}
+
+			String target = matcher.group(1);
+			logger.debug("Inline redirection to: {}", target);
+			String subreply = getReply(username, target.trim(), false, step + 1);
+			reply = reply.replace(matcher.group(0), subreply);
 		}
 
-		// <call> tag
+		// Object caller.
 		reply = reply.replaceAll("\\{__call__}", "<call>");
 		reply = reply.replaceAll("\\{/__call__}", "</call>");
-		if (reply.indexOf("<call>") > -1) {
-			Pattern reCall = Pattern.compile("<call>(.+?)<\\/call>");
-			Matcher mCall = reCall.matcher(reply);
-			while (mCall.find()) {
-				String tag = mCall.group(0);
-				String data = mCall.group(1);
-				String[] parts = data.split(" ");
-				String name = parts[0];
-				Vector<String> args = new Vector<String>();
-				for (int i = 1; i < parts.length; i++) {
-					args.add(parts[i]);
-				}
-
-				// See if we know of this object.
-				if (objects.containsKey(name)) {
-					// What language handles it?
-					String lang = objects.get(name);
-					String result = handlers.get(lang).onCall(name, user, Util.Sv2s(args));
-					reply = reply.replace(tag, result);
-				} else {
-					reply = reply.replace(tag, "[ERR: Object Not Found]");
-				}
+		matcher = RE_CALL.matcher(reply);
+		giveup = 0;
+		while (matcher.find()) {
+			giveup++;
+			if (checkDeepRecursion(giveup, "Infinite loop looking for call tag!")) {
+				break;
 			}
+
+			String text = matcher.group(1).trim();
+			String[] parts = text.split(" ");
+			String obj = parts[0];
+			String[] args;
+			if (parts.length > 1) {
+				args = Arrays.copyOfRange(parts, 1, parts.length);
+			} else {
+				args = new String[0];
+			}
+
+			// Do we know this object?
+			String output;
+			if (this.subroutines.containsKey(obj)) {
+				// It exists as a native Java macro.
+				output = this.subroutines.get(obj).call(this, args);
+			} else if (this.objectLanguages.containsKey(obj)) {
+				String languange = this.objectLanguages.get(obj);
+				output = this.handlers.get(languange).call(obj, args);
+			} else {
+				output = this.errorMessages.get("objectNotFound");
+			}
+
+			reply = reply.replace(matcher.group(0), output);
 		}
 
 		return reply;
 	}
 
 	/**
-	 * Reformats a {@link String} in a certain way: formal, uppercase, lowercase, sentence.
+	 * Applies a substitution to an input message.
 	 *
-	 * @param format The format you want the string in.
-	 * @param text   The text to format.
+	 * @param message the input message
+	 * @param subs    the substitution map
+	 * @param sorted  the substitution list
+	 * @return the substituted message
 	 */
-	private String stringTransform(String format, String text) {
-		if (format.equals("uppercase")) {
-			return text.toUpperCase();
-		} else if (format.equals("lowercase")) {
-			return text.toLowerCase();
-		} else if (format.equals("formal")) {
-			// Capitalize Each First Letter
-			String[] words = text.split(" ");
-			say("wc: " + words.length);
-			for (int i = 0; i < words.length; i++) {
-				say("word: " + words[i]);
-				String[] letters = words[i].split("");
-				say("cc: " + letters.length);
-				if (letters.length > 1) {
-					letters[0] = letters[0].toUpperCase();
-					words[i] = Util.join(letters, "");
-					say("new word: " + words[i]);
-				}
-			}
-			return Util.join(words, " ");
-		} else if (format.equals("sentence")) {
-			// Uppercase the first letter of the first word.
-			String[] letters = text.split("");
-			if (letters.length > 1) {
-				letters[0] = letters[0].toUpperCase();
-			}
-			return Util.join(letters, "");
-		} else {
-			return "[ERR: Unknown String Transform " + format + "]";
+	private String substitute(String message, Map<String, String> subs, List<String> sorted) {
+		// Safety checking.
+		if (subs == null || subs.size() == 0) {
+			return message;
 		}
+
+		// Make placeholders each time we substitute something.
+		List<String> ph = new ArrayList<>();
+		int pi = 0;
+
+		for (String pattern : sorted) {
+			String result = subs.get(pattern);
+			String qm = quoteMetacharacters(pattern);
+
+			// Make a placeholder.
+			ph.add(result);
+			String placeholder = "\\\\x00" + pi + "\\\\x00";
+			pi++;
+
+			// Run substitutions.
+			message = message.replaceAll("^" + qm + "$", placeholder);
+			message = message.replaceAll("^" + qm + "(\\W+)", placeholder + "$1");
+			message = message.replaceAll("(\\W+)" + qm + "(\\W+)", "$1" + placeholder + "$2");
+			message = message.replaceAll("(\\W+)" + qm + "$", "$1" + placeholder);
+		}
+
+		// Convert the placeholders back in.
+		int tries = 0;
+		while (message.contains("\\x00")) {
+			tries++;
+			if (checkDeepRecursion(tries, "Too many loops in substitution placeholders!")) {
+				break;
+			}
+
+			Matcher matcher = RE_PLACEHOLDER.matcher(message);
+			if (matcher.find()) {
+				int i = Integer.parseInt(matcher.group(1));
+				String result = ph.get(i);
+				message = message.replace(matcher.group(0), result);
+			}
+		}
+
+		return message;
 	}
 
 	/**
-	 * Formats the user's message to begin reply matching. Lowercases it, runs substitutions,
-	 * and neutralizes what's left.
+	 * Returns an array of every topic related to a topic (all the topics it inherits or includes,
+	 * plus all the topics included or inherited by those topics, and so on).
+	 * The array includes the original topic, too.
 	 *
-	 * @param message The input message to format.
+	 * @param topic the name of the topic
+	 * @param depth the recursion depth counter
+	 * @return the list of topic names
 	 */
-	private String formatMessage(String message) {
-		// Lowercase it first.
-		message = message.toLowerCase();
+	private List<String> getTopicTree(String topic, int depth) {
+		// Break if we're in too deep.
+		if (checkDeepRecursion(depth, "Deep recursion while scanning topic tree!")) {
+			return new ArrayList<>();
+		}
 
-		// Run substitutions.
-		message = Util.substitute(subs_s, subs, message);
+		// Collect an array of all topics.
+		List<String> topics = new ArrayList<>(Arrays.asList(topic));
+		for (String includes : this.topics.get(topic).getIncludes().keySet()) {
+			topics.addAll(getTopicTree(includes, depth + 1));
+		}
+		for (String inherits : this.topics.get(topic).getInherits().keySet()) {
+			topics.addAll(getTopicTree(inherits, depth + 1));
+		}
 
-		// Sanitize what's left.
-		message = message.replaceAll("[^a-z0-9_ ]", "");
-		return message;
+		return topics;
+	}
+
+	/**
+	 * Prepares a trigger pattern for the regular expression engine.
+	 *
+	 * @param username the username
+	 * @param pattern  the pattern
+	 * @return the regular expression trigger pattern
+	 */
+	private String triggerRegexp(String username, String pattern) {
+		// If the trigger is simply '*' then the * needs to become (.*?) to match the blank string too.
+		pattern = RE_ZERO_WITH_STAR.matcher(pattern).replaceAll("<zerowidthstar>");
+
+		// Simple replacements.
+		pattern = pattern.replaceAll("\\*", "(.+?)");                  // Convert * into (.+?)
+		pattern = pattern.replaceAll("#", "(\\\\d+?)");                // Convert # into (\d+?)
+		pattern = pattern.replaceAll("(?<!\\\\)_", "(\\\\w+?)");       // Convert _ into (\w+?)
+		pattern = pattern.replaceAll("\\\\_", "_");                    // Convert \_ into _
+		pattern = pattern.replaceAll("\\s*\\{weight=\\d+\\}\\s*", ""); // Remove {weight} tags
+		pattern = pattern.replaceAll("<zerowidthstar>", "(.*?)");      // Convert <zerowidthstar> into (.+?)
+		pattern = pattern.replaceAll("\\|{2,}", "|");                  // Remove empty entities
+		pattern = pattern.replaceAll("(\\(|\\[)\\|", "$1");            // Remove empty entities from start of alt/opts
+		pattern = pattern.replaceAll("\\|(\\)|\\])", "$1");            // Remove empty entities from end of alt/opts
+
+		// UTF-8 mode special characters.
+		if (this.utf8) {
+			// Literal @ symbols (like in an e-mail address) conflict with arrays.
+			pattern = pattern.replaceAll("\\\\@", "\\\\u0040");
+		}
+
+		// Optionals.
+		Matcher matcher = RE_OPTIONAL.matcher(pattern);
+		int giveup = 0;
+		while (matcher.find()) {
+			giveup++;
+			if (checkDeepRecursion(giveup, "Infinite loop when trying to process optionals in a trigger!")) {
+				return "";
+			}
+
+			String[] parts = matcher.group(1).split("\\|");
+			List<String> opts = new ArrayList<>();
+			for (String p : parts) {
+				opts.add("(?:\\s|\\b)+" + p + "(?:\\s|\\b)+");
+			}
+
+			// If this optional had a star or anything in it, make it non-matching.
+			String pipes = StringUtils.join(opts.toArray(new String[0]), "|");
+			pipes.replaceAll(StringUtils.quoteMetacharacters("(.+?)"), "(?:.+?)");
+			pipes.replaceAll(StringUtils.quoteMetacharacters("(\\d+?)"), "(?:\\\\d+?)");
+			pipes.replaceAll(StringUtils.quoteMetacharacters("(\\w+?)"), "(?:\\\\w+?)");
+
+			// Put the new text in.
+			pipes = "(?:" + pipes + "|(?:\\s|\\b)+)";
+			pattern = pattern.replaceAll("\\s*\\[" + StringUtils.quoteMetacharacters(matcher.group(1)) + "\\]\\s*",
+					StringUtils.quoteMetacharacters(pipes));
+		}
+
+		// _ wildcards can't match numbers!
+		// Quick note on why I did it this way: the initial replacement above (_ => (\w+?)) needs to be \w because the square brackets
+		// in [\s\d] will confuse the optionals logic just above. So then we switch it back down here.
+		// Also, we don't just use \w+ because that matches digits, and similarly [A-Za-z] doesn't work with Unicode,
+		// so this regexp excludes spaces and digits instead of including letters.
+		pattern = pattern.replaceAll("\\\\w", "[^\\\\s\\\\d]");
+
+		// Filter in arrays.
+		giveup = 0;
+		matcher = RE_ARRAY.matcher(pattern);
+		while (matcher.find()) {
+			giveup++;
+			if (checkDeepRecursion(giveup, "Infinite loop looking when trying to process arrays in a trigger!")) {
+				break;
+			}
+
+			String name = matcher.group(1);
+			String rep = "";
+			if (this.array.containsKey(name)) {
+				rep = "(?:" + StringUtils.join(this.array.get(name).toArray(new String[0]), "|") + ")";
+			}
+			pattern = pattern.replace(matcher.group(0), rep);
+		}
+
+		// Filter in bot variables.
+		giveup = 0;
+		matcher = RE_BOT_VAR.matcher(pattern);
+		while (matcher.find()) {
+			giveup++;
+			if (checkDeepRecursion(giveup, "Infinite loop looking when trying to process bot variables in a trigger!")) {
+				break;
+			}
+
+			String name = matcher.group(1);
+			String rep = "";
+			if (this.vars.containsKey(name)) {
+				rep = StringUtils.stripNasties(this.vars.get(name));
+			}
+			pattern = pattern.replace(matcher.group(0), rep.toLowerCase());
+		}
+
+		// Filter in user variables.
+		giveup = 0;
+		matcher = RE_USER_VAR.matcher(pattern);
+		while (matcher.find()) {
+			giveup++;
+			if (checkDeepRecursion(giveup, "Infinite loop looking when trying to process user variables in a trigger!")) {
+				break;
+			}
+
+			String name = matcher.group(1);
+			String rep = "undefined";
+			String value = this.sessions.get(username, name);
+			if (value != null) {
+				rep = value;
+			}
+			pattern = pattern.replace(matcher.group(0), rep.toLowerCase());
+		}
+
+		// Filter in <input> and <reply> tags.
+		giveup = 0;
+		pattern = pattern.replaceAll("<input>", "<input1>");
+		pattern = pattern.replaceAll("<reply>", "<reply1>");
+
+		while (pattern.contains("<input") || pattern.contains("<reply")) {
+			giveup++;
+			if (checkDeepRecursion(giveup, "Infinite loop looking when trying to process input and reply tags in a trigger!")) {
+				break;
+			}
+
+			for (int i = 1; i <= HISTORY_SIZE; i++) {
+				String inputPattern = "<input" + i + ">";
+				String replyPattern = "<reply" + i + ">";
+				History history = this.sessions.getHistory(username);
+				if (history == null) {
+					pattern = pattern.replace(inputPattern, history.getInput(i - 1));
+					pattern = pattern.replace(replyPattern, history.getReply(i - 1));
+				} else {
+					pattern = pattern.replace(inputPattern, "undefined");
+					pattern = pattern.replace(replyPattern, "undefined");
+				}
+			}
+		}
+
+		// Recover escaped Unicode symbols.
+		if (this.utf8) {
+			pattern = pattern.replaceAll("\\u0040", "@");
+		}
+
+		return pattern;
+	}
+
+	/**
+	 * Returns whether a trigger is atomic or not.
+	 *
+	 * @param pattern the pattern
+	 * @return whether the pattern is atmonic or not
+	 */
+	private boolean isAtomic(String pattern) {
+		// Atomic triggers don't contain any wildcards or parenthesis or anything of the sort.
+		// We don't need to test the full character set, just left brackets will do.
+		List<String> specials = Arrays.asList("*", "#", "_", "(", "[", "<", "@");
+		for (String special : specials) {
+			if (pattern.contains(special)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/*------------------*/
+	/*-- User Methods --*/
+	/*------------------*/
+
+	/**
+	 * Sets a user variable.
+	 * <p>
+	 * This is equivalent to {@code <set>} in RiveScript. Set the value to {@code null} to delete a user variable.
+	 *
+	 * @param username the username
+	 * @param name     the variable name
+	 * @param value    the variable value
+	 */
+	public void setUservar(String username, String name, String value) {
+		sessions.set(username, name, value);
+	}
+
+	/**
+	 * Set a user's variables.
+	 * <p>
+	 * Set multiple user variables by providing a {@link Map} of key/value pairs.
+	 * Equivalent to calling {@link #setUservar(String, String, String)} for each pair in the map.
+	 *
+	 * @param username the name
+	 * @param vars     the user variables
+	 */
+	public void setUservars(String username, Map<String, String> vars) {
+		sessions.set(username, vars);
+	}
+
+	/**
+	 * Returns a user variable.
+	 * <p>
+	 * This is equivalent to {@code <get name>} in RiveScript. Returns {@code "undefined"} if the variable isn't defined.
+	 *
+	 * @param username the username
+	 * @param name     the variable name
+	 * @return the variable value
+	 */
+	public String getUservar(String username, String name) {
+		return sessions.get(username, name);
+	}
+
+	/**
+	 * Returns all variables for a user.
+	 *
+	 * @param username the username
+	 * @return the variables
+	 */
+	public UserData getUservars(String username) {
+		return sessions.get(username);
+	}
+
+	/**
+	 * Clears all variables for all users.
+	 */
+	public void clearAllUservars() {
+		this.sessions.clearAll();
+	}
+
+	/**
+	 * Clears a user's variables.
+	 *
+	 * @param username the username
+	 */
+	public void clearUservars(String username) {
+		sessions.clear(username);
+	}
+
+	/**
+	 * Makes a snapshot of a user's variables.
+	 *
+	 * @param username the username
+	 */
+	public void freezeUservars(String username) {
+		sessions.freeze(username);
+	}
+
+	/**
+	 * Unfreezes a user's variables.
+	 *
+	 * @param username the username
+	 * @param action   the thaw action
+	 * @see ThawAction
+	 */
+	public void thawUservars(String username, ThawAction action) {
+		sessions.thaw(username, action);
+	}
+
+	/**
+	 * Returns a user's last matched trigger.
+	 *
+	 * @param username the username
+	 * @return the last matched trigger
+	 */
+	public String lastMatch(String username) {
+		return sessions.getLastMatch(username);
+	}
+
+	/**
+	 * Returns the current user's ID.
+	 * <p>
+	 * This is only useful from within a (Java) object macro, to get the ID of the user who invoked the macro.
+	 * This value is set at the beginning of {@link #reply(String, String)} and unset at the end, so this method will return {@code null}
+	 * outside of a reply context.
+	 *
+	 * @return the user's ID or {@code null}
+	 */
+	public String currentUser() {
+		return currentUser.get();
 	}
 
 	/*-----------------------*/
@@ -1999,151 +2390,57 @@ public class RiveScript {
 	/*-----------------------*/
 
 	/**
-	 * DEVELOPER: Dumps the trigger sort buffers to the terminal.
+	 * Dumps the trigger sort buffers to the standard output stream.
 	 */
 	public void dumpSorted() {
-		String[] topics = this.topics.listTopics();
-		for (int t = 0; t < topics.length; t++) {
-			String topic = topics[t];
-			String[] triggers = this.topics.topic(topic).listTriggers();
+		dumpSorted(sorted.getTopics(), "Topics");
+		dumpSorted(sorted.getThats(), "Thats");
+		dumpSortedList(sorted.getSub(), "Substitutions");
+		dumpSortedList(sorted.getPerson(), "Person Substitutions");
+	}
 
-			// Dump.
-			println("Topic: " + topic);
-			for (int i = 0; i < triggers.length; i++) {
-				println("       " + triggers[i]);
+	private void dumpSorted(Map<String, List<SortedTriggerEntry>> tree, String label) {
+		System.out.println("Sort buffer: " + label);
+		for (Map.Entry<String, List<SortedTriggerEntry>> entry : tree.entrySet()) {
+			String topic = entry.getKey();
+			List<SortedTriggerEntry> data = entry.getValue();
+			System.out.println("  Topic: " + topic);
+			for (SortedTriggerEntry trigger : data) {
+				System.out.println("    + " + trigger.getTrigger());
 			}
 		}
 	}
 
+	private void dumpSortedList(List<String> list, String label) {
+		System.out.println("Sort buffer: " + label);
+		for (String item : list) {
+			System.out.println("  " + item);
+		}
+	}
+
 	/**
-	 * DEVELOPER: Dumps the entire topic/trigger/reply structure to the terminal.
+	 * Dumps the entire topic/trigger/reply structure to the standard output stream.
 	 */
 	public void dumpTopics() {
-		// Dump the topic list.
-		println("{");
-		String[] topicList = topics.listTopics();
-		for (int t = 0; t < topicList.length; t++) {
-			String topic = topicList[t];
-			String extra = "";
-
-			// Includes? Inherits?
-			String[] includes = topics.topic(topic).includes();
-			String[] inherits = topics.topic(topic).inherits();
-			if (includes.length > 0) {
-				extra = "includes ";
-				for (int i = 0; i < includes.length; i++) {
-					extra += includes[i] + " ";
+		for (Map.Entry<String, Topic> entry : topics.entrySet()) {
+			String topic = entry.getKey();
+			Topic data = entry.getValue();
+			System.out.println("Topic: " + topic);
+			for (Trigger trigger : data.getTriggers()) {
+				System.out.println("  + " + trigger.getTrigger());
+				if (trigger.getPrevious() != null) {
+					System.out.println("    % " + trigger.getPrevious());
+				}
+				for (String condition : trigger.getCondition()) {
+					System.out.println("    * " + condition);
+				}
+				for (String reply : trigger.getReply()) {
+					System.out.println("    - " + reply);
+				}
+				if (trigger.getRedirect() != null) {
+					System.out.println("    @ " + trigger.getRedirect());
 				}
 			}
-			if (inherits.length > 0) {
-				extra += "inherits ";
-				for (int i = 0; i < inherits.length; i++) {
-					extra += inherits[i] + " ";
-				}
-			}
-			println("  '" + topic + "' " + extra + " => {");
-
-			// Dump the trigger list.
-			String[] trigList = topics.topic(topic).listTriggers();
-			for (int i = 0; i < trigList.length; i++) {
-				String trig = trigList[i];
-				println("    '" + trig + "' => {");
-
-				// Dump the replies.
-				String[] reply = topics.topic(topic).trigger(trig).listReplies();
-				if (reply.length > 0) {
-					println("      'reply' => [");
-					for (int r = 0; r < reply.length; r++) {
-						println("        '" + reply[r] + "',");
-					}
-					println("      ],");
-				}
-
-				// Dump the conditions.
-				String[] cond = topics.topic(topic).trigger(trig).listConditions();
-				if (cond.length > 0) {
-					println("      'condition' => [");
-					for (int r = 0; r < cond.length; r++) {
-						println("        '" + cond[r] + "',");
-					}
-					println("      ],");
-				}
-
-				// Dump the redirects.
-				String[] red = topics.topic(topic).trigger(trig).listRedirects();
-				if (red.length > 0) {
-					println("      'redirect' => [");
-					for (int r = 0; r < red.length; r++) {
-						println("        '" + red[r] + "',");
-					}
-					println("      ],");
-				}
-
-				println("    },");
-			}
-
-			println("  },");
 		}
-	}
-
-	/*-------------------*/
-	/*-- Debug Methods --*/
-	/*-------------------*/
-
-	protected void println(String line) {
-		System.out.println(line);
-	}
-
-	/**
-	 * Prints a line of debug text to the terminal.
-	 *
-	 * @param line The line of text to print.
-	 */
-	protected void say(String line) {
-		if (this.debug) {
-			System.out.println("[RS] " + line);
-		}
-	}
-
-	/**
-	 * Prints a line of warning text to the terminal.
-	 *
-	 * @param line The line of warning text.
-	 */
-	protected void cry(String line) {
-		System.out.println("<RS> " + line);
-	}
-
-	/**
-	 * Prints a line of warning text including a file name and line number.
-	 *
-	 * @param text The warning text.
-	 * @param file The file name.
-	 * @param line The line number.
-	 */
-	protected void cry(String text, String file, int line) {
-		System.out.println("<RS> " + text + " at " + file + " line " + line + ".");
-	}
-
-	/**
-	 * Prints a stack trace to the terminal when debug mode is on.
-	 *
-	 * @param e The IOException object.
-	 */
-	protected void trace(IOException e) {
-		if (this.debug) {
-			e.printStackTrace();
-		}
-	}
-
-	/**
-	 * Return the full version string of the present RiveScript Java codebase,
-	 * or {@code null} if it cannot be determined.
-	 *
-	 * @see Package#getImplementationVersion()
-	 */
-	public static String getVersion() {
-		Package pkg = RiveScript.class.getPackage();
-		return (pkg != null ? pkg.getImplementationVersion() : null);
 	}
 }

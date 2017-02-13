@@ -22,17 +22,19 @@
 
 package com.rivescript.lang;
 
-import com.rivescript.ObjectHandler;
-import com.rivescript.ObjectMacro;
 import com.rivescript.RiveScript;
-import com.rivescript.Util;
+import com.rivescript.macro.ObjectHandler;
+import com.rivescript.util.StringUtils;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Vector;
 
 import static java.util.Objects.requireNonNull;
@@ -45,56 +47,48 @@ import static java.util.Objects.requireNonNull;
  */
 public class Perl implements ObjectHandler {
 
-	private String rsp4j; // Path to the Perl script
-	private RiveScript parent; // Parent RS object
-	private HashMap<String, String> codes = new HashMap<>(); // Object codes
+	private RiveScript rs;                 // Parent RiveScript instance object
+	private String rsp4j;                  // Path to the Perl script
+	private HashMap<String, String> codes; // Object codes
 
 	/**
 	 * Creates a Perl {@link ObjectHandler}. Must take the path to the rsp4j script as its argument.
 	 *
-	 * @param rivescript The RiveScript instance, not null.
-	 * @param rsp4j      The path to the rsp4j script (either in .pl or .exe format), not null.
+	 * @param rs    the RiveScript instance, not null.
+	 * @param rsp4j the path to the rsp4j script (either in .pl or .exe format), not null.
 	 */
-	public Perl(RiveScript rivescript, String rsp4j) {
-		this.parent = requireNonNull(rivescript, "'rivescript' must not be null");
+	public Perl(RiveScript rs, String rsp4j) {
+		this.rs = requireNonNull(rs, "'rs' must not be null");
 		this.rsp4j = requireNonNull(rsp4j, "'rsp4j' must not be null");
-		;
+		this.codes = new HashMap<>();
 	}
 
 	/**
-	 * Handler for when object code is read (loaded) by RiveScript. Should return {@code true} for
-	 * success or {@code false} to indicate error.
-	 *
-	 * @param name The name of the object.
-	 * @param code The source code inside the object.
+	 * {@inheritDoc}
 	 */
 	@Override
-	public boolean onLoad(String name, String[] code) {
-		codes.put(name, Util.join(code, "\n"));
-		return true;
+	public void load(String name, String[] code) {
+		codes.put(name, StringUtils.join(code, "\n"));
 	}
 
 	/**
-	 * Handler for when a user invokes the object. Should return the text reply from the object.
-	 *
-	 * @param name The name of the object being called.
-	 * @param user The user's id.
-	 * @param args The argument list from the call tag.
+	 * {@inheritDoc}
 	 */
 	@Override
-	public String onCall(String name, String user, String[] args) {
+	public String call(String name, String[] fields) {
+		String user = rs.currentUser();
 		// Prepare JSON data to send.
 		try {
 			JSONObject json = new JSONObject();
 
 			// Set the flat scalars first.
 			json.put("id", user);
-			json.put("message", Util.join(args, " "));
+			json.put("message", StringUtils.join(fields, " "));
 			json.put("code", codes.get(name));
 
 			// Transcode the user's data into a JSON object.
 			JSONObject vars = new JSONObject();
-			HashMap<String, String> data = parent.getUservars(user);
+			Map<String, String> data = rs.getUservars(user).getVariables();
 			Iterator it = data.keySet().iterator();
 			while (it.hasNext()) {
 				String key = it.next().toString();
@@ -112,8 +106,7 @@ public class Perl implements ObjectHandler {
 			try {
 				Process p = Runtime.getRuntime().exec(this.rsp4j + " --java");
 				OutputStream stdIn = p.getOutputStream();
-				BufferedReader stdOut =
-						new BufferedReader(new InputStreamReader(p.getInputStream()));
+				BufferedReader stdOut = new BufferedReader(new InputStreamReader(p.getInputStream()));
 
 				// Send it the JSON-in.
 				stdIn.write(outgoing.getBytes());
@@ -126,10 +119,9 @@ public class Perl implements ObjectHandler {
 				while ((line = stdOut.readLine()) != null) {
 					result.add(line);
 				}
-				incoming = Util.join(Util.Sv2s(result), "\n");
-			} catch (java.io.IOException e) {
-				System.err.println("IOException error in " + this.getClass().getCanonicalName()
-						+ ": " + e.getMessage());
+				incoming = StringUtils.join(result.toArray(new String[0]), "\n");
+			} catch (IOException e) {
+				System.err.println("IOException error in " + this.getClass().getCanonicalName() + ": " + e.getMessage());
 				return "[ERR: IOException: " + e.getMessage() + "]";
 			}
 
@@ -146,20 +138,15 @@ public class Perl implements ObjectHandler {
 			String[] keys = reply.getNames(newVars);
 			for (int i = 0; i < keys.length; i++) {
 				String value = newVars.getString(keys[i]);
-				parent.setUservar(user, keys[i], value);
+				rs.setUservar(user, keys[i], value);
 			}
 
 			// OK. Get the reply.
 			return reply.getString("reply");
 
-		} catch (org.json.JSONException e) {
-			System.err.println("JSONException in " + this.getClass().getCanonicalName() + ": "
-					+ e.getMessage());
+		} catch (JSONException e) {
+			System.err.println("JSONException in " + this.getClass().getCanonicalName() + ": " + e.getMessage());
 			return "[ERR: JSONException: " + e.getMessage() + "]";
 		}
-	}
-
-	@Override
-	public void setClass(String name, ObjectMacro impl) {
 	}
 }

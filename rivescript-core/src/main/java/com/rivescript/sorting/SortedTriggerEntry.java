@@ -20,37 +20,39 @@
  * SOFTWARE.
  */
 
-import com.rivescript.macro.Subroutine;
-import com.rivescript.util.StringUtils;
+package com.rivescript.sorting;
 
-import java.lang.String;
-import java.lang.StringBuilder;
+import com.rivescript.ast.Trigger;
 
 /**
- * An example object macro written in Java.
- *
- * To define a Java object macro, you must implement the interface
- * com.rivescript.ZzObjectMacro and register it using setSubroutine().
- *
- * This macro does two things: returns their message reversed, and sets
- * a user variable named `java`.
- *
- * This implements the `reverse` object macro used in Aiden/obj-java.rive
- *
- * See RSBot.java for more details.
+ * Holds a sorted trigger and the pointer to that trigger's data
  *
  * @author Noah Petherbridge
+ * @author Marcel Overdijk
  */
-public class ExampleMacro implements Subroutine {
-	public String call (com.rivescript.RiveScript rs, String[] args) {
-		String message = StringUtils.join(args, " ");
+public class SortedTriggerEntry {
 
-		// To get/set user variables for the user, you can use currentUser
-		// to find their ID and then use the usual methods.
-		String user = rs.currentUser();
-		rs.setUservar(user, "java", "This variable was set by Java when you said 'reverse " + message + "'");
+	private String trigger;
+	private Trigger pointer;
 
-		// Reverse their message and return it.
-		return new StringBuilder(message).reverse().toString();
+	public SortedTriggerEntry(String trigger, Trigger pointer) {
+		this.trigger = trigger;
+		this.pointer = pointer;
+	}
+
+	public String getTrigger() {
+		return trigger;
+	}
+
+	public void setTrigger(String trigger) {
+		this.trigger = trigger;
+	}
+
+	public Trigger getPointer() {
+		return pointer;
+	}
+
+	public void setPointer(Trigger pointer) {
+		this.pointer = pointer;
 	}
 }

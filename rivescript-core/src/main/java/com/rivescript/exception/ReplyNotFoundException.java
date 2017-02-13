@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 the original author or authors.
+ * Copyright (c) 2016-2017 the original author or authors.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,41 +20,31 @@
  * SOFTWARE.
  */
 
-package com.rivescript;
+package com.rivescript.exception;
+
+import com.rivescript.RiveScriptException;
 
 /**
- * Interface for RiveScript object handlers.
+ * Thrown to indicate no reply was found.
  *
  * @author Noah Petherbridge
+ * @author Marcel Overdijk
  */
-public interface ObjectHandler {
+public class ReplyNotFoundException extends RiveScriptException {
 
 	/**
-	 * Handler for when object code is read (loaded) by RiveScript. Should return {@code true} for
-	 * success or {@code false} to indicate error.
-	 *
-	 * @param name The name of the object.
-	 * @param code The source code inside the object.
+	 * Creates a new {@code ReplyNotFoundException}.
 	 */
-	boolean onLoad(String name, String[] code);
+	public ReplyNotFoundException() {
+		super();
+	}
 
 	/**
-	 * Handler for when a user invokes the object. Should return the text reply from the object.
+	 * Creates a new {@code ReplyNotFoundException} with the given message.
 	 *
-	 * @param name The name of the object being called.
-	 * @param user The user's id.
-	 * @param args The argument list from the call tag.
+	 * @param message the message
 	 */
-	String onCall(String name, String user, String[] args);
-
-	/**
-	 * Sets a Java class to handle the {@link ObjectMacro} directly.
-	 * <p>
-	 * This is only useful to the built-in Java handler; other handlers do not need to implement
-	 * this function.
-	 *
-	 * @param name The name of the object macro.
-	 * @param impl The {@link ObjectMacro} implementation.
-	 */
-	void setClass(String name, ObjectMacro impl);
+	public ReplyNotFoundException(String message) {
+		super(message);
+	}
 }

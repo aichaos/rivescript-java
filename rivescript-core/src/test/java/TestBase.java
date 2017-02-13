@@ -46,7 +46,7 @@ public class TestBase {
 	}
 
 	public void setUp(String file, boolean debug) {
-		this.rs = new RiveScript(debug);
+		this.rs = new RiveScript();
 		this.rs.loadFile(getAbsolutePath("fixtures/" + this.replies() + "/" + file));
 		this.rs.sortReplies();
 	}

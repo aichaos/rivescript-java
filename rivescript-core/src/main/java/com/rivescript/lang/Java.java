@@ -22,9 +22,9 @@
 
 package com.rivescript.lang;
 
-import com.rivescript.ObjectHandler;
-import com.rivescript.ObjectMacro;
 import com.rivescript.RiveScript;
+import com.rivescript.macro.ObjectHandler;
+import com.rivescript.macro.Subroutine;
 
 import java.util.HashMap;
 
@@ -34,73 +34,49 @@ import static java.util.Objects.requireNonNull;
  * Java programming language support for RiveScript-Java.
  * <p>
  * Note that since Java must be compiled before running, this object macro language is only
- * available at compile-time using the {@link RiveScript#setSubroutine(String, ObjectMacro)} method.
+ * available at compile-time using the {@link RiveScript#setSubroutine(String, Subroutine)} method.
  * Inline Java code can't be parsed and compiled from RiveScript source files.
  *
  * @author Noah Petherbridge
+ * @author Marcel Overdijk
  * @see ObjectHandler
  */
 public class Java implements ObjectHandler {
 
-	private RiveScript parent;
-	private HashMap<String, ObjectMacro> handlers = new HashMap<>();
+	private RiveScript rs;
+	private HashMap<String, Subroutine> handlers;
 
 	/**
 	 * Constructs a Java {@link ObjectHandler}.
 	 *
-	 * @param rivescript The RiveScript instance, not null.
+	 * @param rs The RiveScript instance, not null.
 	 */
-	public Java(RiveScript rivescript) {
-		this.parent = requireNonNull(rivescript, "'rivescript' must not be null");
+	public Java(RiveScript rs) {
+		this.rs = requireNonNull(rs, "'rs' must not be null");
+		this.handlers = new HashMap<>();
 	}
 
 	/**
-	 * Handler for when object code is read (loaded) by RiveScript. Should return {@code true} for
-	 * success or {@code false} to indicate error.
-	 * <p>
-	 * We can't dynamically evaluate Java code, so this function just logs an error.
-	 *
-	 * @param name The name of the object.
-	 * @param code The source code inside the object.
+	 * {@inheritDoc}
 	 */
 	@Override
-	public boolean onLoad(String name, String[] code) {
-		System.err.println("NOTICE: Can't dynamically eval Java code from an "
-				+ "inline object macro! Use the setSubroutine() function instead "
-				+ "to define an object at compile time.");
-		return false;
+	public void load(String name, String[] code) {
+		System.err.println("NOTICE: Can't dynamically eval Java code from an inline object macro! "
+				+ "Use the setSubroutine() function instead to define an object at compile time.");
 	}
 
 	/**
-	 * Handler for when a user invokes the object. Should return the text reply from the object.
-	 *
-	 * @param name The name of the object being called.
-	 * @param user The user's id.
-	 * @param args The argument list from the tag.
+	 * {@inheritDoc}
 	 */
 	@Override
-	public String onCall(String name, String user, String[] args) {
+	public String call(String name, String[] fields) {
 		// Does the object macro exist?
-		ObjectMacro macro = this.handlers.get(name);
-		if (macro == null) {
+		Subroutine subroutine = this.handlers.get(name);
+		if (subroutine == null) {
 			return "[ERR: Object Not Found]";
 		}
 
 		// Call it!
-		return macro.call(this.parent, args);
-	}
-
-	/**
-	 * Sets a Java class to handle the {@link ObjectMacro} directly.
-	 * <p>
-	 * This is called by the parent RiveScript object's
-	 * {@link RiveScript#setSubroutine(String, ObjectMacro)} method.
-	 *
-	 * @param name The name of the object macro.
-	 * @param impl The {@link ObjectMacro} implementation.
-	 */
-	@Override
-	public void setClass(String name, ObjectMacro impl) {
-		this.handlers.put(name, impl);
+		return subroutine.call(this.rs, fields);
 	}
 }
