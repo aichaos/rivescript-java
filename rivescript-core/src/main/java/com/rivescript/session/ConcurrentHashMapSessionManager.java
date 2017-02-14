@@ -32,7 +32,7 @@ import static com.rivescript.session.ThawAction.KEEP;
 import static com.rivescript.session.ThawAction.THAW;
 
 /**
- * Implements the default in-memory session store for RiveScript, based on a {@link ConcurrentHashMap}.
+ * Implements the default in-memory {@link SessionManager} for RiveScript, based on a {@link ConcurrentHashMap}.
  *
  * @author Noah Petherbridge
  * @author Marcel Overdijk
@@ -184,7 +184,7 @@ public class ConcurrentHashMapSessionManager implements SessionManager {
 	 * <p>
 	 * This mostly just means the topic is set to "random".
 	 *
-	 * @return
+	 * @return the user data
 	 */
 	private UserData defaultSession() {
 		UserData userData = new UserData();
