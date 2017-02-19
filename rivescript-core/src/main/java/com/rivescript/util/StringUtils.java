@@ -96,7 +96,9 @@ public class StringUtils {
 	public static String quoteMetacharacters(String str) {
 		String[] unsafe = "\\.+*?[^]$(){}=!<>|:".split("");
 		for (String c : unsafe) {
-			str = str.replaceAll(Pattern.quote(c), "\\\\\\" + c);
+			if (c != null && c.length() > 0) {
+				str = str.replaceAll(Pattern.quote(c), "\\\\\\" + c);
+			}
 		}
 		return str;
 	}
