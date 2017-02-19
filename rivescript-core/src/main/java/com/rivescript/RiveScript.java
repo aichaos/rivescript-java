@@ -2021,6 +2021,9 @@ public class RiveScript {
 			} else {
 				output = this.errorMessages.get("objectNotFound");
 			}
+			if (output == null) {
+				output = "";
+			}
 
 			reply = reply.replace(matcher.group(0), output);
 		}
