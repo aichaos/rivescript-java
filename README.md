@@ -56,7 +56,7 @@ _Maven_:
 
 ```xml
 <dependency>
-  <groupId>com.rivescript.</groupId>
+  <groupId>com.rivescript</groupId>
   <artifactId>rivescript-core</artifactId>
   <version>0.8.0</version>
 </dependency>
