@@ -2001,11 +2001,11 @@ public class RiveScript {
 			}
 
 			String text = matcher.group(1).trim();
-			String[] parts = text.split(" ");
+			String[] parts = text.split(" ", 2);
 			String obj = parts[0];
 			String[] args;
 			if (parts.length > 1) {
-				args = Arrays.copyOfRange(parts, 1, parts.length);
+				args = parseCallArgsString(parts[1]);
 			} else {
 				args = new String[0];
 			}
@@ -2029,6 +2029,47 @@ public class RiveScript {
 		}
 
 		return reply;
+	}
+
+	/**
+	 * Converts an args {@link String} into a array of arguments.
+	 *
+	 * @param args the args string to convert
+	 * @return the array of arguments
+	 */
+	private String[] parseCallArgsString(String args) {
+		List<String> result = new ArrayList<>();
+		String buffer = "";
+		boolean insideAString = false;
+
+		if (args != null) {
+			for (char c : args.toCharArray()) {
+				if (Character.isWhitespace(c) && !insideAString) {
+					if (buffer.length() > 0) {
+						result.add(buffer);
+					}
+					buffer = "";
+					continue;
+				}
+				if (c == '"') {
+					if (insideAString) {
+						if (buffer.length() > 0) {
+							result.add(buffer);
+						}
+						buffer = "";
+					}
+					insideAString = !insideAString;
+					continue;
+				}
+				buffer += c;
+			}
+
+			if (buffer.length() > 0) {
+				result.add(buffer);
+			}
+		}
+
+		return result.toArray(new String[0]);
 	}
 
 	/**
