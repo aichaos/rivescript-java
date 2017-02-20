@@ -94,11 +94,9 @@ public class StringUtils {
 	 * @return the escaped string
 	 */
 	public static String quoteMetacharacters(String str) {
-		String[] unsafe = "\\.+*?[^]$(){}=!<>|:".split("");
-		for (String c : unsafe) {
-			if (c != null && c.length() > 0) {
-				str = str.replaceAll(Pattern.quote(c), "\\\\\\" + c);
-			}
+		String unsafe = "\\.+*?[^]$(){}=!<>|:";
+		for (char c : unsafe.toCharArray()) {
+			str = str.replaceAll(Pattern.quote(Character.toString(c)), "\\\\\\" + c);
 		}
 		return str;
 	}

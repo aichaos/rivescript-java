@@ -610,31 +610,30 @@ public class Parser {
 			}
 
 			// Count the brackets.
-			String[] chars = line.split("");
-			for (String c : chars) {
+			for (char c : line.toCharArray()) {
 				switch (c) {
-					case "(":
+					case '(':
 						parens++;
 						break;
-					case ")":
+					case ')':
 						parens--;
 						break;
-					case "[":
+					case '[':
 						square++;
 						break;
-					case "]":
+					case ']':
 						square--;
 						break;
-					case "{":
+					case '{':
 						curly++;
 						break;
-					case "}":
+					case '}':
 						curly--;
 						break;
-					case "<":
+					case '<':
 						angle++;
 						break;
-					case ">":
+					case '>':
 						angle--;
 						break;
 				}
