@@ -2,6 +2,26 @@
 
 This documents the history of significant changes to `rivescript-java`.
 
+## v0.8.1 - February 20, 2017
+
+This update focuses on bug fixes.
+
+* **Changes:**
+  * Fix for `String#split()` returning trailing empty string on Google AppEngine 
+    (https://code.google.com/p/googleappengine/issues/detail?id=13565).
+  * Fix for `NullPointerException` being thrown in case `Subroutine` or
+    `ObjectHandler` returned `null` (#40).
+  * Fix for object macros to support quoted strings come in as one arg
+    regardless of spaces (#40). Typical use case:
+    * `<call>object_name "a b"</call>` will call the macro with a single arg
+      `["a b"]`.
+    * `<call>object_name "a b" c d</call>` will call the macro with 3 args
+      `["a b", "c", "d"]`.
+    * `<call>object_name "<get name>"</call>` will call the macro with a single
+      arg containing the value from the user var.
+      Note `<call>object_name <get name></call>` would call the macro with 
+      multiple args in case the user var value would contain spaces.
+
 ## v0.8.0 - February 14, 2017
 
 This update focuses on new features and huge code refactoring / reorganization.
