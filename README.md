@@ -58,7 +58,7 @@ _Maven_:
 <dependency>
   <groupId>com.rivescript</groupId>
   <artifactId>rivescript-core</artifactId>
-  <version>0.8.0</version>
+  <version>0.8.1</version>
 </dependency>
 ```
 
@@ -66,7 +66,7 @@ _Gradle_:
 
 ```groovy
 dependencies {
-    compile "com.rivescript:rivescript-core:0.8.0"
+    compile "com.rivescript:rivescript-core:0.8.1"
 }
 ```
 
