@@ -31,7 +31,6 @@ import com.rivescript.exception.NoDefaultTopicException;
 import com.rivescript.exception.RepliesNotSortedException;
 import com.rivescript.exception.ReplyNotFoundException;
 import com.rivescript.exception.ReplyNotMatchedException;
-import com.rivescript.lang.Java;
 import com.rivescript.macro.ObjectHandler;
 import com.rivescript.macro.Subroutine;
 import com.rivescript.parser.Parser;
@@ -239,9 +238,6 @@ public class RiveScript {
 		this.subroutines = new HashMap<>();
 		this.topics = new HashMap<>();
 		this.sorted = new SortBuffer();
-
-		// Set the default Java macro handler.
-		setHandler("java", new Java(this));
 	}
 
 	/**

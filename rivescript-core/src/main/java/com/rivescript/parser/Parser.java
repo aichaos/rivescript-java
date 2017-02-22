@@ -440,20 +440,18 @@ public class Parser {
 							language = fields[0].toLowerCase();
 						}
 
-						// Missing language?
-						if (language.equals("")) {
-							logger.warn("No programming language specified for object '{}' at {} line", name, filename, lineno);
-							inObject = true;
-							objectName = name;
-							objectLanguage = "__unknown__";
-							continue;
-						}
-
 						// Start reading the object code.
 						objectName = name;
 						objectLanguage = language;
 						objectBuffer = new ArrayList<>();
 						inObject = true;
+
+						// Missing language?
+						if (language.equals("")) {
+							logger.warn("No programming language specified for object '{}' at {} line", name, filename, lineno);
+							objectLanguage = "__unknown__";
+							continue;
+						}
 					} else {
 						logger.warn("Unknown label type '{}' at {} line {}", kind, filename, lineno);
 					}
