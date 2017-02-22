@@ -94,6 +94,9 @@ public class StringUtils {
 	 * @return the escaped string
 	 */
 	public static String quoteMetacharacters(String str) {
+		if (str == null) {
+			return null;
+		}
 		String unsafe = "\\.+*?[^]$(){}=!<>|:";
 		for (char c : unsafe.toCharArray()) {
 			str = str.replaceAll(Pattern.quote(Character.toString(c)), "\\\\\\" + c);
@@ -109,6 +112,9 @@ public class StringUtils {
 	 * @see Regexp#RE_NASTIES
 	 */
 	public static String stripNasties(String str) {
+		if (str == null) {
+			return null;
+		}
 		return RE_NASTIES.matcher(str).replaceAll("");
 	}
 }

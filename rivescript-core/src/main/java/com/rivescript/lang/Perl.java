@@ -27,6 +27,8 @@ import com.rivescript.macro.ObjectHandler;
 import com.rivescript.util.StringUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -46,6 +48,8 @@ import static java.util.Objects.requireNonNull;
  * @see ObjectHandler
  */
 public class Perl implements ObjectHandler {
+
+	private static Logger logger = LoggerFactory.getLogger(Perl.class);
 
 	private RiveScript rs;                 // Parent RiveScript instance object
 	private String rsp4j;                  // Path to the Perl script
@@ -121,7 +125,7 @@ public class Perl implements ObjectHandler {
 				}
 				incoming = StringUtils.join(result.toArray(new String[0]), "\n");
 			} catch (IOException e) {
-				System.err.println("IOException error in " + this.getClass().getCanonicalName() + ": " + e.getMessage());
+				logger.error("IOException error in " + this.getClass().getCanonicalName() + ": " + e.getMessage());
 				return "[ERR: IOException: " + e.getMessage() + "]";
 			}
 
@@ -145,7 +149,7 @@ public class Perl implements ObjectHandler {
 			return reply.getString("reply");
 
 		} catch (JSONException e) {
-			System.err.println("JSONException in " + this.getClass().getCanonicalName() + ": " + e.getMessage());
+			logger.error("JSONException in " + this.getClass().getCanonicalName() + ": " + e.getMessage());
 			return "[ERR: JSONException: " + e.getMessage() + "]";
 		}
 	}
