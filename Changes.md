@@ -13,6 +13,9 @@ This update focuses on new features.
     object macros using the general `Jsr223ScriptingHandler`.
     This `Jsr223ScriptingHandler` can also be used to easily implement other
     programming languages which are supported by the JSR-223 Scripting API.
+    Developers should manually add the appropriate Groovy or Ruby dependencies
+    to their projects if they want to use the `GroovyHandler` or `RubyHandler`.
+    For the `JavaScriptHandler` no external dependency is needed. (#32, #36)
   * Fix for `removeHandler()` causing a `ConcurrentModificationException`.
 
 ## v0.8.1 - February 20, 2017
