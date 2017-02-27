@@ -92,7 +92,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A RiveScript interpreter written in Java.
  * <p>
- * SYNOPSIS:
+ * Usage:
  * <p>
  * <pre>
  * <code>
