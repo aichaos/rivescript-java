@@ -2,6 +2,19 @@
 
 This documents the history of significant changes to `rivescript-java`.
 
+## v0.9.0 - March XX, 2017
+
+This update focuses on new features.
+
+* **Changes:**
+  * Add JSR-223 Scripting `ObjectHandler` to support object macros written in 
+    any JSR-223 compliant scripting language. The `rivescript-core` distro
+    comes bundled with out-of-the-box support for JavaScript, Groovy and Ruby
+    object macros using the general `Jsr223ScriptingHandler`.
+    This `Jsr223ScriptingHandler` can also be used to easily implement other
+    programming languages which are supported by the JSR-223 Scripting API.
+  * Fix for `removeHandler()` causing a `ConcurrentModificationException`.
+
 ## v0.8.1 - February 20, 2017
 
 This update focuses on bug fixes.

@@ -78,9 +78,9 @@ public class Shell {
 
 		// Collect command line arguments.
 		List<String> arguments = new ArrayList<>(Arrays.asList(args));
-		Iterator<String> i = arguments.iterator();
-		while (i.hasNext()) {
-			String argument = i.next();
+		Iterator<String> it = arguments.iterator();
+		while (it.hasNext()) {
+			String argument = it.next();
 			if (argument.charAt(0) == '-') {
 				String flag = argument.replaceAll("^-*", "").trim();
 				if (flag.equals("version")) {
@@ -97,7 +97,7 @@ public class Shell {
 				} else if (flag.equals("nocolor")) {
 					noColor = true;
 				}
-				i.remove();
+				it.remove();
 			}
 		}
 

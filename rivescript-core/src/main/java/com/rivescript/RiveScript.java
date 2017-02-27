@@ -59,6 +59,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -335,9 +336,11 @@ public class RiveScript {
 	 */
 	public void removeHandler(String name) {
 		// Purge all loaded objects for this handler.
-		for (Map.Entry<String, String> entry : objectLanguages.entrySet()) {
+		Iterator<Map.Entry<String, String>> it = objectLanguages.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry<String, String> entry = it.next();
 			if (entry.getValue().equals(name)) {
-				objectLanguages.remove(entry.getKey());
+				it.remove();
 			}
 		}
 
@@ -2012,8 +2015,8 @@ public class RiveScript {
 				// It exists as a native Java macro.
 				output = this.subroutines.get(obj).call(this, args);
 			} else if (this.objectLanguages.containsKey(obj)) {
-				String languange = this.objectLanguages.get(obj);
-				output = this.handlers.get(languange).call(obj, args);
+				String language = this.objectLanguages.get(obj);
+				output = this.handlers.get(language).call(obj, args);
 			} else {
 				output = this.errorMessages.get("objectNotFound");
 			}
