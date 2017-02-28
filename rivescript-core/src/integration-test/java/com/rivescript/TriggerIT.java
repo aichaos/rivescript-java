@@ -74,9 +74,8 @@ public class TriggerIT extends BaseIT {
 		assertReply("i am five years old", "Say that with numbers.");
 		assertReply("i am twenty five years old", "Say that with fewer words.");
 
-		// TODO https://github.com/aichaos/rivescript-java/issues/42
-		// assertReply("my favorite color is red", "Why is it red?");
-		// assertReply("i have 2 questions about bots", "Well I don't have any answers about bots.");
+		assertReply("my favorite color is red", "Why is it red?");
+		assertReply("i have 2 questions about bots", "Well I don't have any answers about bots.");
 	}
 
 	@Test

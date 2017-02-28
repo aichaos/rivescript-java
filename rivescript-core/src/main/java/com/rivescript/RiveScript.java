@@ -2196,9 +2196,9 @@ public class RiveScript {
 
 			// If this optional had a star or anything in it, make it non-matching.
 			String pipes = StringUtils.join(opts.toArray(new String[0]), "|");
-			pipes.replaceAll(StringUtils.quoteMetacharacters("(.+?)"), "(?:.+?)");
-			pipes.replaceAll(StringUtils.quoteMetacharacters("(\\d+?)"), "(?:\\\\d+?)");
-			pipes.replaceAll(StringUtils.quoteMetacharacters("(\\w+?)"), "(?:\\\\w+?)");
+			pipes = pipes.replaceAll(StringUtils.quoteMetacharacters("(.+?)"), "(?:.+?)");
+			pipes = pipes.replaceAll(StringUtils.quoteMetacharacters("(\\d+?)"), "(?:\\\\d+?)");
+			pipes = pipes.replaceAll(StringUtils.quoteMetacharacters("(\\w+?)"), "(?:\\\\w+?)");
 
 			// Put the new text in.
 			pipes = "(?:" + pipes + "|(?:\\s|\\b)+)";

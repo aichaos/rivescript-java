@@ -17,6 +17,7 @@ This update focuses on new features and bug fixes.
     to their projects if they want to use the `GroovyHandler` or `RubyHandler`.
     For the `JavaScriptHandler` no external dependency is needed. (#32, #36)
   * Fix for `removeHandler()` causing a `ConcurrentModificationException`.
+  * Fix for making wildcards in optionals not matchable (#42).
   * Reorganize tests in proper separation of unit and integration tests (#38).
 
 ## v0.8.1 - February 20, 2017
