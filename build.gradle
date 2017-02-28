@@ -32,6 +32,24 @@ configure(allprojects) { project ->
 	apply plugin: "maven"
 	apply plugin: "signing"
 
+	// Configures the classpath and the source and resource directories of the integrationTest task.
+	sourceSets {
+		integrationTest {
+			java {
+				compileClasspath += main.output + test.output
+				runtimeClasspath += main.output + test.output
+				srcDir file("src/integration-test/java")
+			}
+			resources.srcDir file("src/integration-test/resources")
+		}
+	}
+
+	// Configures the compile and runtime configurations for our integration tests and includes the dependencies of the test task.
+	configurations {
+		integrationTestCompile.extendsFrom testCompile
+		integrationTestRuntime.extendsFrom testRuntime
+	}
+
 	compileJava {
 		sourceCompatibility = 1.7
 		targetCompatibility = 1.7
@@ -74,11 +92,23 @@ configure(allprojects) { project ->
 			events "passed", "skipped", "failed"
 		}
 	}
+
+	// Create the task that runs the integration tests found from the configured source directory and uses the correct classpath.
+	task integrationTest(type: Test) {
+		testClassesDir = sourceSets.integrationTest.output.classesDir
+		classpath = sourceSets.integrationTest.runtimeClasspath
+	}
+
+	check.dependsOn integrationTest   // Ensure that the check task fails the build if there are failing integration tests.
+	integrationTest.mustRunAfter test // Ensure that our unit tests are run before our integration tests.
+
+	// Ensure that the HTML reports of unit and integration tests are written to different directories.
+	tasks.withType(Test) {
+		reports.html.destination = file("${reporting.baseDir}/${name}")
+	}
 }
 
 configure(subprojects - sampleprojects) { subproject ->
-
-	apply plugin: "signing"
 
 	jar {
 		manifest.attributes["Created-By"] = "${System.getProperty("java.version")} (${System.getProperty("java.specification.vendor")})"
@@ -170,8 +200,8 @@ project("rivescript-core") {
 
 	dependencies {
 		compileOnly "org.json:json:${jsonVersion}"
-		testRuntime "org.codehaus.groovy:groovy-all:${groovyVersion}"
-		testRuntime "org.jruby:jruby:${jrubyVersion}"
+		integrationTestRuntime "org.codehaus.groovy:groovy-all:${groovyVersion}"
+		integrationTestRuntime "org.jruby:jruby:${jrubyVersion}"
 	}
 }
 

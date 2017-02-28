@@ -1,5 +1,0 @@
-// concat mode should be restored to the default in a
-// separate file/stream parse
-+ test concat second file
-- Hello
-^ world!

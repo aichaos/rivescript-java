@@ -1,7 +1,0 @@
-> begin
-	+ request
-	- {ok}
-< begin
-
-+ hello bot
-- Hello human.

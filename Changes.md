@@ -4,7 +4,7 @@ This documents the history of significant changes to `rivescript-java`.
 
 ## v0.9.0 - March XX, 2017
 
-This update focuses on new features.
+This update focuses on new features and bug fixes.
 
 * **Changes:**
   * Add JSR-223 Scripting `ObjectHandler` to support object macros written in 
@@ -17,6 +17,7 @@ This update focuses on new features.
     to their projects if they want to use the `GroovyHandler` or `RubyHandler`.
     For the `JavaScriptHandler` no external dependency is needed. (#32, #36)
   * Fix for `removeHandler()` causing a `ConcurrentModificationException`.
+  * Reorganize tests in proper separation of unit and integration tests (#38).
 
 ## v0.8.1 - February 20, 2017
 

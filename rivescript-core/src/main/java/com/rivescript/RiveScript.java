@@ -1599,13 +1599,13 @@ public class RiveScript {
 		if (!foundMatch) {
 			String errorMessage = this.errorMessages.get("replyNotMatched");
 			if (this.throwExceptions) {
-				throw new ReplyNotFoundException(errorMessage);
+				throw new ReplyNotMatchedException(errorMessage);
 			}
 			reply = errorMessage;
 		} else if (reply == null || reply.length() == 0) {
 			String errorMessage = this.errorMessages.get("replyNotFound");
 			if (this.throwExceptions) {
-				throw new ReplyNotMatchedException(errorMessage);
+				throw new ReplyNotFoundException(errorMessage);
 			}
 			reply = errorMessage;
 		}

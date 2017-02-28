@@ -1,7 +1,0 @@
-> begin
-	+ request
-	- Nope.
-< begin
-
-+ hello bot
-- Hello human.
