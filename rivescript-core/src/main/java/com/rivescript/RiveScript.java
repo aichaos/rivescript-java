@@ -2349,7 +2349,7 @@ public class RiveScript {
 	/**
 	 * Returns a user variable.
 	 * <p>
-	 * This is equivalent to {@code <get name>} in RiveScript. Returns {@code "undefined"} if the variable isn't defined.
+	 * This is equivalent to {@code <get name>} in RiveScript. Returns {@code null} if the variable isn't defined.
 	 *
 	 * @param username the username
 	 * @param name     the variable name
