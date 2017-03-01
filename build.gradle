@@ -86,25 +86,20 @@ configure(allprojects) { project ->
 		}
 	}
 
-	test {
-		outputs.upToDateWhen { false }
-		testLogging {
-			events "passed", "skipped", "failed"
-		}
-	}
-
-	// Create the task that runs the integration tests found from the configured source directory and uses the correct classpath.
 	task integrationTest(type: Test) {
 		testClassesDir = sourceSets.integrationTest.output.classesDir
 		classpath = sourceSets.integrationTest.runtimeClasspath
 	}
 
-	check.dependsOn integrationTest   // Ensure that the check task fails the build if there are failing integration tests.
-	integrationTest.mustRunAfter test // Ensure that our unit tests are run before our integration tests.
+	check.dependsOn integrationTest
+	integrationTest.mustRunAfter test
 
-	// Ensure that the HTML reports of unit and integration tests are written to different directories.
 	tasks.withType(Test) {
+		outputs.upToDateWhen { false }
 		reports.html.destination = file("${reporting.baseDir}/${name}")
+		testLogging {
+			events "passed", "skipped", "failed"
+		}
 	}
 }
 
