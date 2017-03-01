@@ -124,6 +124,17 @@ import static java.util.Objects.requireNonNull;
  */
 public class RiveScript {
 
+	public static final String MSG_DEEP_RECURSION_KEY = "deepRecursion";
+	public static final String MSG_REPLIES_NOT_SORTED_KEY = "repliesNotSorted";
+	public static final String MSG_DEFAULT_TOPIC_NOT_FOUND_KEY = "defaultTopicNotFound";
+	public static final String MSG_REPLY_NOT_MATCHED_KEY = "replyNotMatched";
+	public static final String MSG_REPLY_NOT_FOUND_KEY = "replyNotFound";
+	public static final String MSG_OBJECT_NOT_FOUND_KEY = "objectNotFound";
+	public static final String MSG_CANNOT_DIVIDE_BY_ZERO_KEY = "cannotDivideByZero";
+	public static final String MSG_CANNOT_MATH_VARIABLE_KEY = "cannotMathVariable";
+	public static final String MSG_CANNOT_MATH_VALUE_KEY = "cannotMathValue";
+	public static final String UNDEFINED = "undefined";
+
 	private static final String[] DEFAULT_FILE_EXTENSIONS = new String[] {".rive", ".rs"};
 	private static final Random RANDOM = new Random();
 	private static final String UNDEF_TAG = "<undef>";
@@ -192,16 +203,15 @@ public class RiveScript {
 		this.unicodePunctuation = Pattern.compile(unicodePunctuation);
 
 		this.errorMessages = new HashMap<>();
-		this.errorMessages.put("deepRecursion", "ERR: Deep Recursion Detected");
-		this.errorMessages.put("repliesNotSorted", "ERR: Replies Not Sorted");
-		this.errorMessages.put("defaultTopicNotFound", "ERR: No default topic 'random' was found");
-		this.errorMessages.put("replyNotMatched", "ERR: No Reply Matched");
-		this.errorMessages.put("replyNotFound", "ERR: No Reply Found");
-		this.errorMessages.put("objectNotFound", "[ERR: Object Not Found]");
-		this.errorMessages.put("cannotDivideByZero", "[ERR: Can't Divide By Zero]");
-		this.errorMessages.put("cannotMathVariable", "[ERR: Can't perform math operation on non-numeric variable]");
-		this.errorMessages.put("cannotMathValue", "[ERR: Can't perform math operation on non-numeric value]");
-		this.errorMessages.put("undefined", "undefined");
+		this.errorMessages.put(MSG_DEEP_RECURSION_KEY, "ERR: Deep Recursion Detected");
+		this.errorMessages.put(MSG_REPLIES_NOT_SORTED_KEY, "ERR: Replies Not Sorted");
+		this.errorMessages.put(MSG_DEFAULT_TOPIC_NOT_FOUND_KEY, "ERR: No default topic 'random' was found");
+		this.errorMessages.put(MSG_REPLY_NOT_MATCHED_KEY, "ERR: No Reply Matched");
+		this.errorMessages.put(MSG_REPLY_NOT_FOUND_KEY, "ERR: No Reply Found");
+		this.errorMessages.put(MSG_OBJECT_NOT_FOUND_KEY, "[ERR: Object Not Found]");
+		this.errorMessages.put(MSG_CANNOT_DIVIDE_BY_ZERO_KEY, "[ERR: Can't Divide By Zero]");
+		this.errorMessages.put(MSG_CANNOT_MATH_VARIABLE_KEY, "[ERR: Can't perform math operation on non-numeric variable]");
+		this.errorMessages.put(MSG_CANNOT_MATH_VALUE_KEY, "[ERR: Can't perform math operation on non-numeric value]");
 
 		if (config.getErrorMessages() != null) {
 			for (Map.Entry<String, String> entry : config.getErrorMessages().entrySet()) {
@@ -1309,7 +1319,7 @@ public class RiveScript {
 		// Needed to sort replies?
 		if (this.sorted.getTopics().size() == 0) {
 			logger.warn("You forgot to call sortReplies()!");
-			String errorMessage = this.errorMessages.get("repliesNotSorted");
+			String errorMessage = this.errorMessages.get(MSG_REPLIES_NOT_SORTED_KEY);
 			if (this.throwExceptions) {
 				throw new RepliesNotSortedException(errorMessage);
 			}
@@ -1334,7 +1344,7 @@ public class RiveScript {
 
 		// Avoid deep recursion.
 		if (checkDeepRecursion(step, "Deep recursion while getting reply!")) {
-			return this.errorMessages.get("deepRecursion");
+			return this.errorMessages.get(MSG_DEEP_RECURSION_KEY);
 		}
 
 		// Are we in the BEGIN block?
@@ -1345,7 +1355,7 @@ public class RiveScript {
 		// More topic sanity checking.
 		if (!this.topics.containsKey(topic)) {
 			// This was handled before, which would mean topic=random and it doesn't exist. Serious issue!
-			String errorMessage = this.errorMessages.get("defaultTopicNotFound");
+			String errorMessage = this.errorMessages.get(MSG_DEFAULT_TOPIC_NOT_FOUND_KEY);
 			if (this.throwExceptions) {
 				throw new NoDefaultTopicException(errorMessage);
 			}
@@ -1513,10 +1523,10 @@ public class RiveScript {
 
 							// Defaults?
 							if (left.length() == 0) {
-								left = "undefined";
+								left = UNDEFINED;
 							}
 							if (right.length() == 0) {
-								right = "undefined";
+								right = UNDEFINED;
 							}
 
 							logger.debug("Check if {} {} {}", left, eq, right);
@@ -1597,13 +1607,13 @@ public class RiveScript {
 
 		// Still no reply?? Give up with the fallback error replies.
 		if (!foundMatch) {
-			String errorMessage = this.errorMessages.get("replyNotMatched");
+			String errorMessage = this.errorMessages.get(MSG_REPLY_NOT_MATCHED_KEY);
 			if (this.throwExceptions) {
 				throw new ReplyNotMatchedException(errorMessage);
 			}
 			reply = errorMessage;
 		} else if (reply == null || reply.length() == 0) {
-			String errorMessage = this.errorMessages.get("replyNotFound");
+			String errorMessage = this.errorMessages.get(MSG_REPLY_NOT_FOUND_KEY);
 			if (this.throwExceptions) {
 				throw new ReplyNotFoundException(errorMessage);
 			}
@@ -1690,13 +1700,13 @@ public class RiveScript {
 	/**
 	 * Processes tags in a reply element.
 	 *
-	 * @param username
-	 * @param message
-	 * @param reply
-	 * @param st
-	 * @param bst
-	 * @param step
-	 * @return
+	 * @param username the username
+	 * @param message  the user's message
+	 * @param reply    the reply
+	 * @param st       the stars
+	 * @param bst      the bot stars
+	 * @param step     the recursion depth counter
+	 * @return the processed reply
 	 */
 	private String processTags(String username, String message, String reply, List<String> st, List<String> bst, int step) {
 		// Prepare the stars and botstars.
@@ -1707,10 +1717,10 @@ public class RiveScript {
 		botstars.add("");
 		botstars.addAll(bst);
 		if (stars.size() == 1) {
-			stars.add("undefined");
+			stars.add(UNDEFINED);
 		}
 		if (botstars.size() == 1) {
-			botstars.add("undefined");
+			botstars.add(UNDEFINED);
 		}
 
 		// Turn arrays into randomized sets.
@@ -1883,7 +1893,7 @@ public class RiveScript {
 					if (target.containsKey(data)) {
 						insert = target.get(data);
 					} else {
-						insert = "undefined";
+						insert = UNDEFINED;
 					}
 				}
 			} else if (tag.equals("set")) {
@@ -1928,24 +1938,24 @@ public class RiveScript {
 							// Don't divide by zero.
 							if (value == 0) {
 								logger.warn("Can't divide by zero");
-								insert = this.errorMessages.get("cannotDivideByZero");
+								insert = this.errorMessages.get(MSG_CANNOT_DIVIDE_BY_ZERO_KEY);
 							}
 							result /= value;
 						}
 						this.sessions.set(username, name, Integer.toString(result));
 					} catch (NumberFormatException e) {
 						logger.warn("Math can't " + tag + " non-numeric variable " + name);
-						insert = this.errorMessages.get("cannotMathVariable");
+						insert = this.errorMessages.get(MSG_CANNOT_MATH_VARIABLE_KEY);
 					}
 				} catch (NumberFormatException e) {
 					logger.warn("Math can't " + tag + " non-numeric value " + strValue);
-					insert = this.errorMessages.get("cannotMathValue");
+					insert = this.errorMessages.get(MSG_CANNOT_MATH_VALUE_KEY);
 				}
 			} else if (tag.equals("get")) {
 				// <get> user vars.
 				insert = this.sessions.get(username, data);
 				if (insert == null) {
-					insert = "undefined";
+					insert = UNDEFINED;
 				}
 			} else {
 				// Unrecognized tag; preserve it.
@@ -2018,7 +2028,7 @@ public class RiveScript {
 				String language = this.objectLanguages.get(obj);
 				output = this.handlers.get(language).call(obj, args);
 			} else {
-				output = this.errorMessages.get("objectNotFound");
+				output = this.errorMessages.get(MSG_OBJECT_NOT_FOUND_KEY);
 			}
 			if (output == null) {
 				output = "";
@@ -2257,7 +2267,7 @@ public class RiveScript {
 			}
 
 			String name = matcher.group(1);
-			String rep = "undefined";
+			String rep = UNDEFINED;
 			String value = this.sessions.get(username, name);
 			if (value != null) {
 				rep = value;
@@ -2284,8 +2294,8 @@ public class RiveScript {
 					pattern = pattern.replace(inputPattern, history.getInput(i - 1));
 					pattern = pattern.replace(replyPattern, history.getReply(i - 1));
 				} else {
-					pattern = pattern.replace(inputPattern, "undefined");
-					pattern = pattern.replace(replyPattern, "undefined");
+					pattern = pattern.replace(inputPattern, UNDEFINED);
+					pattern = pattern.replace(replyPattern, UNDEFINED);
 				}
 			}
 		}

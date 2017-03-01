@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.rivescript.RiveScript.UNDEFINED;
 import static com.rivescript.session.SessionManager.HISTORY_SIZE;
 
 /**
@@ -42,11 +43,11 @@ public class History implements Serializable {
 	private List<String> reply;
 
 	public History() {
-		this.input = new ArrayList<>();
-		this.reply = new ArrayList<>();
+		this.input = new ArrayList<>(HISTORY_SIZE);
+		this.reply = new ArrayList<>(HISTORY_SIZE);
 		for (int i = 0; i < HISTORY_SIZE; i++) {
-			this.input.add("undefined");
-			this.reply.add("undefined");
+			this.input.add(UNDEFINED);
+			this.reply.add(UNDEFINED);
 		}
 	}
 
