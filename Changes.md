@@ -2,7 +2,7 @@
 
 This documents the history of significant changes to `rivescript-java`.
 
-## v0.9.0 - March XX, 2017
+## v0.9.0 - March 3, 2017
 
 This update focuses on new features and bug fixes.
 
