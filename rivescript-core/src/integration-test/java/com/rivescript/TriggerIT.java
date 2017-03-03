@@ -22,6 +22,8 @@ package com.rivescript;/*
 
 import org.junit.Test;
 
+import static com.rivescript.RiveScript.DEFAULT_REPLY_NOT_MATCHED_MESSAGE;
+
 /**
  * @author Noah Petherbridge
  * @author Marcel Overdijk
@@ -112,15 +114,15 @@ public class TriggerIT extends BaseIT {
 		assertReply("aa", "Matched.");
 		assertReply("bb", "Matched.");
 		assertReply("aa bogus", "Matched.");
-		assertReply("aabogus", ERR_NO_REPLY_MATCHED);
-		assertReply("bogus", ERR_NO_REPLY_MATCHED);
+		assertReply("aabogus", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
+		assertReply("bogus", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
 
 		assertReply("hi Aiden", "Matched.");
 		assertReply("hi bot how are you?", "Matched.");
 		assertReply("yo computer what time is it?", "Matched.");
-		assertReply("yoghurt is yummy", ERR_NO_REPLY_MATCHED);
-		assertReply("hide and seek is fun", ERR_NO_REPLY_MATCHED);
-		assertReply("hip hip hurrah", ERR_NO_REPLY_MATCHED);
+		assertReply("yoghurt is yummy", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
+		assertReply("hide and seek is fun", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
+		assertReply("hip hip hurrah", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
 	}
 
 	@Test
@@ -141,12 +143,12 @@ public class TriggerIT extends BaseIT {
 		});
 		assertReply("What color is my red shirt?", "Your shirt is red.");
 		assertReply("What color is my blue car?", "Your car is blue.");
-		assertReply("What color is my pink house?", ERR_NO_REPLY_MATCHED);
+		assertReply("What color is my pink house?", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
 		assertReply("What color is my dark blue jacket?", "Your jacket is dark blue.");
 		assertReply("What color was Napoleoan's white horse?", "It was white.");
 		assertReply("What color was my red shirt?", "It was red.");
 		assertReply("I have a blue car.", "Tell me more about your car.");
-		assertReply("I have a cyan car.", ERR_NO_REPLY_MATCHED);
+		assertReply("I have a cyan car.", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
 	}
 
 	@Test

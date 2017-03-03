@@ -1,0 +1,8 @@
+// Administrative functions.
+
++ shutdown{weight=10000}
+* <id> eq <bot master> => Shutting down... (j/k, not supported)
+- {@botmaster only}
+
++ botmaster only
+- This command can only be used by my botmaster. <id> != <bot master>

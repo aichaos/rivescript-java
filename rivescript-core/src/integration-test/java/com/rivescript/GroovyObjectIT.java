@@ -26,6 +26,8 @@ import com.rivescript.lang.groovy.GroovyHandler;
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.rivescript.RiveScript.DEFAULT_OBJECT_NOT_FOUND_MESSAGE;
+
 /**
  * Integration tests for {@link GroovyHandler}.
  *
@@ -36,7 +38,7 @@ public class GroovyObjectIT extends BaseIT {
 	@Before
 	public void setUp() {
 		rs = new RiveScript();
-		rs.setHandler("groovy", new GroovyHandler(rs));
+		rs.setHandler("groovy", new GroovyHandler());
 		setUp(new String[] {
 				"> object reverse groovy",
 				"    def msg = args.join(' ')",
@@ -69,6 +71,6 @@ public class GroovyObjectIT extends BaseIT {
 	@Test
 	public void testNoGroovyHandler() {
 		rs.removeHandler("groovy");
-		assertReply("reverse hello world", ERR_OBJECT_NOT_FOUND);
+		assertReply("reverse hello world", DEFAULT_OBJECT_NOT_FOUND_MESSAGE);
 	}
 }

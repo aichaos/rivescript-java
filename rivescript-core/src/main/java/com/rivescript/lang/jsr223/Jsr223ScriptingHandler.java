@@ -48,7 +48,6 @@ public class Jsr223ScriptingHandler implements ObjectHandler {
 
 	private static Logger logger = LoggerFactory.getLogger(Jsr223ScriptingHandler.class);
 
-	protected RiveScript rs;
 	protected String engineName;
 	protected ScriptEngine scriptEngine;
 	protected String functionNamePrefix;
@@ -58,38 +57,33 @@ public class Jsr223ScriptingHandler implements ObjectHandler {
 	/**
 	 * Constructs a JSR-223 Scripting {@link ObjectHandler}.
 	 *
-	 * @param rs                 the RiveScript instance, not null
 	 * @param engineName         the short name of the desired {@link ScriptEngine}
 	 * @param functionCodeFormat the function code format
 	 */
-	public Jsr223ScriptingHandler(RiveScript rs, String engineName, String functionCodeFormat) {
-		this(rs, engineName, functionCodeFormat, "object_");
+	public Jsr223ScriptingHandler(String engineName, String functionCodeFormat) {
+		this(engineName, functionCodeFormat, "object_");
 	}
 
 	/**
 	 * Constructs a JSR-223 Scripting {@link ObjectHandler}.
 	 *
-	 * @param rs                 the RiveScript instance, not null
 	 * @param engineName         the short name of the desired {@link ScriptEngine}
 	 * @param functionCodeFormat the function code format
 	 * @param functionNamePrefix the function code prefix
 	 */
-	public Jsr223ScriptingHandler(RiveScript rs, String engineName, String functionCodeFormat, String functionNamePrefix) {
-		this(rs, engineName, functionCodeFormat, functionNamePrefix, "\n");
+	public Jsr223ScriptingHandler(String engineName, String functionCodeFormat, String functionNamePrefix) {
+		this(engineName, functionCodeFormat, functionNamePrefix, "\n");
 	}
 
 	/**
 	 * Constructs a JSR-223 Scripting {@link ObjectHandler}.
 	 *
-	 * @param rs                 the RiveScript instance, not null
 	 * @param engineName         the short name of the desired {@link ScriptEngine}
 	 * @param functionCodeFormat the function code format
 	 * @param functionNamePrefix the function code prefix
 	 * @param codeDelimiter      the code delimiter
 	 */
-	public Jsr223ScriptingHandler(RiveScript rs, String engineName, String functionCodeFormat, String functionNamePrefix,
-			String codeDelimiter) {
-		this.rs = requireNonNull(rs, "'rs' must not be null");
+	public Jsr223ScriptingHandler(String engineName, String functionCodeFormat, String functionNamePrefix, String codeDelimiter) {
 		this.engineName = requireNonNull(engineName, "'engineName' must not be null");
 		this.scriptEngine = new ScriptEngineManager().getEngineByName(engineName);
 		this.functionNamePrefix = requireNonNull(functionNamePrefix, "'functionNamePrefix' must not be null");
@@ -104,7 +98,7 @@ public class Jsr223ScriptingHandler implements ObjectHandler {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void load(String name, String[] code) {
+	public void load(RiveScript rs, String name, String[] code) {
 		if (scriptEngine == null) {
 			logger.warn("Cannot load macro '{}' as no script engine was found for '{}'", name, engineName);
 		} else {
@@ -130,7 +124,7 @@ public class Jsr223ScriptingHandler implements ObjectHandler {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public String call(String name, String[] fields) {
+	public String call(RiveScript rs, String name, String[] fields) {
 		String result = null;
 		if (scriptEngine == null) {
 			logger.warn("Cannot call macro '{}' as no script engine was found for '{}'", name, engineName);

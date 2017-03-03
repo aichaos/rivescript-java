@@ -22,6 +22,7 @@ package com.rivescript;/*
 
 import org.junit.Test;
 
+import static com.rivescript.RiveScript.DEFAULT_REPLIES_NOT_SORTED_MESSAGE;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -36,7 +37,7 @@ public class RiveScriptIT extends BaseIT {
 	@Test
 	public void testNoSorting() {
 		rs = new RiveScript();
-		assertReply("hello bot", ERR_REPLIES_NOT_SORTED);
+		assertReply("hello bot", DEFAULT_REPLIES_NOT_SORTED_MESSAGE);
 	}
 
 	@Test

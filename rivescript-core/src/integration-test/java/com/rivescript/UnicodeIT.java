@@ -22,6 +22,8 @@ package com.rivescript;/*
 
 import org.junit.Test;
 
+import static com.rivescript.RiveScript.DEFAULT_REPLY_NOT_MATCHED_MESSAGE;
+
 /**
  * @author Noah Petherbridge
  * @author Marcel Overdijk
@@ -99,6 +101,6 @@ public class UnicodeIT extends BaseIT {
 				"- Hello human!"
 		});
 		assertReply("Hello bot", "Hello human!");
-		assertReply("Hello, bot!", ERR_NO_REPLY_MATCHED);
+		assertReply("Hello, bot!", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
 	}
 }

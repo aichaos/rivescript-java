@@ -22,7 +22,6 @@
 
 package com.rivescript.lang.ruby;
 
-import com.rivescript.RiveScript;
 import com.rivescript.lang.jsr223.Jsr223ScriptingHandler;
 import com.rivescript.macro.ObjectHandler;
 
@@ -77,11 +76,9 @@ public class RubyHandler extends Jsr223ScriptingHandler {
 
 	/**
 	 * Constructs a Ruby {@link ObjectHandler}.
-	 *
-	 * @param rs the RiveScript instance, not null
 	 */
-	public RubyHandler(RiveScript rs) {
-		super(rs, "ruby", ""
+	public RubyHandler() {
+		super("ruby", ""
 				+ "def %s(rs, args)\n"
 				+ "    args = args.to_a\n"
 				+ "    %s\n"

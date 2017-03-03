@@ -70,6 +70,9 @@ dependencies {
 }
 ```
 
+If you want to use RiveScript in a Spring Boot application see the 
+Spring Boot Starter [section](#spring-boot-starter).
+
 ## Usage
 
 When used as a library for writing your own chatbot, the synopsis is as follows:
@@ -167,6 +170,76 @@ The `<star>` tags in RiveScript will capture the user's "raw" input, so you can
 write replies to get the user's e-mail address or store foreign characters in
 their name.
 
+## Spring Boot Starter
+
+Add the `rivescript-spring-boot-starter` dependency to your project:
+
+_Maven_:
+
+```xml
+<dependency>
+  <groupId>com.rivescript</groupId>
+  <artifactId>rivescript-spring-boot-starter</artifactId>
+  <version>0.8.1</version>
+</dependency>
+```
+
+_Gradle_:
+
+```groovy
+dependencies {
+    compile "com.rivescript:rivescript-spring-boot-starter:0.8.1"
+}
+```
+
+The starter will automatically add the `rivescript-core` dependency to your 
+project and trigger the auto configuration to create the `RiveScript` bot 
+instance.
+
+Although the auto configuration will use sensible defaults to create the bot 
+instance, the following properties can be specified inside your 
+`application.properties`/`application.yml` file (or as command line switches)
+to customize the auto configuration behaviour:
+
+```txt
+rivescript:
+  enabled: true # Enable RiveScript for the application.
+  source-path: classpath:/rivescript/ # The comma-separated list of RiveScript source files and/or directories.
+  file-extensions: .rive, .rs # The comma-separated list of RiveScript file extensions to load.
+  throw-exceptions: false # Enable throw exceptions.
+  strict: true # Enable strict syntax checking.
+  utf8: false # Enable UTF-8 mode.
+  unicode-punctuation: [.,!?;:] # The unicode punctuation pattern (only used when UTF-8 mode is enabled).
+  force-case: false # Enable forcing triggers to lowercase.
+  depth: 50 # The recursion depth limit.
+  error-messages: # The custom error message overrides. For instance `rivescript.error-messages.deepRecursion=Custom Deep Recursion Detected Message`
+  object-handlers: # The comma-separated list of object handler names to register (currently supported: `groovy`, `javascript`, `ruby`).
+```
+
+To automatically register custom Java subroutines and/or non-default supported
+object handlers in the created `RiveScript` bot instance, define appropriate 
+beans in your application context like:
+
+```java
+@Bean
+public Map<String, Subroutine> subroutines() {
+	// The key is the name of the Java object macro to register.
+    Map<String, Subroutine> subroutines = new HashMap<>();
+    subroutines.put("subroutine1", new Subroutine1());
+    subroutines.put("subroutine2", new Subroutine2());
+    return subroutines;
+}
+
+@Bean
+public Map<String, ObjectHandler> objectHandlers() {
+	// The key is the name of the programming language to register.
+    Map<String, ObjectHandler> objectHandlers = new HashMap<>();
+    objectHandlers.put("handler1", new ObjectHandler1());
+    objectHandlers.put("handler2", new ObjectHandler2());
+    return objectHandlers;
+}
+```
+
 ## Building
 
 To compile, test, build all jars and docs run:
@@ -177,22 +250,29 @@ To install all jars into your local Maven cache run:
 
     ./gradlew install
 
-## RSBot Demo Script
+## Samples
 
-The `RSBot.java` is a simple implementation of a Java RiveScript bot. You
-can use it to quickly chat with the Eliza-based bot in the `Aiden/` folder.
+The `/samples` folder contains various samples of Java RiveScript bot implementations.
 
-These commands may be used at your input prompt in RSBot:
+* `rsbot` - The `RSBot.java` is a simple implementation using the `com.rivescript.cmd.Shell`.
 
-    /quit        - Quit the program
-    /dump topics - Dump the internal topic/trigger/reply struct (debugging)
-    /dump sorted - Dump the internal trigger sort buffers (debugging)
-    /last        - Print the last trigger you matched.
+  These commands may be used at your input prompt in RSBot:
 
-To execute `RSBot` to begin chatting with the demo Eliza-based bot that
-tends to ship with RiveScript libraries run:
+      /quit        - Quit the program
+      /dump topics - Dump the internal topic/trigger/reply struct (debugging)
+      /dump sorted - Dump the internal trigger sort buffers (debugging)
+      /last        - Print the last trigger you matched.
 
-    ./gradlew :rivescript-samples-rsbot:runBot --console plain
+  To execute `RSBot` to begin chatting with the demo Eliza-based run:
+
+      ./gradlew :rivescript-samples-rsbot:runBot --console plain
+
+* `spring-boot-starter-rsbot` - This example uses the RiveScript Spring Boot Starter to 
+  auto-configure the `RiveScript` bot instance. 
+  
+  To begin chatting with the demo bot run:
+  
+      ./gradlew :rivescript-samples-spring-boot-starter-rsbot:bootRun --console plain
 
 ## Authors
 

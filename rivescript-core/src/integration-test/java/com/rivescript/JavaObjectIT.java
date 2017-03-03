@@ -27,6 +27,8 @@ import com.rivescript.util.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.rivescript.RiveScript.DEFAULT_OBJECT_NOT_FOUND_MESSAGE;
+
 /**
  * Integration tests for Java {@link Subroutine}.
  *
@@ -78,6 +80,6 @@ public class JavaObjectIT extends BaseIT {
 	@Test
 	public void testRemoveSubroutine() {
 		rs.removeSubroutine("reverse");
-		assertReply("reverse hello world", ERR_OBJECT_NOT_FOUND);
+		assertReply("reverse hello world", DEFAULT_OBJECT_NOT_FOUND_MESSAGE);
 	}
 }

@@ -1,0 +1,24 @@
+buildscript {
+	ext {
+		springBootVersion = "1.5.1.RELEASE"
+	}
+	repositories {
+		jcenter()
+		mavenCentral()
+		mavenLocal()
+	}
+	dependencies {
+		classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
+	}
+}
+
+apply plugin: "org.springframework.boot"
+
+dependencies {
+	compile project(":rivescript-spring-boot-starter")
+	compile "org.springframework.boot:spring-boot-starter"
+}
+
+bootRun {
+	standardInput = System.in
+}

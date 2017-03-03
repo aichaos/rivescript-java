@@ -1,0 +1,4 @@
+logging.level:
+  com.rivescript: INFO # Change to DEBUG for full logging.
+rivescript:
+  object-handlers: javascript

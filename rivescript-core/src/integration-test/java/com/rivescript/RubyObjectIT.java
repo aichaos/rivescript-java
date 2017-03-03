@@ -26,6 +26,8 @@ import com.rivescript.lang.ruby.RubyHandler;
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.rivescript.RiveScript.DEFAULT_OBJECT_NOT_FOUND_MESSAGE;
+
 /**
  * Integration tests for {@link RubyHandler}.
  *
@@ -36,7 +38,7 @@ public class RubyObjectIT extends BaseIT {
 	@Before
 	public void setUp() {
 		rs = new RiveScript();
-		rs.setHandler("ruby", new RubyHandler(rs));
+		rs.setHandler("ruby", new RubyHandler());
 		setUp(new String[] {
 				"> object reverse ruby",
 				"    msg = args.join(' ')",
@@ -69,6 +71,6 @@ public class RubyObjectIT extends BaseIT {
 	@Test
 	public void testNoRubyHandler() {
 		rs.removeHandler("ruby");
-		assertReply("reverse hello world", ERR_OBJECT_NOT_FOUND);
+		assertReply("reverse hello world", DEFAULT_OBJECT_NOT_FOUND_MESSAGE);
 	}
 }

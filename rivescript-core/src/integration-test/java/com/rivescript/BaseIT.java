@@ -37,11 +37,6 @@ import static org.junit.Assert.fail;
  */
 public class BaseIT {
 
-	protected static final String ERR_DEEP_RECURSION_DETECTED = "ERR: Deep Recursion Detected";
-	protected static final String ERR_NO_REPLY_MATCHED = "ERR: No Reply Matched";
-	protected static final String ERR_OBJECT_NOT_FOUND = "[ERR: Object Not Found]";
-	protected static final String ERR_REPLIES_NOT_SORTED = "ERR: Replies Not Sorted";
-
 	protected RiveScript rs;
 	protected String username = "local-user";
 

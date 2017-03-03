@@ -22,6 +22,8 @@
 
 package com.rivescript.macro;
 
+import com.rivescript.RiveScript;
+
 /**
  * Interface for RiveScript object handlers.
  *
@@ -33,19 +35,21 @@ public interface ObjectHandler {
 	/**
 	 * Handler for when object code is read (loaded) by RiveScript.
 	 *
+	 * @param rs   the reference to the parent RiveScript instance
 	 * @param name the name of the object
 	 * @param code the source code inside the object
 	 */
-	void load(String name, String[] code);
+	void load(RiveScript rs, String name, String[] code);
 
 	/**
 	 * Handler for when a user invokes the object. Should return the {@link String} result from the object.
 	 * <p>
 	 * This code is executed when a {@code <call>} tag in a RiveScript reply wants to call your object macro.
 	 *
+	 * @param rs     the reference to the parent RiveScript instance
 	 * @param name   the name of the object being called
 	 * @param fields the argument list from the call tag
 	 * @return the result
 	 */
-	String call(String name, String[] fields);
+	String call(RiveScript rs, String name, String[] fields);
 }

@@ -34,7 +34,7 @@ public class RSBot extends Shell {
 	protected void init(RiveScript bot) {
 		// Create a handler for Perl as an object macro language.
 		File rsp4jFile = new File(RSBot.class.getClassLoader().getResource("lang/rsp4j.pl").getFile());
-		bot.setHandler("perl", new Perl(bot, rsp4jFile.getAbsolutePath()));
+		bot.setHandler("perl", new Perl(rsp4jFile.getAbsolutePath()));
 		// Define an object macro in Java.
 		bot.setSubroutine("javatest", new ExampleMacro());
 	}

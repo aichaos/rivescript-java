@@ -22,7 +22,6 @@
 
 package com.rivescript.lang.javascript;
 
-import com.rivescript.RiveScript;
 import com.rivescript.lang.jsr223.Jsr223ScriptingHandler;
 import com.rivescript.macro.ObjectHandler;
 
@@ -77,11 +76,9 @@ public class JavaScriptHandler extends Jsr223ScriptingHandler {
 
 	/**
 	 * Constructs a JavaScript {@link ObjectHandler}.
-	 *
-	 * @param rs the RiveScript instance, not null
 	 */
-	public JavaScriptHandler(RiveScript rs) {
-		super(rs, "javascript", ""
+	public JavaScriptHandler() {
+		super("javascript", ""
 				+ "function %s(rs, args) {\n"
 				+ "    args = Java.from(args);"
 				+ "    %s\n"

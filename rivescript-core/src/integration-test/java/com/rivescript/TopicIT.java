@@ -22,6 +22,8 @@ package com.rivescript;/*
 
 import org.junit.Test;
 
+import static com.rivescript.RiveScript.DEFAULT_REPLY_NOT_MATCHED_MESSAGE;
+
 /**
  * @author Noah Petherbridge
  * @author Marcel Overdijk
@@ -100,23 +102,23 @@ public class TopicIT extends BaseIT {
 		setUservar("topic", "colors");
 		assertReply("What color is the sky?", "Blue.");
 		assertReply("What color is the sun?", "Yellow.");
-		assertReply("What color is grass?", ERR_NO_REPLY_MATCHED);
-		assertReply("Name a Red Hat distro.", ERR_NO_REPLY_MATCHED);
-		assertReply("Name a Debian distro.", ERR_NO_REPLY_MATCHED);
-		assertReply("Say stuff.", ERR_NO_REPLY_MATCHED);
+		assertReply("What color is grass?", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
+		assertReply("Name a Red Hat distro.", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
+		assertReply("Name a Debian distro.", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
+		assertReply("Say stuff.", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
 
 		setUservar("topic", "linux");
-		assertReply("What color is the sky?", ERR_NO_REPLY_MATCHED);
-		assertReply("What color is the sun?", ERR_NO_REPLY_MATCHED);
-		assertReply("What color is grass?", ERR_NO_REPLY_MATCHED);
+		assertReply("What color is the sky?", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
+		assertReply("What color is the sun?", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
+		assertReply("What color is grass?", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
 		assertReply("Name a Red Hat distro.", "Fedora.");
 		assertReply("Name a Debian distro.", "Ubuntu.");
-		assertReply("Say stuff.", ERR_NO_REPLY_MATCHED);
+		assertReply("Say stuff.", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
 
 		setUservar("topic", "stuff");
 		assertReply("What color is the sky?", "Blue.");
 		assertReply("What color is the sun?", "Yellow.");
-		assertReply("What color is grass?", ERR_NO_REPLY_MATCHED);
+		assertReply("What color is grass?", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
 		assertReply("Name a Red Hat distro.", "Fedora.");
 		assertReply("Name a Debian distro.", "Ubuntu.");
 		assertReply("Say stuff.", "\"Stuff.\"");
@@ -124,25 +126,25 @@ public class TopicIT extends BaseIT {
 		setUservar("topic", "override");
 		assertReply("What color is the sky?", "Blue.");
 		assertReply("What color is the sun?", "Purple.");
-		assertReply("What color is grass?", ERR_NO_REPLY_MATCHED);
-		assertReply("Name a Red Hat distro.", ERR_NO_REPLY_MATCHED);
-		assertReply("Name a Debian distro.", ERR_NO_REPLY_MATCHED);
-		assertReply("Say stuff.", ERR_NO_REPLY_MATCHED);
+		assertReply("What color is grass?", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
+		assertReply("Name a Red Hat distro.", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
+		assertReply("Name a Debian distro.", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
+		assertReply("Say stuff.", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
 
 		setUservar("topic", "morecolors");
 		assertReply("What color is the sky?", "Blue.");
 		assertReply("What color is the sun?", "Yellow.");
 		assertReply("What color is grass?", "Green.");
-		assertReply("Name a Red Hat distro.", ERR_NO_REPLY_MATCHED);
-		assertReply("Name a Debian distro.", ERR_NO_REPLY_MATCHED);
-		assertReply("Say stuff.", ERR_NO_REPLY_MATCHED);
+		assertReply("Name a Red Hat distro.", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
+		assertReply("Name a Debian distro.", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
+		assertReply("Say stuff.", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
 
 		setUservar("topic", "evenmore");
 		assertReply("What color is the sky?", "Blue.");
 		assertReply("What color is the sun?", "Yellow.");
 		assertReply("What color is grass?", "Blue, sometimes.");
-		assertReply("Name a Red Hat distro.", ERR_NO_REPLY_MATCHED);
-		assertReply("Name a Debian distro.", ERR_NO_REPLY_MATCHED);
-		assertReply("Say stuff.", ERR_NO_REPLY_MATCHED);
+		assertReply("Name a Red Hat distro.", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
+		assertReply("Name a Debian distro.", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
+		assertReply("Say stuff.", DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
 	}
 }

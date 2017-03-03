@@ -70,6 +70,16 @@ public class Shell {
 	private boolean noColor = false;
 
 	/**
+	 * Initializes the RiveScript instance.
+	 * <p>
+	 * Override this method to define additional language handlers or Java object macro's.
+	 *
+	 * @param rs the RiveScript instance
+	 */
+	protected void init(RiveScript rs) {
+	}
+
+	/**
 	 * Runs the RiveScript bot.
 	 *
 	 * @param args the arguments
@@ -117,13 +127,13 @@ public class Shell {
 				.build();
 
 		// Initialize the bot.
-		RiveScript bot = new RiveScript(config);
-		init(bot);
+		RiveScript rs = new RiveScript(config);
+		init(rs);
 
 		// Load the target directory.
-		bot.loadDirectory(root);
+		rs.loadDirectory(root);
 
-		bot.sortReplies();
+		rs.sortReplies();
 
 		System.out.println(""
 				+ "      .   .       \n"
@@ -137,7 +147,16 @@ public class Shell {
 				+ "Using the RiveScript bot found in: " + root + "\n"
 				+ "Type a message to the bot and press Return to send it.");
 
-		// Enter the main loop.
+		run(rs);
+	}
+
+	/**
+	 * Runs the RiveScript bot.
+	 *
+	 * @param rs the initialised RiveScript instance
+	 */
+	protected void run(RiveScript rs) {
+		// Enter the main run.
 		BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
 		while (true) {
 			print(YELLOW, "You>");
@@ -145,7 +164,7 @@ public class Shell {
 			try {
 				text = stdin.readLine();
 			} catch (IOException e) {
-				print(RED, "Read error!");
+				print(RED, "Read error!", "\n");
 			}
 			text = text.trim();
 			if (text.length() == 0) {
@@ -157,28 +176,18 @@ public class Shell {
 			} else if (text.startsWith("/quit")) {
 				System.exit(0);
 			} else if (text.startsWith("/dump t")) {
-				bot.dumpTopics();
+				rs.dumpTopics();
 			} else if (text.startsWith("/dump s")) {
-				bot.dumpSorted();
+				rs.dumpSorted();
 			} else {
 				try {
-					String reply = bot.reply("localuser", text);
+					String reply = rs.reply("local-user", text);
 					print(GREEN, "RiveScript>", reply, "\n");
 				} catch (RiveScriptException e) {
 					print(RED, "Error>", e.getMessage(), "\n");
 				}
 			}
 		}
-	}
-
-	/**
-	 * Initializes the RiveScript instance.
-	 * <p>
-	 * Override this method to define additional language handlers or Java object macro's.
-	 *
-	 * @param rs the RiveScript instance
-	 */
-	protected void init(RiveScript rs) {
 	}
 
 	/**

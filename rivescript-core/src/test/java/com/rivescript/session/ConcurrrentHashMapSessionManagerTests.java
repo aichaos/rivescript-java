@@ -43,7 +43,7 @@ public class ConcurrrentHashMapSessionManagerTests {
 
 	private ConcurrentHashMapSessionManager sessionManager;
 
-	private String username = "localuser";
+	private String username = "local-user";
 
 	@Before
 	public void setUp() {

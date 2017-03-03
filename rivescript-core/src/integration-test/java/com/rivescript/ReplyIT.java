@@ -25,6 +25,8 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.rivescript.RiveScript.DEFAULT_DEEP_RECURSION_MESSAGE;
+
 /**
  * @author Noah Petherbridge
  * @author Marcel Overdijk
@@ -139,7 +141,7 @@ public class ReplyIT extends BaseIT {
 		assertReply("hi there", "Hi there!");
 		assertReply("my name is Kirsle", "That's my botmaster's name too.");
 		assertReply("call me kirsle", "That's my botmaster's name too.");
-		assertReply("one", ERR_DEEP_RECURSION_DETECTED);
+		assertReply("one", DEFAULT_DEEP_RECURSION_MESSAGE);
 	}
 
 	@Test

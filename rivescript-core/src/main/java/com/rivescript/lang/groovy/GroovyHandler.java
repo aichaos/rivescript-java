@@ -22,7 +22,6 @@
 
 package com.rivescript.lang.groovy;
 
-import com.rivescript.RiveScript;
 import com.rivescript.lang.jsr223.Jsr223ScriptingHandler;
 import com.rivescript.macro.ObjectHandler;
 
@@ -77,11 +76,9 @@ public class GroovyHandler extends Jsr223ScriptingHandler {
 
 	/**
 	 * Constructs a Groovy {@link ObjectHandler}.
-	 *
-	 * @param rs the RiveScript instance, not null
 	 */
-	public GroovyHandler(RiveScript rs) {
-		super(rs, "groovy", ""
+	public GroovyHandler() {
+		super("groovy", ""
 				+ "def %s(rs, args) {\n"
 				+ "    %s\n"
 				+ "}");

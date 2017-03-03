@@ -27,6 +27,8 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.rivescript.RiveScript.DEFAULT_OBJECT_NOT_FOUND_MESSAGE;
+
 /**
  * @author Noah Petherbridge
  * @author Marcel Overdijk
@@ -53,7 +55,7 @@ public class ObjectIT extends BaseIT {
 				"- <call>goodbye</call>"
 		});
 		assertReply("Hello", "Hello world!");
-		assertReply("goodbye", ERR_OBJECT_NOT_FOUND);
+		assertReply("goodbye", DEFAULT_OBJECT_NOT_FOUND_MESSAGE);
 	}
 
 	private static class MockHandler implements ObjectHandler {
@@ -61,12 +63,12 @@ public class ObjectIT extends BaseIT {
 		private Map<String, String> codes = new HashMap<>();
 
 		@Override
-		public void load(String name, String[] code) {
+		public void load(RiveScript rs, String name, String[] code) {
 			codes.put(name, StringUtils.join(code, "\n"));
 		}
 
 		@Override
-		public String call(String name, String[] fields) {
+		public String call(RiveScript rs, String name, String[] fields) {
 			return codes.get(name);
 		}
 	}

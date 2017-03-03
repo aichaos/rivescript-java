@@ -51,18 +51,15 @@ public class Perl implements ObjectHandler {
 
 	private static Logger logger = LoggerFactory.getLogger(Perl.class);
 
-	private RiveScript rs;                 // Parent RiveScript instance object
 	private String rsp4j;                  // Path to the Perl script
 	private HashMap<String, String> codes; // Object codes
 
 	/**
 	 * Creates a Perl {@link ObjectHandler}. Must take the path to the rsp4j script as its argument.
 	 *
-	 * @param rs    the RiveScript instance, not null.
 	 * @param rsp4j the path to the rsp4j script (either in .pl or .exe format), not null.
 	 */
-	public Perl(RiveScript rs, String rsp4j) {
-		this.rs = requireNonNull(rs, "'rs' must not be null");
+	public Perl(String rsp4j) {
 		this.rsp4j = requireNonNull(rsp4j, "'rsp4j' must not be null");
 		this.codes = new HashMap<>();
 	}
@@ -71,7 +68,7 @@ public class Perl implements ObjectHandler {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void load(String name, String[] code) {
+	public void load(RiveScript rs, String name, String[] code) {
 		codes.put(name, StringUtils.join(code, "\n"));
 	}
 
@@ -79,7 +76,7 @@ public class Perl implements ObjectHandler {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public String call(String name, String[] fields) {
+	public String call(RiveScript rs, String name, String[] fields) {
 		String user = rs.currentUser();
 		// Prepare JSON data to send.
 		try {

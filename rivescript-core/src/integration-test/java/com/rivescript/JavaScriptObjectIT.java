@@ -26,6 +26,8 @@ import com.rivescript.lang.javascript.JavaScriptHandler;
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.rivescript.RiveScript.DEFAULT_OBJECT_NOT_FOUND_MESSAGE;
+
 /**
  * Integration tests for {@link JavaScriptHandler}.
  *
@@ -36,7 +38,7 @@ public class JavaScriptObjectIT extends BaseIT {
 	@Before
 	public void setUp() {
 		rs = new RiveScript();
-		rs.setHandler("javascript", new JavaScriptHandler(rs));
+		rs.setHandler("javascript", new JavaScriptHandler());
 		setUp(new String[] {
 				"> object reverse javascript",
 				"    var msg = args.join(' ');",
@@ -69,6 +71,6 @@ public class JavaScriptObjectIT extends BaseIT {
 	@Test
 	public void testNoJavaScriptHandler() {
 		rs.removeHandler("javascript");
-		assertReply("reverse hello world", ERR_OBJECT_NOT_FOUND);
+		assertReply("reverse hello world", DEFAULT_OBJECT_NOT_FOUND_MESSAGE);
 	}
 }

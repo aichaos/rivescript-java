@@ -124,19 +124,32 @@ import static java.util.Objects.requireNonNull;
  */
 public class RiveScript {
 
-	public static final String MSG_DEEP_RECURSION_KEY = "deepRecursion";
-	public static final String MSG_REPLIES_NOT_SORTED_KEY = "repliesNotSorted";
-	public static final String MSG_DEFAULT_TOPIC_NOT_FOUND_KEY = "defaultTopicNotFound";
-	public static final String MSG_REPLY_NOT_MATCHED_KEY = "replyNotMatched";
-	public static final String MSG_REPLY_NOT_FOUND_KEY = "replyNotFound";
-	public static final String MSG_OBJECT_NOT_FOUND_KEY = "objectNotFound";
-	public static final String MSG_CANNOT_DIVIDE_BY_ZERO_KEY = "cannotDivideByZero";
-	public static final String MSG_CANNOT_MATH_VARIABLE_KEY = "cannotMathVariable";
-	public static final String MSG_CANNOT_MATH_VALUE_KEY = "cannotMathValue";
+	public static final String DEEP_RECURSION_KEY = "deepRecursion";
+	public static final String REPLIES_NOT_SORTED_KEY = "repliesNotSorted";
+	public static final String DEFAULT_TOPIC_NOT_FOUND_KEY = "defaultTopicNotFound";
+	public static final String REPLY_NOT_MATCHED_KEY = "replyNotMatched";
+	public static final String REPLY_NOT_FOUND_KEY = "replyNotFound";
+	public static final String OBJECT_NOT_FOUND_KEY = "objectNotFound";
+	public static final String CANNOT_DIVIDE_BY_ZERO_KEY = "cannotDivideByZero";
+	public static final String CANNOT_MATH_VARIABLE_KEY = "cannotMathVariable";
+	public static final String CANNOT_MATH_VALUE_KEY = "cannotMathValue";
+
+	public static final String DEFAULT_DEEP_RECURSION_MESSAGE = "ERR: Deep Recursion Detected";
+	public static final String DEFAULT_REPLIES_NOT_SORTED_MESSAGE = "ERR: Replies Not Sorted";
+	public static final String DEFAULT_DEFAULT_TOPIC_NOT_FOUND_MESSAGE = "ERR: No default topic 'random' was found";
+	public static final String DEFAULT_REPLY_NOT_MATCHED_MESSAGE = "ERR: No Reply Matched";
+	public static final String DEFAULT_REPLY_NOT_FOUND_MESSAGE = "ERR: No Reply Found";
+	public static final String DEFAULT_OBJECT_NOT_FOUND_MESSAGE = "[ERR: Object Not Found]";
+	public static final String DEFAULT_CANNOT_DIVIDE_BY_ZERO_MESSAGE = "[ERR: Can't Divide By Zero]";
+	public static final String DEFAULT_CANNOT_MATH_VARIABLE_MESSAGE = "[ERR: Can't perform math operation on non-numeric variable]";
+	public static final String DEFAULT_CANNOT_MATH_VALUE_MESSAGE = "[ERR: Can't perform math operation on non-numeric value]";
+
 	public static final String UNDEFINED = "undefined";
 
-	private static final String[] DEFAULT_FILE_EXTENSIONS = new String[] {".rive", ".rs"};
+	public static final String[] DEFAULT_FILE_EXTENSIONS = new String[] {".rive", ".rs"};
+
 	private static final Random RANDOM = new Random();
+
 	private static final String UNDEF_TAG = "<undef>";
 
 	private static Logger logger = LoggerFactory.getLogger(RiveScript.class);
@@ -203,15 +216,15 @@ public class RiveScript {
 		this.unicodePunctuation = Pattern.compile(unicodePunctuation);
 
 		this.errorMessages = new HashMap<>();
-		this.errorMessages.put(MSG_DEEP_RECURSION_KEY, "ERR: Deep Recursion Detected");
-		this.errorMessages.put(MSG_REPLIES_NOT_SORTED_KEY, "ERR: Replies Not Sorted");
-		this.errorMessages.put(MSG_DEFAULT_TOPIC_NOT_FOUND_KEY, "ERR: No default topic 'random' was found");
-		this.errorMessages.put(MSG_REPLY_NOT_MATCHED_KEY, "ERR: No Reply Matched");
-		this.errorMessages.put(MSG_REPLY_NOT_FOUND_KEY, "ERR: No Reply Found");
-		this.errorMessages.put(MSG_OBJECT_NOT_FOUND_KEY, "[ERR: Object Not Found]");
-		this.errorMessages.put(MSG_CANNOT_DIVIDE_BY_ZERO_KEY, "[ERR: Can't Divide By Zero]");
-		this.errorMessages.put(MSG_CANNOT_MATH_VARIABLE_KEY, "[ERR: Can't perform math operation on non-numeric variable]");
-		this.errorMessages.put(MSG_CANNOT_MATH_VALUE_KEY, "[ERR: Can't perform math operation on non-numeric value]");
+		this.errorMessages.put(DEEP_RECURSION_KEY, DEFAULT_DEEP_RECURSION_MESSAGE);
+		this.errorMessages.put(REPLIES_NOT_SORTED_KEY, DEFAULT_REPLIES_NOT_SORTED_MESSAGE);
+		this.errorMessages.put(DEFAULT_TOPIC_NOT_FOUND_KEY, DEFAULT_DEFAULT_TOPIC_NOT_FOUND_MESSAGE);
+		this.errorMessages.put(REPLY_NOT_MATCHED_KEY, DEFAULT_REPLY_NOT_MATCHED_MESSAGE);
+		this.errorMessages.put(REPLY_NOT_FOUND_KEY, DEFAULT_REPLY_NOT_FOUND_MESSAGE);
+		this.errorMessages.put(OBJECT_NOT_FOUND_KEY, DEFAULT_OBJECT_NOT_FOUND_MESSAGE);
+		this.errorMessages.put(CANNOT_DIVIDE_BY_ZERO_KEY, DEFAULT_CANNOT_DIVIDE_BY_ZERO_MESSAGE);
+		this.errorMessages.put(CANNOT_MATH_VARIABLE_KEY, DEFAULT_CANNOT_MATH_VARIABLE_MESSAGE);
+		this.errorMessages.put(CANNOT_MATH_VALUE_KEY, DEFAULT_CANNOT_MATH_VALUE_MESSAGE);
 
 		if (config.getErrorMessages() != null) {
 			for (Map.Entry<String, String> entry : config.getErrorMessages().entrySet()) {
@@ -359,6 +372,15 @@ public class RiveScript {
 	}
 
 	/**
+	 * Returns the object macro language handlers (unmodifiable).
+	 * .
+	 * @return the object macro language handlers
+	 */
+	public Map<String, ObjectHandler> getHandlers() {
+		return Collections.unmodifiableMap(handlers);
+	}
+
+	/**
 	 * Defines a Java object macro.
 	 * <p>
 	 * Because Java is a compiled language, this method must be used to create an object macro written in Java.
@@ -377,6 +399,15 @@ public class RiveScript {
 	 */
 	public void removeSubroutine(String name) {
 		subroutines.remove(name);
+	}
+
+	/**
+	 * Returns the Java object macros (unmodifiable).
+	 *
+	 * @return the Java object macros
+	 */
+	public Map<String, Subroutine> getSubroutines() {
+		return Collections.unmodifiableMap(subroutines);
 	}
 
 	/**
@@ -774,7 +805,7 @@ public class RiveScript {
 		for (ObjectMacro object : ast.getObjects()) {
 			// Have a language handler for this?
 			if (this.handlers.containsKey(object.getLanguage())) {
-				this.handlers.get(object.getLanguage()).load(object.getName(), object.getCode().toArray(new String[0]));
+				this.handlers.get(object.getLanguage()).load(this, object.getName(), object.getCode().toArray(new String[0]));
 				this.objectLanguages.put(object.getName(), object.getLanguage());
 			} else {
 				logger.warn("Object '{}' not loaded as no handler was found for programming language '{}'", object.getName(),
@@ -1319,7 +1350,7 @@ public class RiveScript {
 		// Needed to sort replies?
 		if (this.sorted.getTopics().size() == 0) {
 			logger.warn("You forgot to call sortReplies()!");
-			String errorMessage = this.errorMessages.get(MSG_REPLIES_NOT_SORTED_KEY);
+			String errorMessage = this.errorMessages.get(REPLIES_NOT_SORTED_KEY);
 			if (this.throwExceptions) {
 				throw new RepliesNotSortedException(errorMessage);
 			}
@@ -1344,7 +1375,7 @@ public class RiveScript {
 
 		// Avoid deep recursion.
 		if (checkDeepRecursion(step, "Deep recursion while getting reply!")) {
-			return this.errorMessages.get(MSG_DEEP_RECURSION_KEY);
+			return this.errorMessages.get(DEEP_RECURSION_KEY);
 		}
 
 		// Are we in the BEGIN block?
@@ -1355,7 +1386,7 @@ public class RiveScript {
 		// More topic sanity checking.
 		if (!this.topics.containsKey(topic)) {
 			// This was handled before, which would mean topic=random and it doesn't exist. Serious issue!
-			String errorMessage = this.errorMessages.get(MSG_DEFAULT_TOPIC_NOT_FOUND_KEY);
+			String errorMessage = this.errorMessages.get(DEFAULT_TOPIC_NOT_FOUND_KEY);
 			if (this.throwExceptions) {
 				throw new NoDefaultTopicException(errorMessage);
 			}
@@ -1607,13 +1638,13 @@ public class RiveScript {
 
 		// Still no reply?? Give up with the fallback error replies.
 		if (!foundMatch) {
-			String errorMessage = this.errorMessages.get(MSG_REPLY_NOT_MATCHED_KEY);
+			String errorMessage = this.errorMessages.get(REPLY_NOT_MATCHED_KEY);
 			if (this.throwExceptions) {
 				throw new ReplyNotMatchedException(errorMessage);
 			}
 			reply = errorMessage;
 		} else if (reply == null || reply.length() == 0) {
-			String errorMessage = this.errorMessages.get(MSG_REPLY_NOT_FOUND_KEY);
+			String errorMessage = this.errorMessages.get(REPLY_NOT_FOUND_KEY);
 			if (this.throwExceptions) {
 				throw new ReplyNotFoundException(errorMessage);
 			}
@@ -1938,18 +1969,18 @@ public class RiveScript {
 							// Don't divide by zero.
 							if (value == 0) {
 								logger.warn("Can't divide by zero");
-								insert = this.errorMessages.get(MSG_CANNOT_DIVIDE_BY_ZERO_KEY);
+								insert = this.errorMessages.get(CANNOT_DIVIDE_BY_ZERO_KEY);
 							}
 							result /= value;
 						}
 						this.sessions.set(username, name, Integer.toString(result));
 					} catch (NumberFormatException e) {
 						logger.warn("Math can't " + tag + " non-numeric variable " + name);
-						insert = this.errorMessages.get(MSG_CANNOT_MATH_VARIABLE_KEY);
+						insert = this.errorMessages.get(CANNOT_MATH_VARIABLE_KEY);
 					}
 				} catch (NumberFormatException e) {
 					logger.warn("Math can't " + tag + " non-numeric value " + strValue);
-					insert = this.errorMessages.get(MSG_CANNOT_MATH_VALUE_KEY);
+					insert = this.errorMessages.get(CANNOT_MATH_VALUE_KEY);
 				}
 			} else if (tag.equals("get")) {
 				// <get> user vars.
@@ -2026,9 +2057,9 @@ public class RiveScript {
 				output = this.subroutines.get(obj).call(this, args);
 			} else if (this.objectLanguages.containsKey(obj)) {
 				String language = this.objectLanguages.get(obj);
-				output = this.handlers.get(language).call(obj, args);
+				output = this.handlers.get(language).call(this, obj, args);
 			} else {
-				output = this.errorMessages.get(MSG_OBJECT_NOT_FOUND_KEY);
+				output = this.errorMessages.get(OBJECT_NOT_FOUND_KEY);
 			}
 			if (output == null) {
 				output = "";

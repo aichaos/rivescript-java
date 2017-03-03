@@ -6,7 +6,14 @@ This documents the history of significant changes to `rivescript-java`.
 
 This update focuses on new features and bug fixes.
 
+* **API Breaking Changes:**
+  * The `load` and `call` methods of the `ObjectHandler` interface now 
+    require the `RiveScript` instance as an additional (first) argument.
+
 * **Changes:**
+  * Add RiveScript Spring Boot Starter module (#34).
+    A dedicated RiveScript Spring Boot Starter sample is available under
+    `/samples/spring-bootstarter-rsbot` for reference.
   * Add JSR-223 Scripting `ObjectHandler` to support object macros written in 
     any JSR-223 compliant scripting language. The `rivescript-core` distro
     comes bundled with out-of-the-box support for JavaScript, Groovy and Ruby
