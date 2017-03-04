@@ -43,7 +43,8 @@ To test drive RiveScript in your web browser, try the
 
 ## Documentation
 
-API Documentation is available at <http://www.javadoc.io/doc/com.rivescript/rivescript-core/>
+* API Documentation: <http://www.javadoc.io/doc/com.rivescript/rivescript-core/>
+* Working Draft: <http://www.rivescript.com/wd/RiveScript>
 
 Also check out the [**RiveScript Community Wiki**](https://github.com/aichaos/rivescript/wiki)
 for common design patterns and tips & tricks for RiveScript.
