@@ -12,9 +12,9 @@ ext {
 	junitVersion      = "4.12"
 	jrubyVersion      = "9.1.7.0"
 	jsonVersion       = "20160810"
-	mockitoVersion    = "1.10.19"
-	slf4jVersion      = "1.7.22"
-	springBootVersion = "1.5.1.RELEASE"
+	mockitoVersion    = "2.5.4"
+	slf4jVersion      = "1.7.24"
+	springBootVersion = "1.5.2.RELEASE"
 	ext.javadocLinks = [
 			"http://docs.oracle.com/javase/7/docs/api/",
 			"http://docs.oracle.com/javaee/7/api/"
@@ -33,7 +33,6 @@ configure(allprojects) { project ->
 	apply plugin: "maven"
 	apply plugin: "signing"
 
-	// Configures the classpath and the source and resource directories of the integrationTest task.
 	sourceSets {
 		integrationTest {
 			java {
@@ -45,7 +44,6 @@ configure(allprojects) { project ->
 		}
 	}
 
-	// Configures the compile and runtime configurations for our integration tests and includes the dependencies of the test task.
 	configurations {
 		integrationTestCompile.extendsFrom testCompile
 		integrationTestRuntime.extendsFrom testRuntime
