@@ -53,7 +53,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -599,18 +598,6 @@ public class RiveScript {
 	 * @throws RiveScriptException in case of a loading error
 	 * @throws ParserException     in case of a parsing error
 	 */
-	public void loadFile(Path path) throws RiveScriptException, ParserException {
-		requireNonNull(path, "'path' must not be null");
-		loadFile(path.toFile());
-	}
-
-	/**
-	 * Loads a single RiveScript document from disk.
-	 *
-	 * @param path the path to the RiveScript document
-	 * @throws RiveScriptException in case of a loading error
-	 * @throws ParserException     in case of a parsing error
-	 */
 	public void loadFile(String path) throws RiveScriptException, ParserException {
 		requireNonNull(path, "'path' must not be null");
 		loadFile(new File(path));
@@ -662,18 +649,6 @@ public class RiveScript {
 		for (File file : files) {
 			loadFile(file);
 		}
-	}
-
-	/**
-	 * Loads multiple RiveScript documents from a directory on disk.
-	 *
-	 * @param path The path to the directory containing the RiveScript documents
-	 * @throws RiveScriptException in case of a loading error
-	 * @throws ParserException     in case of a parsing error
-	 */
-	public void loadDirectory(Path path, String... extensions) throws RiveScriptException, ParserException {
-		requireNonNull(path, "'path' must not be null");
-		loadDirectory(path.toFile(), extensions);
 	}
 
 	/**
