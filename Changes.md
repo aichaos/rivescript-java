@@ -2,6 +2,20 @@
 
 This documents the history of significant changes to `rivescript-java`.
 
+## v0.9.1 - March 7, 2017
+
+This update focuses on bug fixes.
+
+* **API Breaking Changes:**
+  * Remove `java.nio.file.Path` reference and subsequently also the 
+    `RiveScript#loadDirectory(Path path, String... extensions)` and
+    `RiveScript#loadFile(Path path)` methods as they caused issues
+    on Adroid. (#43).
+
+* **Changes:**
+  * Fix for object caller regexp processing internal `{__call__}`
+    tags. The closing curly brackets were not escaped (#43).
+
 ## v0.9.0 - March 3, 2017
 
 This update focuses on new features and bug fixes.
