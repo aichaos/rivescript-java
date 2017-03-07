@@ -2005,8 +2005,8 @@ public class RiveScript {
 		}
 
 		// Object caller.
-		reply = reply.replaceAll("\\{__call__}", "<call>");
-		reply = reply.replaceAll("\\{/__call__}", "</call>");
+		reply = reply.replaceAll("\\{__call__\\}", "<call>");
+		reply = reply.replaceAll("\\{/__call__\\}", "</call>");
 		matcher = RE_CALL.matcher(reply);
 		giveup = 0;
 		while (matcher.find()) {
