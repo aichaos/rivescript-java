@@ -2,6 +2,16 @@
 
 This documents the history of significant changes to `rivescript-java`.
 
+## v0.9.2 - March 19, 2017
+
+This update focuses on bug fixes.
+
+* **Changes:**
+  * Fix for not able to get JavaScript `ScriptEngine` in Google App Engine 
+    local devserver using `new ScriptEngineManager().getEngineByName(engineName)`.
+    Fallback mechanism added to use  
+    `new ScriptEngineManager(null).getEngineByName(engineName)` (#44).
+
 ## v0.9.1 - March 7, 2017
 
 This update focuses on bug fixes.

@@ -67,7 +67,7 @@ _Gradle_:
 
 ```groovy
 dependencies {
-    compile "com.rivescript:rivescript-core:0.9.1"
+    compile "com.rivescript:rivescript-core:0.9.2"
 }
 ```
 
@@ -181,7 +181,7 @@ _Maven_:
 <dependency>
   <groupId>com.rivescript</groupId>
   <artifactId>rivescript-spring-boot-starter</artifactId>
-  <version>0.9.1</version>
+  <version>0.9.2</version>
 </dependency>
 ```
 
@@ -189,7 +189,7 @@ _Gradle_:
 
 ```groovy
 dependencies {
-    compile "com.rivescript:rivescript-spring-boot-starter:0.9.1"
+    compile "com.rivescript:rivescript-spring-boot-starter:0.9.2"
 }
 ```
 
