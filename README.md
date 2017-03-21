@@ -224,7 +224,7 @@ beans in your application context like:
 ```java
 @Bean
 public Map<String, Subroutine> subroutines() {
-	// The key is the name of the Java object macro to register.
+    // The key is the name of the Java object macro to register.
     Map<String, Subroutine> subroutines = new HashMap<>();
     subroutines.put("subroutine1", new Subroutine1());
     subroutines.put("subroutine2", new Subroutine2());
@@ -233,7 +233,7 @@ public Map<String, Subroutine> subroutines() {
 
 @Bean
 public Map<String, ObjectHandler> objectHandlers() {
-	// The key is the name of the programming language to register.
+    // The key is the name of the programming language to register.
     Map<String, ObjectHandler> objectHandlers = new HashMap<>();
     objectHandlers.put("handler1", new ObjectHandler1());
     objectHandlers.put("handler2", new ObjectHandler2());
