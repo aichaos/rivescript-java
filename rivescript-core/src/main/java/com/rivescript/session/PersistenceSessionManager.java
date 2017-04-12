@@ -22,29 +22,32 @@
 
 package com.rivescript.session;
 
+import static com.rivescript.session.ThawAction.DISCARD;
+import static com.rivescript.session.ThawAction.KEEP;
+import static com.rivescript.session.ThawAction.THAW;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 
 /**
- * Implements the default {@link SessionManager} for RiveScript, based on a {@link ConcurrentHashMap}.
+ * Implements the default {@link SessionManager} for RiveScript
  *
  * @author Balachandar S
  */
-public class AbstractSessionManager implements SessionManager {
+public class PersistenceSessionManager implements SessionManager {
+
 	private PersistenceHandler handler = null;
-	public AbstractSessionManager(PersistenceHandler handler) {
+
+	public PersistenceSessionManager(PersistenceHandler handler) {
 		this.handler = handler;
 	}
-	
+
 	@Override
 	public UserData init(String username) {
-			if (handler.getUserData(username)==null) {
-				handler.createUserData(username, defaultSession());
-			}
-			return handler.getUserData(username);
+		if (handler.getUserData(username) == null) {
+			handler.createUserData(username, defaultSession());
+		}
+		return handler.getUserData(username);
 	}
 
 	@Override
@@ -66,10 +69,14 @@ public class AbstractSessionManager implements SessionManager {
 	@Override
 	public void addHistory(String username, String input, String reply) {
 		UserData userData = init(username);
-		Collections.rotate(userData.getHistory().getInput(), 1); // Rotate right.
-		userData.getHistory().getInput().set(0, input.trim());   // Now set the first item
-		Collections.rotate(userData.getHistory().getReply(), 1); // Rotate right.
-		userData.getHistory().getReply().set(0, reply.trim());   // Now set the first item
+		Collections.rotate(userData.getHistory().getInput(), 1); // Rotate
+																	// right.
+		userData.getHistory().getInput().set(0, input.trim()); // Now set the
+																// first item
+		Collections.rotate(userData.getHistory().getReply(), 1); // Rotate
+																	// right.
+		userData.getHistory().getReply().set(0, reply.trim()); // Now set the
+																// first item
 		handler.updateUserData(username, userData);
 	}
 
@@ -82,13 +89,13 @@ public class AbstractSessionManager implements SessionManager {
 
 	@Override
 	public String get(String username, String name) {
-		return 	handler.getUserData(username).getVariable(name);
+		return handler.getUserData(username).getVariable(name);
 	}
 
 	@Override
 	public UserData get(String username) {
 		UserData userData = init(username);
-		if (userData==null) {
+		if (userData == null) {
 			return null;
 		}
 		return userData;
@@ -102,7 +109,7 @@ public class AbstractSessionManager implements SessionManager {
 	@Override
 	public String getLastMatch(String username) {
 		UserData userData = init(username);
-		if (userData==null) {
+		if (userData == null) {
 			return null;
 		}
 		return userData.getLastMatch();
@@ -111,7 +118,7 @@ public class AbstractSessionManager implements SessionManager {
 	@Override
 	public History getHistory(String username) {
 		UserData userData = init(username);
-		if (userData==null) {
+		if (userData == null) {
 			return null;
 		}
 		return userData.getHistory();
@@ -129,13 +136,20 @@ public class AbstractSessionManager implements SessionManager {
 
 	@Override
 	public void freeze(String username) {
+		handler.moveUserDataToSecondaryStorage(username);
 	}
 
 	@Override
 	public void thaw(String username, ThawAction action) {
+		if (action == THAW) {
+			handler.copyUserDataToPrimaryStorage(username);
+		} else if (action == DISCARD) {
+			handler.removeUserDataFromSecondaryStorage(username);
+		} else if (action == KEEP) {
+			handler.moveUserDataToPrimaryStorage(username);
+		}
 	}
 
-	
 	/**
 	 * Initializes the default session variables for a user.
 	 * <p>
@@ -149,5 +163,5 @@ public class AbstractSessionManager implements SessionManager {
 		userData.setLastMatch("");
 		return userData;
 	}
-	
+
 }

@@ -21,4 +21,14 @@ public interface PersistenceHandler {
 	
 	public void deleteAllUserData();
 	
+	public void copyUserDataToPrimaryStorage(String username);
+	
+	public void moveUserDataToPrimaryStorage(String username);
+	
+	public void moveUserDataToSecondaryStorage(String username);
+
+	public void removeUserDataFromSecondaryStorage(String username);
+
+	
+	
 }
