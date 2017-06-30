@@ -492,6 +492,17 @@ public class RiveScript {
 	}
 
 	/**
+	 * Returns all bot variables.
+	 * <p>
+	 *
+	 * @param 
+	 * @return the variable map
+	 */
+	public Map<String, String> getVariables() {
+		return vars;
+	}
+
+	/**
 	 * Returns a substitution pattern.
 	 * <p>
 	 * Returns {@code null} if the substitution isn't defined.
