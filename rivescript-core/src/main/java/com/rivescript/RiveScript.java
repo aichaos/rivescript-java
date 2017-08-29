@@ -2511,4 +2511,13 @@ public class RiveScript {
 			}
 		}
 	}
+
+	/**
+	 * Returns the topics.
+	 *
+	 * @return the topics
+	 */
+	public Map<String, Topic> getTopics() {
+		return topics;
+	}
 }
