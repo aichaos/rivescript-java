@@ -476,6 +476,15 @@ public class RiveScript {
 	}
 
 	/**
+	 * Returns all bot variables.
+	 *
+	 * @return the variable map
+	 */
+	public Map<String, String> getVariables() {
+		return vars;
+	}
+
+	/**
 	 * Sets a substitution pattern.
 	 * <p>
 	 * This is equivalent to {@code ! sub} in RiveScript. Set the value to {@code null} to delete a substitution.
@@ -489,17 +498,6 @@ public class RiveScript {
 		} else {
 			sub.put(name, value);
 		}
-	}
-
-	/**
-	 * Returns all bot variables.
-	 * <p>
-	 *
-	 * @param 
-	 * @return the variable map
-	 */
-	public Map<String, String> getVariables() {
-		return vars;
 	}
 
 	/**
