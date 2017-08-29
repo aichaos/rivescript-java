@@ -22,11 +22,12 @@
 
 package com.rivescript.util;
 
-import com.rivescript.regexp.Regexp;
-
-import java.util.regex.Pattern;
-
 import static com.rivescript.regexp.Regexp.RE_NASTIES;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import com.rivescript.regexp.Regexp;
 
 /**
  * Miscellaneous {@link String} utility methods.
@@ -35,6 +36,30 @@ import static com.rivescript.regexp.Regexp.RE_NASTIES;
  * @author Marcel Overdijk
  */
 public class StringUtils {
+
+	private static final char ESCAPE_CHAR = '\\';
+	private static final Set<Character> UNSAFE_CHARS = new HashSet<Character>(); 
+	static {
+		UNSAFE_CHARS.add('\\');
+		UNSAFE_CHARS.add('.');
+		UNSAFE_CHARS.add('+');
+		UNSAFE_CHARS.add('*');
+		UNSAFE_CHARS.add('?');
+		UNSAFE_CHARS.add('[');
+		UNSAFE_CHARS.add('^');
+		UNSAFE_CHARS.add(']');
+		UNSAFE_CHARS.add('$');
+		UNSAFE_CHARS.add('(');
+		UNSAFE_CHARS.add(')');
+		UNSAFE_CHARS.add('{');
+		UNSAFE_CHARS.add('}');
+		UNSAFE_CHARS.add('=');
+		UNSAFE_CHARS.add('!');
+		UNSAFE_CHARS.add('<');
+		UNSAFE_CHARS.add('>');
+		UNSAFE_CHARS.add('|');
+		UNSAFE_CHARS.add(':');
+	}
 
 	/**
 	 * Counts the number of words in a {@link String}.
@@ -93,15 +118,21 @@ public class StringUtils {
 	 * @param str the string to escape
 	 * @return the escaped string
 	 */
-	public static String quoteMetacharacters(String str) {
+	public static String quoteMetacharacters(final String str) {
 		if (str == null) {
 			return null;
 		}
-		String unsafe = "\\.+*?[^]$(){}=!<>|:";
-		for (char c : unsafe.toCharArray()) {
-			str = str.replaceAll(Pattern.quote(Character.toString(c)), "\\\\\\" + c);
+
+		final StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < str.length(); i++) {
+			final char c = str.charAt(i);
+			if (UNSAFE_CHARS.contains(c)) {
+				sb.append(ESCAPE_CHAR);
+			}
+			sb.append(c);
 		}
-		return str;
+
+		return sb.toString();
 	}
 
 	/**
@@ -118,3 +149,4 @@ public class StringUtils {
 		return RE_NASTIES.matcher(str).replaceAll("");
 	}
 }
+
