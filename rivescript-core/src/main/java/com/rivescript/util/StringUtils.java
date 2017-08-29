@@ -38,7 +38,9 @@ import com.rivescript.regexp.Regexp;
 public class StringUtils {
 
 	private static final char ESCAPE_CHAR = '\\';
-	private static final Set<Character> UNSAFE_CHARS = new HashSet<Character>(); 
+
+	private static final Set<Character> UNSAFE_CHARS = new HashSet<>();
+
 	static {
 		UNSAFE_CHARS.add('\\');
 		UNSAFE_CHARS.add('.');
@@ -118,14 +120,14 @@ public class StringUtils {
 	 * @param str the string to escape
 	 * @return the escaped string
 	 */
-	public static String quoteMetacharacters(final String str) {
+	public static String quoteMetacharacters(String str) {
 		if (str == null) {
 			return null;
 		}
 
-		final StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < str.length(); i++) {
-			final char c = str.charAt(i);
+			char c = str.charAt(i);
 			if (UNSAFE_CHARS.contains(c)) {
 				sb.append(ESCAPE_CHAR);
 			}
