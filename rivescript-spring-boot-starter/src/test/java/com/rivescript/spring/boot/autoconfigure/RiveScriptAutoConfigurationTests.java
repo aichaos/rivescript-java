@@ -38,6 +38,10 @@ import org.springframework.context.annotation.Configuration;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.rivescript.ConcatMode.NEWLINE;
+import static com.rivescript.ConcatMode.NONE;
+import static com.rivescript.ConcatMode.SPACE;
+import static com.rivescript.Config.DEFAULT_CONCAT;
 import static com.rivescript.Config.DEFAULT_DEPTH;
 import static com.rivescript.RiveScript.CANNOT_DIVIDE_BY_ZERO_KEY;
 import static com.rivescript.RiveScript.CANNOT_MATH_VALUE_KEY;
@@ -99,6 +103,7 @@ public class RiveScriptAutoConfigurationTests {
 		assertThat(rs.isUtf8(), is(false));
 		assertThat(rs.getUnicodePunctuation(), is(equalTo("[.,!?;:]")));
 		assertThat(rs.isForceCase(), is(false));
+		assertThat(rs.getConcat(), is(equalTo(DEFAULT_CONCAT)));
 		assertThat(rs.getDepth(), is(equalTo(DEFAULT_DEPTH)));
 		assertThat(rs.getErrorMessages(), hasEntry(DEEP_RECURSION_KEY, DEFAULT_DEEP_RECURSION_MESSAGE));
 		assertThat(rs.getErrorMessages(), hasEntry(REPLIES_NOT_SORTED_KEY, DEFAULT_REPLIES_NOT_SORTED_MESSAGE));
@@ -158,7 +163,7 @@ public class RiveScriptAutoConfigurationTests {
 	}
 
 	@Test
-	public void testThrowExceptionsFalse() {
+	public void testThrowExceptionsIsFalse() {
 		load(new Class[] {RiveScriptAutoConfiguration.class},
 				"rivescript.throw-exceptions: false");
 
@@ -168,7 +173,7 @@ public class RiveScriptAutoConfigurationTests {
 	}
 
 	@Test
-	public void testThrowExceptionsTrue() {
+	public void testThrowExceptionsIsTrue() {
 		load(new Class[] {RiveScriptAutoConfiguration.class},
 				"rivescript.throw-exceptions: true");
 
@@ -178,7 +183,7 @@ public class RiveScriptAutoConfigurationTests {
 	}
 
 	@Test
-	public void testStrictFalse() {
+	public void testStrictIsFalse() {
 		load(new Class[] {RiveScriptAutoConfiguration.class},
 				"rivescript.strict: false");
 
@@ -188,7 +193,7 @@ public class RiveScriptAutoConfigurationTests {
 	}
 
 	@Test
-	public void testStrictTrue() {
+	public void testStrictIsTrue() {
 		load(new Class[] {RiveScriptAutoConfiguration.class},
 				"rivescript.strict: true");
 
@@ -198,7 +203,7 @@ public class RiveScriptAutoConfigurationTests {
 	}
 
 	@Test
-	public void testUtf8False() {
+	public void testUtf8IsFalse() {
 		load(new Class[] {RiveScriptAutoConfiguration.class},
 				"rivescript.utf8: false");
 
@@ -208,7 +213,7 @@ public class RiveScriptAutoConfigurationTests {
 	}
 
 	@Test
-	public void testUtf8True() {
+	public void testUtf8IsTrue() {
 		load(new Class[] {RiveScriptAutoConfiguration.class},
 				"rivescript.utf8: true");
 
@@ -228,7 +233,7 @@ public class RiveScriptAutoConfigurationTests {
 	}
 
 	@Test
-	public void testForceCaseFalse() {
+	public void testForceCaseIsFalse() {
 		load(new Class[] {RiveScriptAutoConfiguration.class},
 				"rivescript.force-case: false");
 
@@ -238,13 +243,43 @@ public class RiveScriptAutoConfigurationTests {
 	}
 
 	@Test
-	public void testForceCaseTrue() {
+	public void testForceCaseIsTrue() {
 		load(new Class[] {RiveScriptAutoConfiguration.class},
 				"rivescript.force-case: true");
 
 		RiveScript rs = this.context.getBean(RiveScript.class);
 
 		assertThat(rs.isForceCase(), is(true));
+	}
+
+	@Test
+	public void testConcatIsNone() {
+		load(new Class[] {RiveScriptAutoConfiguration.class},
+				"rivescript.concat: none");
+
+		RiveScript rs = this.context.getBean(RiveScript.class);
+
+		assertThat(rs.getConcat(), is(equalTo(NONE)));
+	}
+
+	@Test
+	public void testConcatIsNewline() {
+		load(new Class[] {RiveScriptAutoConfiguration.class},
+				"rivescript.concat: newline");
+
+		RiveScript rs = this.context.getBean(RiveScript.class);
+
+		assertThat(rs.getConcat(), is(equalTo(NEWLINE)));
+	}
+
+	@Test
+	public void testConcatIsSpace() {
+		load(new Class[] {RiveScriptAutoConfiguration.class},
+				"rivescript.concat: space");
+
+		RiveScript rs = this.context.getBean(RiveScript.class);
+
+		assertThat(rs.getConcat(), is(equalTo(SPACE)));
 	}
 
 	@Test
@@ -258,7 +293,7 @@ public class RiveScriptAutoConfigurationTests {
 	}
 
 	@Test
-	public void testCustomErrorMessag() {
+	public void testCustomErrorMessage() {
 		load(new Class[] {RiveScriptAutoConfiguration.class},
 				"rivescript.error-messages.deepRecursion: Custom ERR: Deep Recursion Detected");
 
@@ -276,7 +311,7 @@ public class RiveScriptAutoConfigurationTests {
 	}
 
 	@Test
-	public void testCustomErrorMessage() {
+	public void testCustomErrorMessages() {
 		load(new Class[] {RiveScriptAutoConfiguration.class},
 				"rivescript.error-messages.deepRecursion: Custom ERR: Deep Recursion Detected",
 				"rivescript.error-messages.repliesNotSorted: Custom ERR: Replies Not Sorted",

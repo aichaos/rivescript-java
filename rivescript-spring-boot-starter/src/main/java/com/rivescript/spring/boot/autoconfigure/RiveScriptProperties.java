@@ -22,10 +22,12 @@
 
 package com.rivescript.spring.boot.autoconfigure;
 
+import com.rivescript.ConcatMode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.Map;
 
+import static com.rivescript.Config.DEFAULT_CONCAT;
 import static com.rivescript.Config.DEFAULT_DEPTH;
 import static com.rivescript.Config.DEFAULT_UNICODE_PUNCTUATION_PATTERN;
 import static com.rivescript.RiveScript.DEFAULT_FILE_EXTENSIONS;
@@ -81,6 +83,11 @@ public class RiveScriptProperties {
 	 * Enable forcing triggers to lowercase.
 	 */
 	private boolean forceCase = false;
+
+	/**
+	 * The concat mode.
+	 */
+	private ConcatMode concat = DEFAULT_CONCAT;
 
 	/**
 	 * The recursion depth limit.
@@ -159,6 +166,14 @@ public class RiveScriptProperties {
 
 	public void setForceCase(boolean forceCase) {
 		this.forceCase = forceCase;
+	}
+
+	public ConcatMode getConcat() {
+		return concat;
+	}
+
+	public void setConcat(ConcatMode concat) {
+		this.concat = concat;
 	}
 
 	public int getDepth() {

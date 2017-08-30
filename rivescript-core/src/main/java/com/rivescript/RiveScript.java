@@ -157,6 +157,7 @@ public class RiveScript {
 	private boolean strict;
 	private boolean utf8;
 	private boolean forceCase;
+	private ConcatMode concat;
 	private int depth;
 	private Pattern unicodePunctuation;
 	private Map<String, String> errorMessages;
@@ -205,6 +206,7 @@ public class RiveScript {
 		this.strict = config.isStrict();
 		this.utf8 = config.isUtf8();
 		this.forceCase = config.isForceCase();
+		this.concat = config.getConcat();
 		this.depth = config.getDepth();
 		this.sessions = config.getSessionManager();
 
@@ -231,6 +233,11 @@ public class RiveScript {
 			}
 		}
 
+		if (this.concat == null) {
+			this.concat = Config.DEFAULT_CONCAT;
+			logger.debug("No concat config: using default {}", Config.DEFAULT_CONCAT);
+		}
+
 		if (this.depth <= 0) {
 			this.depth = Config.DEFAULT_DEPTH;
 			logger.debug("No depth config: using default {}", Config.DEFAULT_DEPTH);
@@ -246,6 +253,7 @@ public class RiveScript {
 				.strict(this.strict)
 				.utf8(this.utf8)
 				.forceCase(this.forceCase)
+				.concat(this.concat)
 				.build());
 
 		// Initialize all the data structures.
@@ -312,6 +320,15 @@ public class RiveScript {
 	 */
 	public boolean isForceCase() {
 		return forceCase;
+	}
+
+	/**
+	 * Returns the concat mode.
+	 *
+	 * @return the concat mode
+	 */
+	public ConcatMode getConcat() {
+		return concat;
 	}
 
 	/**

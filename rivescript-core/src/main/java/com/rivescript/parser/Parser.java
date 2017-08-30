@@ -22,6 +22,8 @@
 
 package com.rivescript.parser;
 
+import com.rivescript.ConcatMode;
+import com.rivescript.Config;
 import com.rivescript.ast.ObjectMacro;
 import com.rivescript.ast.Root;
 import com.rivescript.ast.Trigger;
@@ -50,18 +52,10 @@ public class Parser {
 
 	private static Logger logger = LoggerFactory.getLogger(Parser.class);
 
-	private static Map<String, String> concatModes;
-
-	static {
-		concatModes = new HashMap<>();
-		concatModes.put("none", "");
-		concatModes.put("newline", "\n");
-		concatModes.put("space", " ");
-	}
-
 	private boolean strict;
 	private boolean utf8;
 	private boolean forceCase;
+	private ConcatMode concat;
 
 	/**
 	 * Creates a new {@link Parser} with a default {@link ParserConfig}.
@@ -82,6 +76,7 @@ public class Parser {
 		this.strict = config.isStrict();
 		this.utf8 = config.isUtf8();
 		this.forceCase = config.isForceCase();
+		this.concat = config.getConcat();
 	}
 
 	/**
@@ -124,7 +119,6 @@ public class Parser {
 
 		// Local (file-scoped) parser options.
 		Map<String, String> localOptions = new HashMap<>();
-		localOptions.put("concat", "none");
 
 		// Go through the lines of code.
 		for (int lp = 0; lp < code.length; lp++) {
@@ -260,14 +254,14 @@ public class Parser {
 					if (!cmd.equals("^") && !lookCmd.equals("%")) {
 						if (lookCmd.equals("^")) {
 							// Which character to concatenate with?
-							String concatChar = "";
-							String concatMode = localOptions.get("concat");
-							if (concatMode != null) {
-								if (concatModes.containsKey(concatMode)) {
-									concatChar = concatModes.get(concatMode);
-								}
+							ConcatMode concat = null;
+							if (localOptions.containsKey("concat")) {
+								concat = ConcatMode.fromName(localOptions.get("concat"));
 							}
-							line += concatChar + lookahead;
+							if (concat == null) {
+								concat = this.concat != null ? this.concat : Config.DEFAULT_CONCAT;
+							}
+							line += concat.getConcatChar() + lookahead;
 						}
 					}
 				}
