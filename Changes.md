@@ -2,6 +2,16 @@
 
 This documents the history of significant changes to `rivescript-java`.
 
+## v0.10.0 - August 30, 2017
+
+This update focuses on new features and improvements.
+
+* **Changes:**
+  * Huge performance improvement in `StringUtils.quoteMetacharacters(str)` (#52).
+  * Add method `getVariables()` to get all variables (#51).
+  * Add method `getTopics()` to return all topics (#47).
+  * Add ability to set a default (brain-wide) `concat` flag (#46).
+
 ## v0.9.2 - March 19, 2017
 
 This update focuses on bug fixes.
