@@ -22,12 +22,12 @@
 
 package com.rivescript.util;
 
-import static com.rivescript.regexp.Regexp.RE_NASTIES;
+import com.rivescript.regexp.Regexp;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import com.rivescript.regexp.Regexp;
+import static com.rivescript.regexp.Regexp.RE_NASTIES;
 
 /**
  * Miscellaneous {@link String} utility methods.
