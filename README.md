@@ -11,9 +11,6 @@ This is a RiveScript interpreter library written for the Java programming
 language. RiveScript is a scripting language for chatterbots, making it easy
 to write trigger/response pairs for building up a bot's intelligence.
 
-**This project is currently in Beta status.** The API should be mostly stable
-but things might move around on you.
-
 ## About RiveScript
 
 RiveScript is a scripting language for authoring chatbots. It has a very
