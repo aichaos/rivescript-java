@@ -11,9 +11,6 @@ This is a RiveScript interpreter library written for the Java programming
 language. RiveScript is a scripting language for chatterbots, making it easy
 to write trigger/response pairs for building up a bot's intelligence.
 
-**This project is currently in Beta status.** The API should be mostly stable
-but things might move around on you.
-
 ## About RiveScript
 
 RiveScript is a scripting language for authoring chatbots. It has a very
@@ -59,7 +56,7 @@ _Maven_:
 <dependency>
   <groupId>com.rivescript</groupId>
   <artifactId>rivescript-core</artifactId>
-  <version>0.9.1</version>
+  <version>0.10.0</version>
 </dependency>
 ```
 
@@ -67,7 +64,7 @@ _Gradle_:
 
 ```groovy
 dependencies {
-    compile "com.rivescript:rivescript-core:0.9.1"
+    compile "com.rivescript:rivescript-core:0.10.0"
 }
 ```
 
@@ -120,6 +117,7 @@ RiveScript bot = new RiveScript(Config.newBuilder()
         .utf8(false)                     // Whether UTF-8 mode is enabled
         .unicodePunctuation("[.,!?;:]")  // The unicode punctuation pattern
         .forceCase(false)                // Whether forcing triggers to lowercase is enabled
+        .concat(ConcatMode.NONE)         // The concat mode
         .depth(50)                       // The recursion depth limit 
         .sessionManager(sessionManager)  // The session manager for user variables
         .errorMessages(errors)           // Map of custom error messages
@@ -181,7 +179,7 @@ _Maven_:
 <dependency>
   <groupId>com.rivescript</groupId>
   <artifactId>rivescript-spring-boot-starter</artifactId>
-  <version>0.9.1</version>
+  <version>0.10.0</version>
 </dependency>
 ```
 
@@ -189,7 +187,7 @@ _Gradle_:
 
 ```groovy
 dependencies {
-    compile "com.rivescript:rivescript-spring-boot-starter:0.9.1"
+    compile "com.rivescript:rivescript-spring-boot-starter:0.10.0"
 }
 ```
 
@@ -212,6 +210,7 @@ rivescript:
   utf8: false # Enable UTF-8 mode.
   unicode-punctuation: [.,!?;:] # The unicode punctuation pattern (only used when UTF-8 mode is enabled).
   force-case: false # Enable forcing triggers to lowercase.
+  concat: none # The concat mode (none|newline|space).
   depth: 50 # The recursion depth limit.
   error-messages: # The custom error message overrides. For instance `rivescript.error-messages.deepRecursion=Custom Deep Recursion Detected Message`
   object-handlers: # The comma-separated list of object handler names to register (currently supported: `groovy`, `javascript`, `ruby`).
@@ -224,7 +223,7 @@ beans in your application context like:
 ```java
 @Bean
 public Map<String, Subroutine> subroutines() {
-	// The key is the name of the Java object macro to register.
+    // The key is the name of the Java object macro to register.
     Map<String, Subroutine> subroutines = new HashMap<>();
     subroutines.put("subroutine1", new Subroutine1());
     subroutines.put("subroutine2", new Subroutine2());
@@ -233,7 +232,7 @@ public Map<String, Subroutine> subroutines() {
 
 @Bean
 public Map<String, ObjectHandler> objectHandlers() {
-	// The key is the name of the programming language to register.
+    // The key is the name of the programming language to register.
     Map<String, ObjectHandler> objectHandlers = new HashMap<>();
     objectHandlers.put("handler1", new ObjectHandler1());
     objectHandlers.put("handler2", new ObjectHandler2());

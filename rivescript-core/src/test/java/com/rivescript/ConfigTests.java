@@ -24,6 +24,7 @@ package com.rivescript;
 
 import org.junit.Test;
 
+import static com.rivescript.Config.DEFAULT_CONCAT;
 import static com.rivescript.Config.DEFAULT_DEPTH;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -44,6 +45,7 @@ public class ConfigTests {
 		assertThat(config.isUtf8(), is(equalTo(false)));
 		assertThat(config.getUnicodePunctuation(), is(equalTo("[.,!?;:]")));
 		assertThat(config.isForceCase(), is(equalTo(false)));
+		assertThat(config.getConcat(), is(equalTo(DEFAULT_CONCAT)));
 		assertThat(config.getDepth(), is(equalTo(DEFAULT_DEPTH)));
 		assertThat(config.getSessionManager(), is(equalTo(null)));
 		assertThat(config.getErrorMessages(), is(equalTo(null)));
@@ -57,6 +59,7 @@ public class ConfigTests {
 		assertThat(config.isUtf8(), is(equalTo(true)));
 		assertThat(config.getUnicodePunctuation(), is(equalTo("[.,!?;:]")));
 		assertThat(config.isForceCase(), is(equalTo(false)));
+		assertThat(config.getConcat(), is(equalTo(DEFAULT_CONCAT)));
 		assertThat(config.getDepth(), is(equalTo(DEFAULT_DEPTH)));
 		assertThat(config.getSessionManager(), is(equalTo(null)));
 		assertThat(config.getErrorMessages(), is(equalTo(null)));

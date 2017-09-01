@@ -22,6 +22,8 @@
 
 package com.rivescript.parser;
 
+import com.rivescript.ConcatMode;
+
 /**
  * User-configurable properties of the RiveScript {@link Parser}.
  *
@@ -33,6 +35,7 @@ public class ParserConfig {
 	private boolean strict;
 	private boolean utf8;
 	private boolean forceCase;
+	private ConcatMode concat;
 
 	protected ParserConfig() {
 	}
@@ -64,6 +67,15 @@ public class ParserConfig {
 		return forceCase;
 	}
 
+	/**
+	 * Returns the concat mode.
+	 *
+	 * @return the concat mode
+	 */
+	public ConcatMode getConcat() {
+		return concat;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -79,7 +91,10 @@ public class ParserConfig {
 		if (utf8 != that.utf8) {
 			return false;
 		}
-		return forceCase == that.forceCase;
+		if (forceCase != that.forceCase) {
+			return false;
+		}
+		return concat == that.concat;
 	}
 
 	@Override
@@ -87,6 +102,7 @@ public class ParserConfig {
 		int result = (strict ? 1 : 0);
 		result = 31 * result + (utf8 ? 1 : 0);
 		result = 31 * result + (forceCase ? 1 : 0);
+		result = 31 * result + (concat != null ? concat.hashCode() : 0);
 		return result;
 	}
 
@@ -96,6 +112,7 @@ public class ParserConfig {
 				"strict=" + strict +
 				", utf8=" + utf8 +
 				", forceCase=" + forceCase +
+				", concat=" + concat +
 				'}';
 	}
 
@@ -108,7 +125,8 @@ public class ParserConfig {
 		return newBuilder()
 				.strict(this.strict)
 				.utf8(this.utf8)
-				.forceCase(this.forceCase);
+				.forceCase(this.forceCase)
+				.concat(this.concat);
 	}
 
 	/**
@@ -128,6 +146,7 @@ public class ParserConfig {
 		private boolean strict;
 		private boolean utf8;
 		private boolean forceCase;
+		private ConcatMode concat;
 
 		private Builder() {
 		}
@@ -166,6 +185,17 @@ public class ParserConfig {
 		}
 
 		/**
+		 * Sets the concat mode
+		 *
+		 * @param concat the concat mode
+		 * @return this builder
+		 */
+		public Builder concat(ConcatMode concat) {
+			this.concat = concat;
+			return this;
+		}
+
+		/**
 		 * Builds the parser config.
 		 *
 		 * @return the parser config
@@ -175,6 +205,7 @@ public class ParserConfig {
 			config.strict = this.strict;
 			config.utf8 = this.utf8;
 			config.forceCase = this.forceCase;
+			config.concat = this.concat;
 			return config;
 		}
 	}

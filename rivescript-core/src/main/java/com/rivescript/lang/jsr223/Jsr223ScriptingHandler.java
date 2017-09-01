@@ -85,12 +85,15 @@ public class Jsr223ScriptingHandler implements ObjectHandler {
 	 */
 	public Jsr223ScriptingHandler(String engineName, String functionCodeFormat, String functionNamePrefix, String codeDelimiter) {
 		this.engineName = requireNonNull(engineName, "'engineName' must not be null");
-		this.scriptEngine = new ScriptEngineManager().getEngineByName(engineName);
 		this.functionNamePrefix = requireNonNull(functionNamePrefix, "'functionNamePrefix' must not be null");
 		this.functionCodeFormat = requireNonNull(functionCodeFormat, "'functionCodeFormat' must not be null");
 		this.codeDelimiter = requireNonNull(codeDelimiter, "'codeDelimiter' must not be null");
+		this.scriptEngine = new ScriptEngineManager().getEngineByName(engineName);
 		if (this.scriptEngine == null) {
-			logger.error("No script engine found for '{}'", engineName);
+			this.scriptEngine = new ScriptEngineManager(null).getEngineByName(engineName);
+			if (this.scriptEngine == null) {
+				logger.error("No script engine found for '{}'", engineName);
+			}
 		}
 	}
 

@@ -24,6 +24,9 @@ package com.rivescript.parser;
 
 import org.junit.Test;
 
+import static com.rivescript.ConcatMode.NEWLINE;
+import static com.rivescript.ConcatMode.NONE;
+import static com.rivescript.ConcatMode.SPACE;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -42,7 +45,7 @@ public class ParserConfigBuilderTests {
 	}
 
 	@Test
-	public void testBuildWithStrictIstrue() {
+	public void testBuildWithStrictIsTrue() {
 		ParserConfig config = ParserConfig.newBuilder().strict(true).build();
 		assertThat(config.isStrict(), is(equalTo(true)));
 	}
@@ -54,7 +57,7 @@ public class ParserConfigBuilderTests {
 	}
 
 	@Test
-	public void testBuildWithUtf8Istrue() {
+	public void testBuildWithUtf8IsTrue() {
 		ParserConfig config = ParserConfig.newBuilder().utf8(true).build();
 		assertThat(config.isUtf8(), is(equalTo(true)));
 	}
@@ -66,8 +69,26 @@ public class ParserConfigBuilderTests {
 	}
 
 	@Test
-	public void testBuildWithForceCaseIstrue() {
+	public void testBuildWithForceCaseIsTrue() {
 		ParserConfig config = ParserConfig.newBuilder().forceCase(true).build();
 		assertThat(config.isForceCase(), is(equalTo(true)));
+	}
+
+	@Test
+	public void testBuildWithConcatIsNone() {
+		ParserConfig config = ParserConfig.newBuilder().concat(NONE).build();
+		assertThat(config.getConcat(), is(equalTo(NONE)));
+	}
+
+	@Test
+	public void testBuildWithConcatIsNewline() {
+		ParserConfig config = ParserConfig.newBuilder().concat(NEWLINE).build();
+		assertThat(config.getConcat(), is(equalTo(NEWLINE)));
+	}
+
+	@Test
+	public void testBuildWithConcatIsSpace() {
+		ParserConfig config = ParserConfig.newBuilder().concat(SPACE).build();
+		assertThat(config.getConcat(), is(equalTo(SPACE)));
 	}
 }

@@ -27,6 +27,8 @@ import com.rivescript.session.SessionManager;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.rivescript.ConcatMode.NONE;
+
 /**
  * User-configurable properties of the {@link RiveScript} interpreter.
  *
@@ -34,6 +36,11 @@ import java.util.Map;
  * @author Marcel Overdijk
  */
 public class Config {
+
+	/**
+	 * The default concat mode.
+	 */
+	public static final ConcatMode DEFAULT_CONCAT = NONE;
 
 	/**
 	 * The default recursion depth limit.
@@ -50,6 +57,7 @@ public class Config {
 	private boolean utf8;
 	private String unicodePunctuation = DEFAULT_UNICODE_PUNCTUATION_PATTERN;
 	private boolean forceCase;
+	private ConcatMode concat = DEFAULT_CONCAT;
 	private int depth = DEFAULT_DEPTH;
 	private SessionManager sessionManager;
 	private Map<String, String> errorMessages;
@@ -103,6 +111,15 @@ public class Config {
 	}
 
 	/**
+	 * Returns the concat mode.
+	 *
+	 * @return the concat mode
+	 */
+	public ConcatMode getConcat() {
+		return concat;
+	}
+
+	/**
 	 * Returns the recursion depth limit.
 	 *
 	 * @return the recursion depth limit
@@ -150,6 +167,9 @@ public class Config {
 		if (forceCase != that.forceCase) {
 			return false;
 		}
+		if (concat != that.concat) {
+			return false;
+		}
 		if (depth != that.depth) {
 			return false;
 		}
@@ -160,7 +180,6 @@ public class Config {
 			return false;
 		}
 		return errorMessages != null ? errorMessages.equals(that.errorMessages) : that.errorMessages == null;
-
 	}
 
 	@Override
@@ -170,6 +189,7 @@ public class Config {
 		result = 31 * result + (utf8 ? 1 : 0);
 		result = 31 * result + (unicodePunctuation != null ? unicodePunctuation.hashCode() : 0);
 		result = 31 * result + (forceCase ? 1 : 0);
+		result = 31 * result + (concat != null ? concat.hashCode() : 0);
 		result = 31 * result + depth;
 		result = 31 * result + (sessionManager != null ? sessionManager.hashCode() : 0);
 		result = 31 * result + (errorMessages != null ? errorMessages.hashCode() : 0);
@@ -184,6 +204,7 @@ public class Config {
 				", utf8=" + utf8 +
 				", unicodePunctuation='" + unicodePunctuation + '\'' +
 				", forceCase=" + forceCase +
+				", concat=" + concat +
 				", depth=" + depth +
 				", sessionManager=" + sessionManager +
 				", errorMessages=" + errorMessages +
@@ -202,6 +223,7 @@ public class Config {
 				.utf8(this.utf8)
 				.unicodePunctuation(this.unicodePunctuation)
 				.forceCase(this.forceCase)
+				.concat(this.concat)
 				.depth(this.depth)
 				.sessionManager(this.sessionManager)
 				.errorMessages(this.errorMessages);
@@ -244,6 +266,7 @@ public class Config {
 		private boolean utf8;
 		private String unicodePunctuation = DEFAULT_UNICODE_PUNCTUATION_PATTERN;
 		private boolean forceCase;
+		private ConcatMode concat = DEFAULT_CONCAT;
 		private int depth = DEFAULT_DEPTH;
 		private SessionManager sessionManager;
 		private Map<String, String> errorMessages;
@@ -307,6 +330,17 @@ public class Config {
 		}
 
 		/**
+		 * Sets the concat mode.
+		 *
+		 * @param concat the concat mode
+		 * @return this builder
+		 */
+		public Builder concat(ConcatMode concat) {
+			this.concat = concat;
+			return this;
+		}
+
+		/**
 		 * Sets the recursion depth limit.
 		 *
 		 * @param depth the recursion depth limit
@@ -366,6 +400,7 @@ public class Config {
 			config.utf8 = this.utf8;
 			config.unicodePunctuation = this.unicodePunctuation;
 			config.forceCase = this.forceCase;
+			config.concat = this.concat;
 			config.depth = this.depth;
 			config.sessionManager = this.sessionManager;
 			config.errorMessages = this.errorMessages;

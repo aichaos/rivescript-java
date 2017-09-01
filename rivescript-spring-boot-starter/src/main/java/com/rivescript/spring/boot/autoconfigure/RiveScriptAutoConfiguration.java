@@ -87,6 +87,7 @@ public class RiveScriptAutoConfiguration {
 					.utf8(properties.isUtf8())
 					.unicodePunctuation(properties.getUnicodePunctuation())
 					.forceCase(properties.isForceCase())
+					.concat(properties.getConcat())
 					.depth(properties.getDepth())
 					.sessionManager(sessionManager)
 					.errorMessages(properties.getErrorMessages())

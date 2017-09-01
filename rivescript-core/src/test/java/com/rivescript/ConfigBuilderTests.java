@@ -29,6 +29,10 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.rivescript.ConcatMode.NEWLINE;
+import static com.rivescript.ConcatMode.NONE;
+import static com.rivescript.ConcatMode.SPACE;
+import static com.rivescript.Config.DEFAULT_CONCAT;
 import static com.rivescript.Config.DEFAULT_DEPTH;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -49,6 +53,7 @@ public class ConfigBuilderTests {
 		assertThat(config.isUtf8(), is(equalTo(false)));
 		assertThat(config.getUnicodePunctuation(), is(equalTo("[.,!?;:]")));
 		assertThat(config.isForceCase(), is(equalTo(false)));
+		assertThat(config.getConcat(), is(equalTo(DEFAULT_CONCAT)));
 		assertThat(config.getDepth(), is(equalTo(DEFAULT_DEPTH)));
 		assertThat(config.getSessionManager(), is(equalTo(null)));
 		assertThat(config.getErrorMessages(), is(equalTo(null)));
@@ -62,6 +67,7 @@ public class ConfigBuilderTests {
 		assertThat(config.isUtf8(), is(equalTo(true)));
 		assertThat(config.getUnicodePunctuation(), is(equalTo("[.,!?;:]")));
 		assertThat(config.isForceCase(), is(equalTo(false)));
+		assertThat(config.getConcat(), is(equalTo(DEFAULT_CONCAT)));
 		assertThat(config.getDepth(), is(equalTo(DEFAULT_DEPTH)));
 		assertThat(config.getSessionManager(), is(equalTo(null)));
 		assertThat(config.getErrorMessages(), is(equalTo(null)));
@@ -74,7 +80,7 @@ public class ConfigBuilderTests {
 	}
 
 	@Test
-	public void testBuildWithThrowExceptionsIstrue() {
+	public void testBuildWithThrowExceptionsIsTrue() {
 		Config config = Config.newBuilder().throwExceptions(true).build();
 		assertThat(config.isThrowExceptions(), is(equalTo(true)));
 	}
@@ -86,7 +92,7 @@ public class ConfigBuilderTests {
 	}
 
 	@Test
-	public void testBuildWithStrictIstrue() {
+	public void testBuildWithStrictIsTrue() {
 		Config config = Config.newBuilder().strict(true).build();
 		assertThat(config.isStrict(), is(equalTo(true)));
 	}
@@ -98,7 +104,7 @@ public class ConfigBuilderTests {
 	}
 
 	@Test
-	public void testBuildWithUtf8Istrue() {
+	public void testBuildWithUtf8IsTrue() {
 		Config config = Config.newBuilder().utf8(true).build();
 		assertThat(config.isUtf8(), is(equalTo(true)));
 	}
@@ -116,9 +122,27 @@ public class ConfigBuilderTests {
 	}
 
 	@Test
-	public void testBuildWithForceCaseIstrue() {
+	public void testBuildWithForceCaseIsTrue() {
 		Config config = Config.newBuilder().forceCase(true).build();
 		assertThat(config.isForceCase(), is(equalTo(true)));
+	}
+
+	@Test
+	public void testBuildWithConcatIsNone() {
+		Config config = Config.newBuilder().concat(NONE).build();
+		assertThat(config.getConcat(), is(equalTo(NONE)));
+	}
+
+	@Test
+	public void testBuildWithConcatIsNewline() {
+		Config config = Config.newBuilder().concat(NEWLINE).build();
+		assertThat(config.getConcat(), is(equalTo(NEWLINE)));
+	}
+
+	@Test
+	public void testBuildWithConcatIsSpace() {
+		Config config = Config.newBuilder().concat(SPACE).build();
+		assertThat(config.getConcat(), is(equalTo(SPACE)));
 	}
 
 	@Test

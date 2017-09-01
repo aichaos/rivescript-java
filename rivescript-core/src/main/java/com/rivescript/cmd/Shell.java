@@ -22,6 +22,7 @@
 
 package com.rivescript.cmd;
 
+import com.rivescript.ConcatMode;
 import com.rivescript.Config;
 import com.rivescript.RiveScript;
 import com.rivescript.RiveScriptException;
@@ -35,6 +36,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import static com.rivescript.Config.DEFAULT_CONCAT;
 import static com.rivescript.Config.DEFAULT_DEPTH;
 import static com.rivescript.cmd.Shell.Color.GREEN;
 import static com.rivescript.cmd.Shell.Color.RED;
@@ -54,6 +56,7 @@ import static com.rivescript.cmd.Shell.Color.YELLOW;
  * <li>{@code --nostrict} Disable strict syntax checking
  * <li>{@code --utf8} Enable UTF-8 mode
  * <li>{@code --forcecase} Enable forcing triggers to lowercase
+ * <li>{@code --concat=none|newline|space} Set the global concat mode (default {@code none})
  * <li>{@code --depth=50} Override the recursion depth limit (default {@code 50})
  * <li>{@code --nocolor} Disable ANSI colors
  * </ul>
@@ -66,6 +69,7 @@ public class Shell {
 	private boolean strict = true;
 	private boolean utf8 = false;
 	private boolean forceCase = false;
+	private ConcatMode concat = DEFAULT_CONCAT;
 	private int depth = DEFAULT_DEPTH;
 	private boolean noColor = false;
 
@@ -102,6 +106,8 @@ public class Shell {
 					utf8 = true;
 				} else if (flag.equals("forcecase")) {
 					forceCase = true;
+				} else if (flag.equals("concat")) {
+					concat = ConcatMode.fromName(flag.split("=", 2)[1]);
 				} else if (flag.startsWith("depth")) {
 					depth = Integer.parseInt(flag.split("=", 2)[1]);
 				} else if (flag.equals("nocolor")) {
@@ -123,6 +129,7 @@ public class Shell {
 				.strict(strict)
 				.utf8(utf8)
 				.forceCase(forceCase)
+				.concat(concat)
 				.depth(depth)
 				.build();
 
