@@ -13,6 +13,7 @@
 /classes
 /lib
 /log
+/out
 /target
 
 /rivescript-*/bin
@@ -20,6 +21,7 @@
 /rivescript-*/classes
 /rivescript-*/lib
 /rivescript-*/log
+/rivescript-*/out
 /rivescript-*/target
 
 /samples/*/bin
@@ -27,4 +29,5 @@
 /samples/*/classes
 /samples/*/lib
 /samples/*/log
+/samples/*/out
 /samples/*/target
