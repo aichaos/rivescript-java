@@ -4,7 +4,10 @@ This documents the history of significant changes to `rivescript-java`.
 
 ## v0.11.0 - TBD, 2018
 
+This update focuses on bug fixes.
+
 * **Changes:**
+  * Fix for data loss occuring when variable contains `=` (#55).
   * Upgraded build environment to latest Gradle `4.6` version.
 
 ## v0.10.0 - August 30, 2017
