@@ -1915,10 +1915,10 @@ public class RiveScript {
 
 				if (data.contains("=")) {
 					// Assigning the value.
-					parts = data.split("=");
+					parts = data.split("=", 2);
 					String name = parts[0];
 					String value = parts[1];
-					logger.debug("Assign {} variable {} = }{", tag, name, value);
+					logger.debug("Assign {} variable {} = {}", tag, name, value);
 					target.put(name, value);
 				} else {
 					// Getting a bot/env variable.
@@ -1930,7 +1930,7 @@ public class RiveScript {
 				}
 			} else if (tag.equals("set")) {
 				// <set> user vars.
-				parts = data.split("=");
+				parts = data.split("=", 2);
 				if (parts.length > 1) {
 					String name = parts[0];
 					String value = parts[1];
@@ -1941,7 +1941,7 @@ public class RiveScript {
 				}
 			} else if (tag.equals("add") || tag.equals("sub") || tag.equals("mult") || tag.equals("div")) {
 				// Math operator tags
-				parts = data.split("=");
+				parts = data.split("=", 2);
 				String name = parts[0];
 				String strValue = parts[1];
 				int result = 0;
