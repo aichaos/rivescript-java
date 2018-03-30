@@ -2,6 +2,11 @@
 
 This documents the history of significant changes to `rivescript-java`.
 
+## v0.11.0 - TBD, 2018
+
+* **Changes:**
+  * Upgraded build environment to latest Gradle `4.6` version.
+
 ## v0.10.0 - August 30, 2017
 
 This update focuses on new features and improvements.
