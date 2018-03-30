@@ -4,7 +4,7 @@ This documents the history of significant changes to `rivescript-java`.
 
 ## v0.11.0 - TBD, 2018
 
-This update focuses on bug fixes.
+This update focuses on Python support and bug fixes.
 
 * **Changes:**
   * Fix for data loss occuring when variable contains `=` (#55).
