@@ -48,11 +48,7 @@ import com.rivescript.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FilenameFilter;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -145,7 +141,7 @@ public class RiveScript {
 
 	public static final String UNDEFINED = "undefined";
 
-	public static final String[] DEFAULT_FILE_EXTENSIONS = new String[] {".rive", ".rs"};
+	public static final String[] DEFAULT_FILE_EXTENSIONS = new String[]{".rive", ".rs"};
 
 	private static final Random RANDOM = new Random();
 
@@ -250,11 +246,11 @@ public class RiveScript {
 
 		// Initialize the parser.
 		this.parser = new Parser(ParserConfig.newBuilder()
-				.strict(this.strict)
-				.utf8(this.utf8)
-				.forceCase(this.forceCase)
-				.concat(this.concat)
-				.build());
+			.strict(this.strict)
+			.utf8(this.utf8)
+			.forceCase(this.forceCase)
+			.concat(this.concat)
+			.build());
 
 		// Initialize all the data structures.
 		this.global = new HashMap<>();
@@ -390,6 +386,7 @@ public class RiveScript {
 	/**
 	 * Returns the object macro language handlers (unmodifiable).
 	 * .
+	 *
 	 * @return the object macro language handlers
 	 */
 	public Map<String, ObjectHandler> getHandlers() {
@@ -583,6 +580,42 @@ public class RiveScript {
 	/*---------------------*/
 
 	/**
+	 * Loads a single RiveScript document from an InputStream.
+	 *
+	 * @param inputStream the inputStream referring to a RiveScript file
+	 * @throws RiveScriptException in case of a loading error
+	 * @throws ParserException     in case of a parsing error
+	 */
+	public void loadInputStream(InputStream inputStream) throws RiveScriptException, ParserException {
+		requireNonNull(inputStream, "'inputStream' must not be null");
+		loadReader(new InputStreamReader(inputStream));
+	}
+
+	/**
+	 * Loads a single RiveScript document from a Reader.
+	 *
+	 * @param reader the Reader referring to a RiveScript file
+	 * @throws RiveScriptException in case of a loading error
+	 * @throws ParserException     in case of a parsing error
+	 */
+	public void loadReader(Reader reader) throws RiveScriptException, ParserException {
+		requireNonNull(reader, "'reader' must not be null");
+		List<String> code = new ArrayList<>();
+
+		// Slurp the file's contents.
+		try (BufferedReader br = new BufferedReader(reader)) {
+			String line;
+			while ((line = br.readLine()) != null) {
+				code.add(line);
+			}
+		} catch (IOException e) {
+			throw new RiveScriptException("Error reading file '" + reader + "'", e);
+		}
+
+		parse(reader.toString(), code.toArray(new String[0]));
+	}
+
+	/**
 	 * Loads a single RiveScript document from disk.
 	 *
 	 * @param file the RiveScript file
@@ -602,19 +635,11 @@ public class RiveScript {
 			throw new RiveScriptException("File '" + file + "' cannot be read");
 		}
 
-		List<String> code = new ArrayList<>();
-
-		// Slurp the file's contents.
-		try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-			String line;
-			while ((line = br.readLine()) != null) {
-				code.add(line);
-			}
+		try (FileReader fr = new FileReader(file)) {
+			loadReader(fr);
 		} catch (IOException e) {
 			throw new RiveScriptException("Error reading file '" + file + "'", e);
 		}
-
-		parse(file.toString(), code.toArray(new String[0]));
 	}
 
 	/**
@@ -624,7 +649,8 @@ public class RiveScript {
 	 * @throws RiveScriptException in case of a loading error
 	 * @throws ParserException     in case of a parsing error
 	 */
-	public void loadFile(String path) throws RiveScriptException, ParserException {
+	public void loadFile(String path) throws
+		RiveScriptException, ParserException {
 		requireNonNull(path, "'path' must not be null");
 		loadFile(new File(path));
 	}
@@ -636,7 +662,8 @@ public class RiveScript {
 	 * @throws RiveScriptException in case of a loading error
 	 * @throws ParserException     in case of a parsing error
 	 */
-	public void loadDirectory(File directory, String... extensions) throws RiveScriptException, ParserException {
+	public void loadDirectory(File directory, String... extensions) throws
+		RiveScriptException, ParserException {
 		requireNonNull(directory, "'directory' must not be null");
 		logger.debug("Loading RiveScript files from directory: {}", directory);
 
@@ -684,7 +711,8 @@ public class RiveScript {
 	 * @throws RiveScriptException in case of a loading error
 	 * @throws ParserException     in case of a parsing error
 	 */
-	public void loadDirectory(String path, String... extensions) throws RiveScriptException, ParserException {
+	public void loadDirectory(String path, String... extensions) throws
+		RiveScriptException, ParserException {
 		requireNonNull(path, "'path' must not be null");
 		loadDirectory(new File(path), extensions);
 	}
@@ -721,7 +749,8 @@ public class RiveScript {
 	 * @param code     the lines of RiveScript source code
 	 * @throws ParserException in case of a parsing error
 	 */
-	private void parse(String filename, String[] code) throws ParserException {
+	private void parse(String filename, String[] code) throws
+		ParserException {
 		// Get the abstract syntax tree of this file.
 		Root ast = this.parser.parse(filename, code);
 
@@ -810,7 +839,7 @@ public class RiveScript {
 				this.objectLanguages.put(object.getName(), object.getLanguage());
 			} else {
 				logger.warn("Object '{}' not loaded as no handler was found for programming language '{}'", object.getName(),
-						object.getLanguage());
+					object.getLanguage());
 			}
 		}
 	}
@@ -887,7 +916,8 @@ public class RiveScript {
 	 * @param inherited   the inherited status
 	 * @return the list of triggers
 	 */
-	private List<SortedTriggerEntry> getTopicTriggers(String topic, boolean thats, int depth, int inheritance, boolean inherited) {
+	private List<SortedTriggerEntry> getTopicTriggers(String topic,
+													  boolean thats, int depth, int inheritance, boolean inherited) {
 		// Break if we're in too deep.
 		if (checkDeepRecursion(depth, "Deep recursion while scanning topic inheritance!")) {
 			return new ArrayList<>();
@@ -967,7 +997,8 @@ public class RiveScript {
 	 * @param excludePrevious indicates to exclude triggers with {@code %Previous} or not
 	 * @return the sorted triggers
 	 */
-	private List<SortedTriggerEntry> sortTriggerSet(List<SortedTriggerEntry> triggers, boolean excludePrevious) {
+	private List<SortedTriggerEntry> sortTriggerSet
+	(List<SortedTriggerEntry> triggers, boolean excludePrevious) {
 		// Create a priority map, of priority numbers -> their triggers.
 		Map<Integer, List<SortedTriggerEntry>> priority = new HashMap<>();
 
@@ -1180,7 +1211,8 @@ public class RiveScript {
 	 * @param triggers the triggers to sort
 	 * @return the sorted triggers
 	 */
-	private List<SortedTriggerEntry> sortByWords(Map<Integer, List<SortedTriggerEntry>> triggers) {
+	private List<SortedTriggerEntry> sortByWords
+	(Map<Integer, List<SortedTriggerEntry>> triggers) {
 		// Sort the triggers by their word counts from greatest to smallest.
 		List<Integer> sortedWords = new ArrayList<>();
 		for (Integer wc : triggers.keySet()) {
@@ -1224,7 +1256,8 @@ public class RiveScript {
 	 * @param triggers the triggers to sort
 	 * @return the sorted triggers
 	 */
-	private List<SortedTriggerEntry> sortByLength(List<SortedTriggerEntry> triggers) {
+	private List<SortedTriggerEntry> sortByLength
+	(List<SortedTriggerEntry> triggers) {
 		List<String> sortedPatterns = new ArrayList<>();
 		Map<String, List<SortedTriggerEntry>> patternMap = new HashMap<>();
 		for (SortedTriggerEntry trigger : triggers) {
@@ -1289,7 +1322,8 @@ public class RiveScript {
 	 * @return the reply
 	 * @throws RiveScriptException in case of an exception and exception throwing is enabled
 	 */
-	public String reply(String username, String message) throws RiveScriptException {
+	public String reply(String username, String message) throws
+		RiveScriptException {
 		logger.debug("Asked to reply to [{}] {}", username, message);
 
 		long startTime = System.currentTimeMillis();
@@ -1347,7 +1381,8 @@ public class RiveScript {
 	 * @param step     the recursion depth counter
 	 * @return the reply
 	 */
-	private String getReply(String username, String message, boolean isBegin, int step) {
+	private String getReply(String username, String message,
+							boolean isBegin, int step) {
 		// Needed to sort replies?
 		if (this.sorted.getTopics().size() == 0) {
 			logger.warn("You forgot to call sortReplies()!");
@@ -1740,7 +1775,8 @@ public class RiveScript {
 	 * @param step     the recursion depth counter
 	 * @return the processed reply
 	 */
-	private String processTags(String username, String message, String reply, List<String> st, List<String> bst, int step) {
+	private String processTags(String username, String message, String
+		reply, List<String> st, List<String> bst, int step) {
 		// Prepare the stars and botstars.
 		List<String> stars = new ArrayList<>();
 		stars.add("");
@@ -1837,7 +1873,7 @@ public class RiveScript {
 		}
 
 		// Person substitution and string formatting.
-		String[] formats = new String[] {"person", "formal", "sentence", "uppercase", "lowercase"};
+		String[] formats = new String[]{"person", "formal", "sentence", "uppercase", "lowercase"};
 		for (String format : formats) {
 			re = Pattern.compile("\\{" + format + "\\}(.+?)\\{\\/" + format + "\\}");
 			matcher = re.matcher(reply);
@@ -2121,7 +2157,8 @@ public class RiveScript {
 	 * @param sorted  the substitution list
 	 * @return the substituted message
 	 */
-	private String substitute(String message, Map<String, String> subs, List<String> sorted) {
+	private String substitute(String
+								  message, Map<String, String> subs, List<String> sorted) {
 		// Safety checking.
 		if (subs == null || subs.size() == 0) {
 			return message;
@@ -2245,7 +2282,7 @@ public class RiveScript {
 			// Put the new text in.
 			pipes = "(?:" + pipes + "|(?:\\s|\\b)+)";
 			pattern = pattern.replaceAll("\\s*\\[" + StringUtils.quoteMetacharacters(matcher.group(1)) + "\\]\\s*",
-					StringUtils.quoteMetacharacters(pipes));
+				StringUtils.quoteMetacharacters(pipes));
 		}
 
 		// _ wildcards can't match numbers!
@@ -2484,7 +2521,8 @@ public class RiveScript {
 		dumpSortedList(sorted.getPerson(), "Person Substitutions");
 	}
 
-	private void dumpSorted(Map<String, List<SortedTriggerEntry>> tree, String label) {
+	private void dumpSorted
+		(Map<String, List<SortedTriggerEntry>> tree, String label) {
 		System.out.println("Sort buffer: " + label);
 		for (Map.Entry<String, List<SortedTriggerEntry>> entry : tree.entrySet()) {
 			String topic = entry.getKey();
