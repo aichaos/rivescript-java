@@ -30,7 +30,7 @@ import com.rivescript.macro.ObjectHandler;
 import com.rivescript.macro.Subroutine;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.boot.test.util.EnvironmentTestUtils;
+import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -400,7 +400,7 @@ public class RiveScriptAutoConfigurationTests {
 
 	private void load(Class<?>[] configs, String... environment) {
 		this.context.register(configs);
-		EnvironmentTestUtils.addEnvironment(this.context, environment);
+		TestPropertyValues.of(environment).applyTo(this.context);
 		this.context.refresh();
 	}
 
