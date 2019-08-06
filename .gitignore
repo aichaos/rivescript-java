@@ -15,6 +15,7 @@
 /log
 /out
 /target
+*~
 
 /rivescript-*/bin
 /rivescript-*/build

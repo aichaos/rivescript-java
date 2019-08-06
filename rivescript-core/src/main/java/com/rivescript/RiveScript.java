@@ -52,7 +52,12 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FilenameFilter;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.Reader;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -583,6 +588,46 @@ public class RiveScript {
 	/*---------------------*/
 
 	/**
+	 * Loads a script from an InputStream, suitable for use with
+	 * Class.getResourceAsStream().
+	 *
+	 * @param inputStream An InputStream
+	 * @throws RiveScriptException in case of a loading error
+	 * @throws ParserException     in case of a parsing error
+	 */
+	public void loadInputStream(InputStream inputStream) {
+		requireNonNull(inputStream, "'inputStream' must not be null");
+		loadReader(
+			inputStream.toString(),
+			new InputStreamReader(inputStream, isUtf8()? StandardCharsets.UTF_8:Charset.defaultCharset()));
+	}
+
+	/**
+	 * Loads a script from a Reader, suitable for use with InputStreamReader or
+	 * FileReader. This is currently a private method, as most users will read from
+	 * a File (thus using loadFile()), a directory (thus using loadDirectory()), or
+	 * an InputStream acquired via Class.getResourceAsStream(), thus using loadInputStream().
+	 *
+	 * @param name the name to use for the Reader (presumably the filename in the case of FileReader)
+	 * @param reader the Reader to use as input
+	 * @throws RiveScriptException in case of a loading error
+	 * @throws ParserException     in case of a parsing error
+	 */
+	protected void loadReader(String name, Reader reader) throws RiveScriptException, ParserException {
+		List<String> code=new ArrayList<>();
+
+		try(BufferedReader bufferedReader=new BufferedReader(reader)) {
+			String line;
+			while ((line = bufferedReader.readLine()) != null) {
+				code.add(line);
+			}
+			parse(name, code.toArray(new String[0]));
+		} catch(IOException e) {
+			throw new RiveScriptException("Error reading resource '" + name + "'", e);
+		}
+	}
+
+	/**
 	 * Loads a single RiveScript document from disk.
 	 *
 	 * @param file the RiveScript file
@@ -602,19 +647,11 @@ public class RiveScript {
 			throw new RiveScriptException("File '" + file + "' cannot be read");
 		}
 
-		List<String> code = new ArrayList<>();
-
-		// Slurp the file's contents.
-		try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-			String line;
-			while ((line = br.readLine()) != null) {
-				code.add(line);
-			}
-		} catch (IOException e) {
+		try {
+			loadReader(file.toString(), new FileReader(file));
+		} catch(IOException e) {
 			throw new RiveScriptException("Error reading file '" + file + "'", e);
 		}
-
-		parse(file.toString(), code.toArray(new String[0]));
 	}
 
 	/**

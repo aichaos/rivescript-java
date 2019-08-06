@@ -1,6 +1,6 @@
 buildscript {
 	ext {
-		springBootVersion = "1.5.6.RELEASE"
+		springBootVersion = "2.1.6.RELEASE"
 	}
 	repositories {
 		jcenter()
@@ -16,7 +16,7 @@ apply plugin: "org.springframework.boot"
 
 dependencies {
 	compile project(":rivescript-spring-boot-starter")
-	compile "org.springframework.boot:spring-boot-starter"
+	compile "org.springframework.boot:spring-boot-starter-test:${springBootVersion}"
 }
 
 bootRun {
