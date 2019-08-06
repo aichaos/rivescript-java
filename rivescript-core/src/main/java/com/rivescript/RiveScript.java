@@ -599,7 +599,7 @@ public class RiveScript {
 		requireNonNull(inputStream, "'inputStream' must not be null");
 		loadReader(
 			inputStream.toString(),
-			new InputStreamReader(inputStream, isUtf8()? StandardCharsets.UTF_8:Charset.defaultCharset()));
+			new InputStreamReader(inputStream, isUtf8() ? StandardCharsets.UTF_8 : Charset.defaultCharset()));
 	}
 
 	/**
@@ -614,9 +614,9 @@ public class RiveScript {
 	 * @throws ParserException     in case of a parsing error
 	 */
 	protected void loadReader(String name, Reader reader) throws RiveScriptException, ParserException {
-		List<String> code=new ArrayList<>();
+		List<String> code= new ArrayList<>();
 
-		try(BufferedReader bufferedReader=new BufferedReader(reader)) {
+		try (BufferedReader bufferedReader=new BufferedReader(reader)) {
 			String line;
 			while ((line = bufferedReader.readLine()) != null) {
 				code.add(line);
