@@ -22,7 +22,6 @@
 
 package com.rivescript;
 
-import jdk.internal.jline.internal.TestAccessible;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -35,6 +34,7 @@ import static org.junit.Assert.assertNull;
  * Tests for the RiveScript classpath load methods.
  */
 public class RiveScriptResourceTests {
+
 	/**
 	 * This method tests the loadInputStream() method of RiveScript. This implies
 	 * usage of the loadReader() method as well, as it delegates internally.
@@ -44,7 +44,7 @@ public class RiveScriptResourceTests {
 	@Test
 	public void testLoadFromInputStream() throws IOException {
 		RiveScript engine=new RiveScript();
-		try(InputStream is=RiveScript.class.getResourceAsStream("/test.rive")) {
+		try (InputStream is = RiveScript.class.getResourceAsStream("/test.rive")) {
 			engine.loadInputStream(is);
 			engine.sortReplies();
 			assertEquals(engine.reply("anyone", "hello"), "Hi there!");
@@ -62,7 +62,7 @@ public class RiveScriptResourceTests {
 	@Test
 	public void testLoadFromNull() throws IOException {
 		RiveScript engine=new RiveScript();
-		try(InputStream is=RiveScript.class.getResourceAsStream("/notthere.rive")) {
+		try (InputStream is = RiveScript.class.getResourceAsStream("/notthere.rive")) {
 			assertNull(is);
 			engine.loadInputStream(is);
 			throw new AssertionError("Should have received error from loadInputStream with null input");
