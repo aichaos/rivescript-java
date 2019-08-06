@@ -89,6 +89,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * Usage:
  * <p>
+ * 
  * <pre>
  * <code>
  * import com.rivescript.Config;
@@ -141,7 +142,7 @@ public class RiveScript {
 
 	public static final String UNDEFINED = "undefined";
 
-	public static final String[] DEFAULT_FILE_EXTENSIONS = new String[]{".rive", ".rs"};
+	public static final String[] DEFAULT_FILE_EXTENSIONS = new String[] {".rive", ".rs"};
 
 	private static final Random RANDOM = new Random();
 
@@ -160,19 +161,19 @@ public class RiveScript {
 
 	private Parser parser;
 
-	private Map<String, String> global;                 // 'global' variables
-	private Map<String, String> vars;                   // 'vars' bot variables
-	private Map<String, String> sub;                    // 'sub' substitutions
-	private Map<String, String> person;                 // 'person' substitutions
-	private Map<String, List<String>> array;            // 'array' definitions
-	private SessionManager sessions;                    // user variable session manager
+	private Map<String, String> global; // 'global' variables
+	private Map<String, String> vars; // 'vars' bot variables
+	private Map<String, String> sub; // 'sub' substitutions
+	private Map<String, String> person; // 'person' substitutions
+	private Map<String, List<String>> array; // 'array' definitions
+	private SessionManager sessions; // user variable session manager
 	private Map<String, Map<String, Boolean>> includes; // included topics
 	private Map<String, Map<String, Boolean>> inherits; // inherited topics
-	private Map<String, String> objectLanguages;        // object macro languages
-	private Map<String, ObjectHandler> handlers;        // object language handlers
-	private Map<String, Subroutine> subroutines;        // Java object handlers
-	private Map<String, Topic> topics;                  // main topic structure
-	private SortBuffer sorted;                          // Sorted data from sortReplies()
+	private Map<String, String> objectLanguages; // object macro languages
+	private Map<String, ObjectHandler> handlers; // object language handlers
+	private Map<String, Subroutine> subroutines; // Java object handlers
+	private Map<String, Topic> topics; // main topic structure
+	private SortBuffer sorted; // Sorted data from sortReplies()
 
 	// State information.
 	private ThreadLocal<String> currentUser = new ThreadLocal<>();
@@ -246,11 +247,11 @@ public class RiveScript {
 
 		// Initialize the parser.
 		this.parser = new Parser(ParserConfig.newBuilder()
-			.strict(this.strict)
-			.utf8(this.utf8)
-			.forceCase(this.forceCase)
-			.concat(this.concat)
-			.build());
+				.strict(this.strict)
+				.utf8(this.utf8)
+				.forceCase(this.forceCase)
+				.concat(this.concat)
+				.build());
 
 		// Initialize all the data structures.
 		this.global = new HashMap<>();
@@ -357,7 +358,7 @@ public class RiveScript {
 	/**
 	 * Sets a custom language handler for RiveScript object macros.
 	 *
-	 * @param name    the name of the programming language
+	 * @param name the name of the programming language
 	 * @param handler the implementation
 	 */
 	public void setHandler(String name, ObjectHandler handler) {
@@ -384,8 +385,7 @@ public class RiveScript {
 	}
 
 	/**
-	 * Returns the object macro language handlers (unmodifiable).
-	 * .
+	 * Returns the object macro language handlers (unmodifiable). .
 	 *
 	 * @return the object macro language handlers
 	 */
@@ -398,7 +398,7 @@ public class RiveScript {
 	 * <p>
 	 * Because Java is a compiled language, this method must be used to create an object macro written in Java.
 	 *
-	 * @param name       the name of the object macro for the `<call>` tag
+	 * @param name the name of the object macro for the `<call>` tag
 	 * @param subroutine the subroutine
 	 */
 	public void setSubroutine(String name, Subroutine subroutine) {
@@ -428,7 +428,7 @@ public class RiveScript {
 	 * <p>
 	 * This is equivalent to {@code ! global} in RiveScript. Set the value to {@code null} to delete a global.
 	 *
-	 * @param name  the variable name
+	 * @param name the variable name
 	 * @param value the variable value or {@code null}
 	 */
 	public void setGlobal(String name, String value) {
@@ -466,7 +466,7 @@ public class RiveScript {
 	 * <p>
 	 * This is equivalent to {@code ! vars} in RiveScript. Set the value to {@code null} to delete a bot variable.
 	 *
-	 * @param name  the variable name
+	 * @param name the variable name
 	 * @param value the variable value or {@code null}
 	 */
 	public void setVariable(String name, String value) {
@@ -503,7 +503,7 @@ public class RiveScript {
 	 * <p>
 	 * This is equivalent to {@code ! sub} in RiveScript. Set the value to {@code null} to delete a substitution.
 	 *
-	 * @param name  the substitution name
+	 * @param name the substitution name
 	 * @param value the substitution pattern or {@code null}
 	 */
 	public void setSubstitution(String name, String value) {
@@ -531,7 +531,7 @@ public class RiveScript {
 	 * <p>
 	 * This is equivalent to {@code ! person} in RiveScript. Set the value to {@code null} to delete a person substitution.
 	 *
-	 * @param name  the person substitution name
+	 * @param name the person substitution name
 	 * @param value the person substitution pattern or {@code null}
 	 */
 	public void setPerson(String name, String value) {
@@ -559,7 +559,7 @@ public class RiveScript {
 	 * <p>
 	 * Throws a {@link DeepRecursionException} in case exception throwing is enabled, otherwise logs a warning.
 	 *
-	 * @param depth   the recursion depth counter
+	 * @param depth the recursion depth counter
 	 * @param message the message to log
 	 * @return whether deep recursion is detected
 	 * @throws DeepRecursionException in case deep recursion is detected and exception throwing is enabled
@@ -584,7 +584,7 @@ public class RiveScript {
 	 *
 	 * @param inputStream the inputStream referring to a RiveScript file
 	 * @throws RiveScriptException in case of a loading error
-	 * @throws ParserException     in case of a parsing error
+	 * @throws ParserException in case of a parsing error
 	 */
 	public void loadInputStream(InputStream inputStream) throws RiveScriptException, ParserException {
 		requireNonNull(inputStream, "'inputStream' must not be null");
@@ -596,7 +596,7 @@ public class RiveScript {
 	 *
 	 * @param reader the Reader referring to a RiveScript file
 	 * @throws RiveScriptException in case of a loading error
-	 * @throws ParserException     in case of a parsing error
+	 * @throws ParserException in case of a parsing error
 	 */
 	public void loadReader(Reader reader) throws RiveScriptException, ParserException {
 		requireNonNull(reader, "'reader' must not be null");
@@ -620,7 +620,7 @@ public class RiveScript {
 	 *
 	 * @param file the RiveScript file
 	 * @throws RiveScriptException in case of a loading error
-	 * @throws ParserException     in case of a parsing error
+	 * @throws ParserException in case of a parsing error
 	 */
 	public void loadFile(File file) throws RiveScriptException, ParserException {
 		requireNonNull(file, "'file' must not be null");
@@ -647,10 +647,9 @@ public class RiveScript {
 	 *
 	 * @param path the path to the RiveScript document
 	 * @throws RiveScriptException in case of a loading error
-	 * @throws ParserException     in case of a parsing error
+	 * @throws ParserException in case of a parsing error
 	 */
-	public void loadFile(String path) throws
-		RiveScriptException, ParserException {
+	public void loadFile(String path) throws RiveScriptException, ParserException {
 		requireNonNull(path, "'path' must not be null");
 		loadFile(new File(path));
 	}
@@ -660,10 +659,9 @@ public class RiveScript {
 	 *
 	 * @param directory the directory containing the RiveScript documents
 	 * @throws RiveScriptException in case of a loading error
-	 * @throws ParserException     in case of a parsing error
+	 * @throws ParserException in case of a parsing error
 	 */
-	public void loadDirectory(File directory, String... extensions) throws
-		RiveScriptException, ParserException {
+	public void loadDirectory(File directory, String... extensions) throws RiveScriptException, ParserException {
 		requireNonNull(directory, "'directory' must not be null");
 		logger.debug("Loading RiveScript files from directory: {}", directory);
 
@@ -709,10 +707,9 @@ public class RiveScript {
 	 *
 	 * @param path The path to the directory containing the RiveScript documents
 	 * @throws RiveScriptException in case of a loading error
-	 * @throws ParserException     in case of a parsing error
+	 * @throws ParserException in case of a parsing error
 	 */
-	public void loadDirectory(String path, String... extensions) throws
-		RiveScriptException, ParserException {
+	public void loadDirectory(String path, String... extensions) throws RiveScriptException, ParserException {
 		requireNonNull(path, "'path' must not be null");
 		loadDirectory(new File(path), extensions);
 	}
@@ -746,11 +743,10 @@ public class RiveScript {
 	 * Parses the RiveScript source code into the bot's memory.
 	 *
 	 * @param filename the arbitrary name for the source code being parsed
-	 * @param code     the lines of RiveScript source code
+	 * @param code the lines of RiveScript source code
 	 * @throws ParserException in case of a parsing error
 	 */
-	private void parse(String filename, String[] code) throws
-		ParserException {
+	private void parse(String filename, String[] code) throws ParserException {
 		// Get the abstract syntax tree of this file.
 		Root ast = this.parser.parse(filename, code);
 
@@ -839,7 +835,7 @@ public class RiveScript {
 				this.objectLanguages.put(object.getName(), object.getLanguage());
 			} else {
 				logger.warn("Object '{}' not loaded as no handler was found for programming language '{}'", object.getName(),
-					object.getLanguage());
+						object.getLanguage());
 			}
 		}
 	}
@@ -851,8 +847,8 @@ public class RiveScript {
 	/**
 	 * Sorts the reply structures in memory for optimal matching.
 	 * <p>
-	 * After finishing loading the RiveScript code, this method needs to be called to populate the various sort buffers.
-	 * This is absolutely necessary for reply matching to work efficiently!
+	 * After finishing loading the RiveScript code, this method needs to be called to populate the various sort buffers. This is absolutely
+	 * necessary for reply matching to work efficiently!
 	 */
 	public void sortReplies() {
 		// (Re)initialize the sort cache.
@@ -899,25 +895,24 @@ public class RiveScript {
 	 * increment if this topic has other inheriting topics. So we can use this tag to make sure topics that inherit things will have their
 	 * triggers always be on top of the stack, from {@code inherits=0} to {@code inherits=n}.
 	 * <p>
-	 * Important info about the {@code depth} vs. {@code inheritance} params to this function:
-	 * {@code depth} increments by 1 each time this method recursively calls itself. {@code inheritance} increments by 1 only when this
-	 * topic inherits another topic.
+	 * Important info about the {@code depth} vs. {@code inheritance} params to this function: {@code depth} increments by 1 each time this
+	 * method recursively calls itself. {@code inheritance} increments by 1 only when this topic inherits another topic.
 	 * <p>
-	 * This way, {@code > topic alpha includes beta inherits gamma} will have this effect:
-	 * alpha and beta's triggers are combined together into one matching pool, and then those triggers have higher priority than gamma's.
+	 * This way, {@code > topic alpha includes beta inherits gamma} will have this effect: alpha and beta's triggers are combined together
+	 * into one matching pool, and then those triggers have higher priority than gamma's.
 	 * <p>
 	 * The {@code inherited} option is {@code true} if this is a recursive call, from a topic that inherits other topics. This forces the
 	 * {@code {inherits}} tag to be added to the triggers. This only applies when the top topic 'includes' another topic.
 	 *
-	 * @param topic       the name of the topic to scan through
-	 * @param thats       indicates to get replies with {@code %Previous} or not
-	 * @param depth       the recursion depth counter
+	 * @param topic the name of the topic to scan through
+	 * @param thats indicates to get replies with {@code %Previous} or not
+	 * @param depth the recursion depth counter
 	 * @param inheritance the inheritance counter
-	 * @param inherited   the inherited status
+	 * @param inherited the inherited status
 	 * @return the list of triggers
 	 */
 	private List<SortedTriggerEntry> getTopicTriggers(String topic,
-													  boolean thats, int depth, int inheritance, boolean inherited) {
+			boolean thats, int depth, int inheritance, boolean inherited) {
 		// Break if we're in too deep.
 		if (checkDeepRecursion(depth, "Deep recursion while scanning topic inheritance!")) {
 			return new ArrayList<>();
@@ -989,16 +984,15 @@ public class RiveScript {
 	 * <li>Create a sort buffer for triggers that had {@code %Previous} tags.
 	 * </ol>
 	 * <p>
-	 * Use the {@code excludePrevious} parameter to control which one is being done.
-	 * This function will return a list of {@link SortedTriggerEntry} items, and it's intended to have no duplicate trigger patterns
-	 * (unless the source RiveScript code explicitly uses the same duplicate pattern twice, which is a user error).
+	 * Use the {@code excludePrevious} parameter to control which one is being done. This function will return a list of
+	 * {@link SortedTriggerEntry} items, and it's intended to have no duplicate trigger patterns (unless the source RiveScript code
+	 * explicitly uses the same duplicate pattern twice, which is a user error).
 	 *
-	 * @param triggers        the triggers to sort
+	 * @param triggers the triggers to sort
 	 * @param excludePrevious indicates to exclude triggers with {@code %Previous} or not
 	 * @return the sorted triggers
 	 */
-	private List<SortedTriggerEntry> sortTriggerSet
-	(List<SortedTriggerEntry> triggers, boolean excludePrevious) {
+	private List<SortedTriggerEntry> sortTriggerSet(List<SortedTriggerEntry> triggers, boolean excludePrevious) {
 		// Create a priority map, of priority numbers -> their triggers.
 		Map<Integer, List<SortedTriggerEntry>> priority = new HashMap<>();
 
@@ -1042,7 +1036,7 @@ public class RiveScript {
 			// Lower inherits values mean higher priority on the stack.
 			// Triggers that have NO inherits value at all (which will default to -1),
 			// will be moved to the END of the stack at the end (have the highest number/lowest priority).
-			int inherits = -1;        // -1 means no {inherits} tag
+			int inherits = -1; // -1 means no {inherits} tag
 			int highestInherits = -1; // Highest number seen so far
 
 			// Loop through and categorize these triggers.
@@ -1205,14 +1199,13 @@ public class RiveScript {
 	/**
 	 * Sorts a set of triggers by word count and overall length.
 	 * <p>
-	 * This is a helper function for sorting the {@code atomic}, {@code option}, {@code alpha}, {@code number} and
-	 * {@code wild} attributes of the {@link SortTrack} and adding them to the running sort buffer in that specific order.
+	 * This is a helper function for sorting the {@code atomic}, {@code option}, {@code alpha}, {@code number} and {@code wild} attributes
+	 * of the {@link SortTrack} and adding them to the running sort buffer in that specific order.
 	 *
 	 * @param triggers the triggers to sort
 	 * @return the sorted triggers
 	 */
-	private List<SortedTriggerEntry> sortByWords
-	(Map<Integer, List<SortedTriggerEntry>> triggers) {
+	private List<SortedTriggerEntry> sortByWords(Map<Integer, List<SortedTriggerEntry>> triggers) {
 		// Sort the triggers by their word counts from greatest to smallest.
 		List<Integer> sortedWords = new ArrayList<>();
 		for (Integer wc : triggers.keySet()) {
@@ -1249,15 +1242,14 @@ public class RiveScript {
 	/**
 	 * Sorts a set of triggers purely by character length.
 	 * <p>
-	 * This is like {@link #sortByWords(Map)}, but it's intended for triggers that consist solely of wildcard-like symbols with no real words.
-	 * For example a trigger of {@code * * *} qualifies for this, and it has no words,
-	 * so we sort by length so it gets a higher priority than simply {@code *}.
+	 * This is like {@link #sortByWords(Map)}, but it's intended for triggers that consist solely of wildcard-like symbols with no real
+	 * words. For example a trigger of {@code * * *} qualifies for this, and it has no words, so we sort by length so it gets a higher
+	 * priority than simply {@code *}.
 	 *
 	 * @param triggers the triggers to sort
 	 * @return the sorted triggers
 	 */
-	private List<SortedTriggerEntry> sortByLength
-	(List<SortedTriggerEntry> triggers) {
+	private List<SortedTriggerEntry> sortByLength(List<SortedTriggerEntry> triggers) {
 		List<String> sortedPatterns = new ArrayList<>();
 		Map<String, List<SortedTriggerEntry>> patternMap = new HashMap<>();
 		for (SortedTriggerEntry trigger : triggers) {
@@ -1288,8 +1280,8 @@ public class RiveScript {
 
 
 	/**
-	 * Returns a {@link Comparator<String>} to sort a list of {@link String}s by reverse length.
-	 * Strings with equal length will be sorted alphabetically (natural ordering).
+	 * Returns a {@link Comparator<String>} to sort a list of {@link String}s by reverse length. Strings with equal length will be sorted
+	 * alphabetically (natural ordering).
 	 *
 	 * @return the comparator
 	 */
@@ -1314,16 +1306,15 @@ public class RiveScript {
 	/**
 	 * Returns a reply from the bot for a user's message.
 	 * <p>
-	 * In case of an exception and exception throwing is enabled a {@link RiveScriptException} is thrown.
-	 * Check the subclasses to see which types exceptions can be thrown.
+	 * In case of an exception and exception throwing is enabled a {@link RiveScriptException} is thrown. Check the subclasses to see which
+	 * types exceptions can be thrown.
 	 *
 	 * @param username the username
-	 * @param message  the user's message
+	 * @param message the user's message
 	 * @return the reply
 	 * @throws RiveScriptException in case of an exception and exception throwing is enabled
 	 */
-	public String reply(String username, String message) throws
-		RiveScriptException {
+	public String reply(String username, String message) throws RiveScriptException {
 		logger.debug("Asked to reply to [{}] {}", username, message);
 
 		long startTime = System.currentTimeMillis();
@@ -1376,13 +1367,13 @@ public class RiveScript {
 	 * Returns a reply from the bot for a user's message.
 	 *
 	 * @param username the username
-	 * @param message  the user's message
-	 * @param isBegin  whether this reply is for the {@code BEGIN} block context or not.
-	 * @param step     the recursion depth counter
+	 * @param message the user's message
+	 * @param isBegin whether this reply is for the {@code BEGIN} block context or not.
+	 * @param step the recursion depth counter
 	 * @return the reply
 	 */
 	private String getReply(String username, String message,
-							boolean isBegin, int step) {
+			boolean isBegin, int step) {
 		// Needed to sort replies?
 		if (this.sorted.getTopics().size() == 0) {
 			logger.warn("You forgot to call sortReplies()!");
@@ -1729,7 +1720,7 @@ public class RiveScript {
 	/**
 	 * Formats a user's message for safe processing.
 	 *
-	 * @param message  the user's message
+	 * @param message the user's message
 	 * @param botReply whether it is a bot reply or not
 	 * @return the formatted message
 	 */
@@ -1768,15 +1759,14 @@ public class RiveScript {
 	 * Processes tags in a reply element.
 	 *
 	 * @param username the username
-	 * @param message  the user's message
-	 * @param reply    the reply
-	 * @param st       the stars
-	 * @param bst      the bot stars
-	 * @param step     the recursion depth counter
+	 * @param message the user's message
+	 * @param reply the reply
+	 * @param st the stars
+	 * @param bst the bot stars
+	 * @param step the recursion depth counter
 	 * @return the processed reply
 	 */
-	private String processTags(String username, String message, String
-		reply, List<String> st, List<String> bst, int step) {
+	private String processTags(String username, String message, String reply, List<String> st, List<String> bst, int step) {
 		// Prepare the stars and botstars.
 		List<String> stars = new ArrayList<>();
 		stars.add("");
@@ -1873,7 +1863,7 @@ public class RiveScript {
 		}
 
 		// Person substitution and string formatting.
-		String[] formats = new String[]{"person", "formal", "sentence", "uppercase", "lowercase"};
+		String[] formats = new String[] {"person", "formal", "sentence", "uppercase", "lowercase"};
 		for (String format : formats) {
 			re = Pattern.compile("\\{" + format + "\\}(.+?)\\{\\/" + format + "\\}");
 			matcher = re.matcher(reply);
@@ -2153,12 +2143,11 @@ public class RiveScript {
 	 * Applies a substitution to an input message.
 	 *
 	 * @param message the input message
-	 * @param subs    the substitution map
-	 * @param sorted  the substitution list
+	 * @param subs the substitution map
+	 * @param sorted the substitution list
 	 * @return the substituted message
 	 */
-	private String substitute(String
-								  message, Map<String, String> subs, List<String> sorted) {
+	private String substitute(String message, Map<String, String> subs, List<String> sorted) {
 		// Safety checking.
 		if (subs == null || subs.size() == 0) {
 			return message;
@@ -2204,9 +2193,8 @@ public class RiveScript {
 	}
 
 	/**
-	 * Returns an array of every topic related to a topic (all the topics it inherits or includes,
-	 * plus all the topics included or inherited by those topics, and so on).
-	 * The array includes the original topic, too.
+	 * Returns an array of every topic related to a topic (all the topics it inherits or includes, plus all the topics included or inherited
+	 * by those topics, and so on). The array includes the original topic, too.
 	 *
 	 * @param topic the name of the topic
 	 * @param depth the recursion depth counter
@@ -2234,7 +2222,7 @@ public class RiveScript {
 	 * Prepares a trigger pattern for the regular expression engine.
 	 *
 	 * @param username the username
-	 * @param pattern  the pattern
+	 * @param pattern the pattern
 	 * @return the regular expression trigger pattern
 	 */
 	private String triggerRegexp(String username, String pattern) {
@@ -2242,15 +2230,15 @@ public class RiveScript {
 		pattern = RE_ZERO_WITH_STAR.matcher(pattern).replaceAll("<zerowidthstar>");
 
 		// Simple replacements.
-		pattern = pattern.replaceAll("\\*", "(.+?)");                  // Convert * into (.+?)
-		pattern = pattern.replaceAll("#", "(\\\\d+?)");                // Convert # into (\d+?)
-		pattern = pattern.replaceAll("(?<!\\\\)_", "(\\\\w+?)");       // Convert _ into (\w+?)
-		pattern = pattern.replaceAll("\\\\_", "_");                    // Convert \_ into _
+		pattern = pattern.replaceAll("\\*", "(.+?)"); // Convert * into (.+?)
+		pattern = pattern.replaceAll("#", "(\\\\d+?)"); // Convert # into (\d+?)
+		pattern = pattern.replaceAll("(?<!\\\\)_", "(\\\\w+?)"); // Convert _ into (\w+?)
+		pattern = pattern.replaceAll("\\\\_", "_"); // Convert \_ into _
 		pattern = pattern.replaceAll("\\s*\\{weight=\\d+\\}\\s*", ""); // Remove {weight} tags
-		pattern = pattern.replaceAll("<zerowidthstar>", "(.*?)");      // Convert <zerowidthstar> into (.+?)
-		pattern = pattern.replaceAll("\\|{2,}", "|");                  // Remove empty entities
-		pattern = pattern.replaceAll("(\\(|\\[)\\|", "$1");            // Remove empty entities from start of alt/opts
-		pattern = pattern.replaceAll("\\|(\\)|\\])", "$1");            // Remove empty entities from end of alt/opts
+		pattern = pattern.replaceAll("<zerowidthstar>", "(.*?)"); // Convert <zerowidthstar> into (.+?)
+		pattern = pattern.replaceAll("\\|{2,}", "|"); // Remove empty entities
+		pattern = pattern.replaceAll("(\\(|\\[)\\|", "$1"); // Remove empty entities from start of alt/opts
+		pattern = pattern.replaceAll("\\|(\\)|\\])", "$1"); // Remove empty entities from end of alt/opts
 
 		// UTF-8 mode special characters.
 		if (this.utf8) {
@@ -2282,7 +2270,7 @@ public class RiveScript {
 			// Put the new text in.
 			pipes = "(?:" + pipes + "|(?:\\s|\\b)+)";
 			pattern = pattern.replaceAll("\\s*\\[" + StringUtils.quoteMetacharacters(matcher.group(1)) + "\\]\\s*",
-				StringUtils.quoteMetacharacters(pipes));
+					StringUtils.quoteMetacharacters(pipes));
 		}
 
 		// _ wildcards can't match numbers!
@@ -2405,8 +2393,8 @@ public class RiveScript {
 	 * This is equivalent to {@code <set>} in RiveScript. Set the value to {@code null} to delete a user variable.
 	 *
 	 * @param username the username
-	 * @param name     the variable name
-	 * @param value    the variable value
+	 * @param name the variable name
+	 * @param value the variable value
 	 */
 	public void setUservar(String username, String name, String value) {
 		sessions.set(username, name, value);
@@ -2415,11 +2403,11 @@ public class RiveScript {
 	/**
 	 * Set a user's variables.
 	 * <p>
-	 * Set multiple user variables by providing a {@link Map} of key/value pairs.
-	 * Equivalent to calling {@link #setUservar(String, String, String)} for each pair in the map.
+	 * Set multiple user variables by providing a {@link Map} of key/value pairs. Equivalent to calling
+	 * {@link #setUservar(String, String, String)} for each pair in the map.
 	 *
 	 * @param username the name
-	 * @param vars     the user variables
+	 * @param vars the user variables
 	 */
 	public void setUservars(String username, Map<String, String> vars) {
 		sessions.set(username, vars);
@@ -2431,7 +2419,7 @@ public class RiveScript {
 	 * This is equivalent to {@code <get name>} in RiveScript. Returns {@code null} if the variable isn't defined.
 	 *
 	 * @param username the username
-	 * @param name     the variable name
+	 * @param name the variable name
 	 * @return the variable value
 	 */
 	public String getUservar(String username, String name) {
@@ -2477,7 +2465,7 @@ public class RiveScript {
 	 * Unfreezes a user's variables.
 	 *
 	 * @param username the username
-	 * @param action   the thaw action
+	 * @param action the thaw action
 	 * @see ThawAction
 	 */
 	public void thawUservars(String username, ThawAction action) {
@@ -2497,9 +2485,8 @@ public class RiveScript {
 	/**
 	 * Returns the current user's ID.
 	 * <p>
-	 * This is only useful from within a (Java) object macro, to get the ID of the user who invoked the macro.
-	 * This value is set at the beginning of {@link #reply(String, String)} and unset at the end, so this method will return {@code null}
-	 * outside of a reply context.
+	 * This is only useful from within a (Java) object macro, to get the ID of the user who invoked the macro. This value is set at the
+	 * beginning of {@link #reply(String, String)} and unset at the end, so this method will return {@code null} outside of a reply context.
 	 *
 	 * @return the user's ID or {@code null}
 	 */
@@ -2521,8 +2508,7 @@ public class RiveScript {
 		dumpSortedList(sorted.getPerson(), "Person Substitutions");
 	}
 
-	private void dumpSorted
-		(Map<String, List<SortedTriggerEntry>> tree, String label) {
+	private void dumpSorted(Map<String, List<SortedTriggerEntry>> tree, String label) {
 		System.out.println("Sort buffer: " + label);
 		for (Map.Entry<String, List<SortedTriggerEntry>> entry : tree.entrySet()) {
 			String topic = entry.getKey();
