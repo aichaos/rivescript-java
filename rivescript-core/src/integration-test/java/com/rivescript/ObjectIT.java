@@ -20,14 +20,16 @@ package com.rivescript;/*
  * SOFTWARE.
  */
 
+
+
 import com.rivescript.macro.ObjectHandler;
 import com.rivescript.util.StringUtils;
 import org.junit.Test;
-
 import java.util.HashMap;
 import java.util.Map;
 
 import static com.rivescript.RiveScript.DEFAULT_OBJECT_NOT_FOUND_MESSAGE;
+
 
 /**
  * @author Noah Petherbridge
@@ -54,7 +56,7 @@ public class ObjectIT extends BaseIT {
 				"+ goodbye",
 				"- <call>goodbye</call>"
 		});
-		assertReply("Hello", "Hello world!");
+		assertReply("Hello", "    Hello world!");
 		assertReply("goodbye", DEFAULT_OBJECT_NOT_FOUND_MESSAGE);
 	}
 

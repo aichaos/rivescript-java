@@ -125,10 +125,10 @@ public class Parser {
 			lineno = lp + 1;
 
 			// Strip the line.
-			String line = code[lp].trim();
-			if (line.length() == 0) {
+			if (code[lp].trim().length() == 0) {
 				continue; // Skip blank lines!
 			}
+			String line = code[lp];
 
 			// Are we inside an `> object`?
 			if (inObject) {
@@ -150,7 +150,7 @@ public class Parser {
 				}
 				continue;
 			}
-
+			line = line.trim();
 			// Look for comments.
 			if (line.startsWith("//")) {
 				continue; // Single line comment.
